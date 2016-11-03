@@ -20,6 +20,7 @@ package com.intel.analytics.sparkdl.pvanet
 import java.util.logging.Logger
 
 import breeze.linalg.{*, DenseMatrix, DenseVector, convert, max}
+import com.intel.analytics.sparkdl.dataset.Transformer
 import com.intel.analytics.sparkdl.pvanet.Roidb.ImageWithRoi
 import com.intel.analytics.sparkdl.tensor.{Storage, Tensor}
 
@@ -34,21 +35,20 @@ case class AnchorTarget(val labels: DenseVector[Int],
 
 }
 
-//object AnchorGenerator extends Transformer[ImageWithRoi, ImageWithRoi] {
-//  override def transform(prev: Iterator[ImageWithRoi]): Iterator[ImageWithRoi] = {
-//    prev.map(data => {
-//      data.anchorTarget = Some(AnchorTargetLayer.generateAnchors(data))
-//      data
-//    })
-//  }
-//}
+object AnchorGenerator extends Transformer[ImageWithRoi, ImageWithRoi] {
+  override def transform(prev: Iterator[ImageWithRoi]): Iterator[ImageWithRoi] = {
+    prev.map(data => {
+      data.anchorTarget = Some(AnchorTargetLayer.generateAnchors(data))
+      data
+    })
+  }
+}
 
-
-class AnchorTargetLayer(anchorScales: Tensor[Float] = Tensor(Storage(Array[Float](3, 6, 9, 16, 32))),
-                        anchorRatios: Tensor[Float] = Tensor(Storage(Array(0.5f, 0.667f, 1.0f, 1.5f, 2.0f)))) {
+object AnchorTargetLayer {
   val logger = Logger.getLogger(this.getClass.getName)
   //todo: now hard code
-
+  val anchorScales = Tensor(Storage(Array[Float](3, 6, 9, 16, 32)))
+  val anchorRatios = Tensor(Storage(Array(0.5f, 0.667f, 1.0f, 1.5f, 2.0f)))
   val featStride = 16
   val anchors = Anchor.generateAnchors(ratios = anchorRatios, scales = anchorScales)
   val num_anchors = anchors.rows
@@ -112,13 +112,13 @@ class AnchorTargetLayer(anchorScales: Tensor[Float] = Tensor(Storage(Array[Float
     * measure GT overlap
     */
 
-  def generateAnchors(data: ImageWithRoi, height: Int, width: Int): AnchorTarget = {
+  def generateAnchors(data: ImageWithRoi): AnchorTarget = {
     logger.info("start generating anchors ----------------------")
     //1. Generate proposals from bbox deltas and shifted anchors
-    val shifts = generateShifts(width, height, featStride).get
+    val shifts = generateShifts(data.scaledImage.get.width(), data.scaledImage.get.height(), featStride).get
     val totalAnchors = shifts.rows * num_anchors
     var allAnchors: DenseMatrix[Float] = getAllAnchors(shifts, anchors)
-    var indsInside: ArrayBuffer[Int] = getIndsInside(width, height, allAnchors, allowedBorder)
+    var indsInside: ArrayBuffer[Int] = getIndsInside(data.scaledImage.get.width(), data.scaledImage.get.height(), allAnchors, allowedBorder)
 
 
     //keep only inside anchors
@@ -227,23 +227,23 @@ class AnchorTargetLayer(anchorScales: Tensor[Float] = Tensor(Storage(Array[Float
     bbox_outside_weights = _unmap(bbox_outside_weights, totalAnchors, indsInside, 0)
 
     if (Config.DEBUG) {
-      println("generate anchors done")
-      println("rpn: max max_overlap %s".format(if (max_overlaps.length != 0) max(max_overlaps) else ""))
-      println("rpn: num_positive %d".format(labelE1.length))
-      println("rpn: num_negative %d".format(labelE0.length))
+      logger.info("generate anchors done")
+      logger.info("rpn: max max_overlap %s".format(if (max_overlaps.length != 0) max(max_overlaps) else ""))
+      logger.info("rpn: num_positive %d".format(labelE1.length))
+      logger.info("rpn: num_negative %d".format(labelE0.length))
       _fg_sum += labelE1.length
       _bg_sum += labelE0.length
       _count += 1
-      println("rpn: num_positive avg " + _fg_sum / _count)
-      println("rpn: num_negative avg " + _bg_sum / _count)
+      logger.info("rpn: num_positive avg " + _fg_sum / _count)
+      logger.info("rpn: num_negative avg " + _bg_sum / _count)
 
-      println("total anchors: " + num_anchors)
-      println("num shifts" + shifts.rows)
-      println("bbox target shape: " + bbox_targets.rows + ", " + bbox_targets.cols)
-      println("bbox_inside_weights shape: " + bbox_inside_weights.rows + ", " + bbox_inside_weights.cols)
-      println("bbox_outside_weights shape: " + bbox_outside_weights.rows + ", " + bbox_outside_weights.cols)
+      logger.info("total anchors: " + num_anchors)
+      logger.info("num shifts" + shifts.rows)
+      logger.info("bbox target shape: " + bbox_targets.rows + ", " + bbox_targets.cols)
+      logger.info("bbox_inside_weights shape: " + bbox_inside_weights.rows + ", " + bbox_inside_weights.cols)
+      logger.info("bbox_outside_weights shape: " + bbox_outside_weights.rows + ", " + bbox_outside_weights.cols)
     }
-    
+
     new AnchorTarget(labels, bbox_targets, bbox_inside_weights, bbox_outside_weights)
 
   }

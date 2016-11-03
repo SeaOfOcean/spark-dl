@@ -2,7 +2,7 @@ package com.intel.analytics.sparkdl.pvanet
 
 import breeze.linalg.{DenseMatrix, DenseVector, convert}
 import breeze.numerics.abs
-import com.intel.analytics.sparkdl.pvanet.datasets.{AnchorToTensor, ImageScalerAndMeanSubstractor, ImdbFactory, PascolVocDataSource}
+import com.intel.analytics.sparkdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, ImdbFactory, PascolVocDataSource}
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.util.Random
@@ -10,10 +10,9 @@ import scala.util.Random
 
 class AnchorTargetLayerSpec extends FlatSpec with Matchers {
   Config.TRAIN.SCALES = List(100)
-  val anchorTargetLayer = new AnchorTargetLayer()
   val width = 133
   val height = 100
-  val shifts = anchorTargetLayer.generateShifts(width, height, 16).get
+  val shifts = AnchorTargetLayer.generateShifts(width, height, 16).get
   "generateShifts" should "work properly" in {
     assert(shifts.rows == 13300)
     assert(shifts.cols == 4)
@@ -28,8 +27,8 @@ class AnchorTargetLayerSpec extends FlatSpec with Matchers {
       }
     }
   }
-  val anchors = anchorTargetLayer.anchors
-  val allAnchors = anchorTargetLayer.getAllAnchors(shifts, anchors)
+  val anchors = AnchorTargetLayer.anchors
+  val allAnchors = AnchorTargetLayer.getAllAnchors(shifts, anchors)
   checkAllAnchors
 
   def checkAllAnchors: Unit = {
@@ -61,7 +60,7 @@ class AnchorTargetLayerSpec extends FlatSpec with Matchers {
     }
   }
 
-  val indsInside = anchorTargetLayer.getIndsInside(width, height, allAnchors, anchorTargetLayer.allowedBorder)
+  val indsInside = AnchorTargetLayer.getIndsInside(width, height, allAnchors, AnchorTargetLayer.allowedBorder)
   "getIndsInside" should "return right values" in {
     assert(indsInside.length == 82)
     val expected = Array(3360, 3375, 3380, 3385, 3400, 3405, 3410, 3425, 3430, 3435,
@@ -78,7 +77,7 @@ class AnchorTargetLayerSpec extends FlatSpec with Matchers {
 
 
   //keep only inside anchors
-  val insideAnchors: DenseMatrix[Float] = anchorTargetLayer.getInsideAnchors(indsInside, allAnchors)
+  val insideAnchors: DenseMatrix[Float] = AnchorTargetLayer.getInsideAnchors(indsInside, allAnchors)
   assert(insideAnchors.size == 82 * 4)
   val expectedHead = DenseMatrix((0., 0., 47., 47. ), (5.5, 6., 73.5, 41. ), (10., 4.5, 69., 42.5))
   convert(expectedHead, Float)
@@ -99,13 +98,13 @@ class AnchorTargetLayerSpec extends FlatSpec with Matchers {
   val pascal = ImdbFactory.get_imdb("voc_2007_testcode")
   val trainDataSource = new PascolVocDataSource(imageSet = "testcode")
   val imageScaler = new ImageScalerAndMeanSubstractor(trainDataSource)
-  val sc = trainDataSource -> imageScaler
+  val sc = trainDataSource ++ imageScaler
   var data = sc.next()
   while (data.imagePath.substring(data.imagePath.indexOf("VOCdevkit")) != "VOCdevkit/VOC2007/JPEGImages/000003.jpg") {
     data = sc.next()
   }
 
-  anchorTargetLayer.generateAnchors(data, data.scaledImage.get.height(), data.scaledImage.get.height())
+  AnchorTargetLayer.generateAnchors(data)
 
   data.imagePath.substring(data.imagePath.indexOf("VOCdevkit")) should be("VOCdevkit/VOC2007/JPEGImages/000003.jpg")
   val overlaps = Bbox.bboxOverlap(insideAnchors, data.gt_boxes.get)
@@ -132,7 +131,7 @@ class AnchorTargetLayerSpec extends FlatSpec with Matchers {
     overlaps(x._1, x._2)
   })
 
-
+  
   gt_max_overlaps.zip(Array(0.1289815, 0.12328038)).foreach(x => assert(abs(x._2 - x._1) < 1e-3))
   gt_argmax_overlaps = Array.range(0, overlaps.rows).filter(r => overlaps(r, 0) == gt_max_overlaps(0) || overlaps(r, 1) == gt_max_overlaps(1))
   if (!Config.TRAIN.RPN_CLOBBER_POSITIVES) {
@@ -165,7 +164,7 @@ class AnchorTargetLayerSpec extends FlatSpec with Matchers {
     disable_inds.foreach(x => labels(x) = -1)
   }
 
-  var bbox_targets = anchorTargetLayer._compute_targets(insideAnchors, MatrixUtil.select(data.gt_boxes.get, argmax_overlaps, 0).get)
+  var bbox_targets = AnchorTargetLayer._compute_targets(insideAnchors, MatrixUtil.select(data.gt_boxes.get, argmax_overlaps, 0).get)
 
   var bbox_inside_weights = DenseMatrix.zeros[Float](indsInside.length, 4)
   labels.foreachPair((k, v) => {
@@ -217,8 +216,5 @@ class AnchorTargetLayerSpec extends FlatSpec with Matchers {
   assert(bbox_inside_weights(51, 0) == 1)
   assert(bbox_inside_weights(59, 0) == 1)
   assert(abs(bbox_outside_weights(0, 0) - 0.01219512) < 1e-6)
-
-  val toTensor = new AnchorToTensor(1, 4, 5)
-  toTensor.apply(new AnchorTarget(labels, bbox_targets, bbox_inside_weights, bbox_outside_weights))
 
 }
