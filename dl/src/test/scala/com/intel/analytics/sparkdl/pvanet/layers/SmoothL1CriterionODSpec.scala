@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package com.intel.analytics.sparkdl.nn
+package com.intel.analytics.sparkdl.pvanet.layers
 
 import breeze.numerics.abs
+import com.intel.analytics.sparkdl.nn.SmoothL1Criterion
 import com.intel.analytics.sparkdl.tensor.{Storage, Tensor}
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -36,6 +37,29 @@ class SmoothL1CriterionODSpec extends FlatSpec with Matchers {
     assert(abs(actualOutput - expectedOutput) < 1e-6)
 
     val expectedGrad = Tensor(Storage(Array(-0.0087008103728294372559, 0.43799301981925964355, 0.73976248502731323242, -0.97521805763244628906, -0.1302922368049621582, 0.069788061082363128662, 0.12716208398342132568, -0.49793213605880737305).map(x => x.toFloat)))
+    val actualGrad = smcod.backward(input, target)
+
+
+    expectedGrad.map(actualGrad, (v1, v2) => {
+      assert(abs(v1 - v2) < 1e-6);
+      v1
+    })
+  }
+  val input2 = Tensor(Storage(inputArr.map(x => x.toFloat))).resize(1, 2, 2, 2)
+  val target2 = Tensor(Storage((targetArr ++ inWArr ++ outWArr).map(x => x.toFloat))).resize(3, 2, 2, 2)
+
+  "a smoothl1criterion of object detection with sigma 2.4 and 4 dims" should "generate correct loss and grad" in {
+    val smcod = new SmoothL1CriterionOD[Float](2.4f, 2)
+    val expectedOutput = -2.2134404182434082031
+    val actualOutput = smcod.forward(input2, target2)
+    assert(abs(actualOutput - expectedOutput) < 1e-6)
+
+    val expectedGrad = Tensor(Storage(Array(-0.0087008103728294372559, 0.43799301981925964355,
+      0.73976248502731323242, -0.97521805763244628906,
+      -0.1302922368049621582, 0.069788061082363128662,
+      0.12716208398342132568, -0.49793213605880737305).map(x => x.toFloat)))
+      .resize(Array(1, 2, 2, 2))
+
     val actualGrad = smcod.backward(input, target)
 
 
