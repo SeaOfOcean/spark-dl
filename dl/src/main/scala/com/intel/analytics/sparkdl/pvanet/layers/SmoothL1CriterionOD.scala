@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package com.intel.analytics.sparkdl.nn
+package com.intel.analytics.sparkdl.pvanet.layers
 
+import com.intel.analytics.sparkdl.nn.TensorCriterion
 import com.intel.analytics.sparkdl.tensor.Tensor
 import com.intel.analytics.sparkdl.tensor.TensorNumericMath.TensorNumeric
 
