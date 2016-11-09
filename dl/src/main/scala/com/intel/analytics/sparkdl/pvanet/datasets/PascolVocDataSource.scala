@@ -22,16 +22,16 @@ import java.awt.image.{BufferedImage, DataBufferByte}
 import javax.imageio.ImageIO
 
 import breeze.linalg.{DenseMatrix, DenseVector}
-import com.intel.analytics.sparkdl.dataset.{DataSource, Transformer}
+import com.intel.analytics.sparkdl.dataset.{LocalDataSource, Transformer}
 import com.intel.analytics.sparkdl.pvanet.Roidb.ImageWithRoi
-import com.intel.analytics.sparkdl.pvanet.{Config, Roidb}
+import com.intel.analytics.sparkdl.pvanet.{AnchorTarget, Config, Roidb}
 import com.intel.analytics.sparkdl.tensor.{Storage, Tensor}
 
 import scala.util.Random
 
 
 class PascolVocDataSource(year: String = "2007", imageSet: String, devkitPath: String = Config.DATA_DIR + "/VOCdevkit", looped: Boolean = true)
-  extends DataSource[ImageWithRoi] {
+  extends LocalDataSource[ImageWithRoi] {
 
   val dataset: Imdb = new PascalVoc(year, imageSet, devkitPath)
 
@@ -112,6 +112,10 @@ object ImageSizeUniformer extends Transformer[ImageWithRoi, ImageWithRoi] {
   }
 }
 
+object ImageScalerAndMeanSubstractor {
+  def apply(dataSource: PascolVocDataSource): ImageScalerAndMeanSubstractor = new ImageScalerAndMeanSubstractor(dataSource)
+}
+
 class ImageScalerAndMeanSubstractor(dataSource: PascolVocDataSource) extends Transformer[ImageWithRoi, ImageWithRoi] {
   def byte2Float(x: Byte): Float = x & 0xff
 
@@ -169,10 +173,63 @@ class ImageScalerAndMeanSubstractor(dataSource: PascolVocDataSource) extends Tra
   }
 }
 
+class AnchorToTensor(batchSize: Int = 1, height: Int, width: Int) extends Transformer[ImageWithRoi, (Tensor[Float], Tensor[Float])] {
+  private val labelTensor: Tensor[Float] = Tensor[Float]()
+  private val roiLabelTensor: Tensor[Float] = Tensor[Float]()
+  private var labelData: Array[Float] = null
+  private var roiLabelData: Array[Float] = null
 
-class ToTensor(batchSize: Int = 1) extends Transformer[ImageWithRoi, (Tensor[Float], Tensor[Float],
-  Tensor[Float])] {
+  def apply(anchorTarget: AnchorTarget): (Tensor[Float], Tensor[Float]) = {
+    var i = 0
+    var k = 0
+    if (labelData == null) {
+      roiLabelData = new Array[Float](batchSize * 3 * 4 * anchorTarget.labels.length)
+      labelData = new Array[Float](batchSize * anchorTarget.labels.length)
+    }
+    val stride = anchorTarget.bboxTargets.rows * anchorTarget.bboxTargets.cols
+    for (r <- 0 until anchorTarget.bboxTargets.rows) {
+      // todo: start from 1
+      labelData(r) = if (anchorTarget.labels(r) != -1) (anchorTarget.labels(r) + 1) else anchorTarget.labels(r)
+      for (c <- 0 until anchorTarget.bboxTargets.cols) {
+        roiLabelData(k) = anchorTarget.bboxTargets.valueAt(r, c)
+        roiLabelData(k + stride) = anchorTarget.bboxInsideWeights.valueAt(r, c)
+        roiLabelData(k + stride * 2) = anchorTarget.bboxOutsideWeights.valueAt(r, c)
+        k += 1
+      }
+    }
+    labelTensor.set(Storage[Float](labelData),
+      storageOffset = 1, sizes = Array(labelData.length))
+    roiLabelTensor.set(Storage[Float](roiLabelData),
+      storageOffset = 1, sizes = Array(roiLabelData.length))
+    if (Config.DEBUG) {
+      println("<-------------to tensor result------------->")
+      println("label tensor size: (" + labelTensor.size().mkString(", ") + ")")
+      println("roiLabel tensor size: (" + roiLabelTensor.size().mkString(", ") + ")")
+    }
+    (labelTensor, roiLabelTensor)
+  }
+
+  override def transform(prev: Iterator[ImageWithRoi]): Iterator[(Tensor[Float], Tensor[Float])] = {
+    new Iterator[(Tensor[Float], Tensor[Float])] {
+      override def hasNext: Boolean = prev.hasNext
+
+      override def next(): (Tensor[Float], Tensor[Float]) = {
+        if (prev.hasNext) {
+          val imgWithRoi = prev.next()
+          apply(imgWithRoi.anchorTarget.get)
+        } else {
+          null
+        }
+      }
+    }
+  }
+}
+
+class ImageToTensor(batchSize: Int = 1) extends Transformer[ImageWithRoi, Tensor[Float]] {
   require(batchSize == 1)
+
+  private val featureTensor: Tensor[Float] = Tensor[Float]()
+  private var featureData: Array[Float] = null
 
   private def copyImage(img: RGBImageOD, storage: Array[Float], offset: Int): Unit = {
     val content = img.content
@@ -187,57 +244,33 @@ class ToTensor(batchSize: Int = 1) extends Transformer[ImageWithRoi, (Tensor[Flo
     }
   }
 
-  override def transform(prev: Iterator[ImageWithRoi]): Iterator[(Tensor[Float], Tensor[Float], Tensor[Float])] = {
-    new Iterator[(Tensor[Float], Tensor[Float], Tensor[Float])] {
-      private val featureTensor: Tensor[Float] = Tensor[Float]()
-      private val labelTensor: Tensor[Float] = Tensor[Float]()
-      private val roiLabelTensor: Tensor[Float] = Tensor[Float]()
-      private var featureData: Array[Float] = null
-      private var labelData: Array[Float] = null
-      private var roiLabelData: Array[Float] = null
-      private var width = 0
-      private var height = 0
+  def apply(imgWithRoi: ImageWithRoi): Tensor[Float] = {
+    var i = 0
+    var k = 0
+    if (featureData == null) {
+      featureData = new Array[Float](batchSize * 3 * imgWithRoi.scaledImage.get.height() * imgWithRoi.scaledImage.get.width())
+    }
+    copyImage(imgWithRoi.scaledImage.get, featureData, i * imgWithRoi.scaledImage.get.width() * imgWithRoi.scaledImage.get.height() * 3)
+
+    featureTensor.set(Storage[Float](featureData),
+      storageOffset = 1, sizes = Array(batchSize, 3, imgWithRoi.scaledImage.get.height(), imgWithRoi.scaledImage.get.width()))
+    if (Config.DEBUG) {
+      println("<-------------to tensor result------------->")
+      println("image size: (" + featureTensor.size().mkString(", ") + ")")
+    }
+    featureTensor
+  }
+
+  override def transform(prev: Iterator[ImageWithRoi]): Iterator[Tensor[Float]] = {
+    new Iterator[Tensor[Float]] {
+
 
       override def hasNext: Boolean = prev.hasNext
 
-      override def next(): (Tensor[Float], Tensor[Float], Tensor[Float]) = {
+      override def next(): Tensor[Float] = {
         if (prev.hasNext) {
-          var i = 0
-          var k = 0
           val imgWithRoi = prev.next()
-          if (featureData == null) {
-            featureData = new Array[Float](batchSize * 3 * imgWithRoi.scaledImage.get.height() * imgWithRoi.scaledImage.get.width())
-            roiLabelData = new Array[Float](batchSize * 3 * 4 * imgWithRoi.anchorTarget.get.labels.length)
-            labelData = new Array[Float](batchSize * imgWithRoi.anchorTarget.get.labels.length)
-            height = imgWithRoi.scaledImage.get.height()
-            width = imgWithRoi.scaledImage.get.width()
-          }
-          copyImage(imgWithRoi.scaledImage.get, featureData, i * imgWithRoi.scaledImage.get.width() * imgWithRoi.scaledImage.get.height() * 3)
-
-          for (r <- 0 until imgWithRoi.anchorTarget.get.bboxTargets.rows) {
-            labelData(r) = imgWithRoi.anchorTarget.get.labels(r)
-            for (c <- 0 until imgWithRoi.anchorTarget.get.bboxTargets.cols) {
-              roiLabelData(k) = imgWithRoi.anchorTarget.get.bboxTargets.valueAt(r, c)
-              k += 1
-              roiLabelData(k) = imgWithRoi.anchorTarget.get.bboxInsideWeights.valueAt(r, c)
-              k += 1
-              roiLabelData(k) = imgWithRoi.anchorTarget.get.bboxOutsideWeights.valueAt(r, c)
-              k += 1
-            }
-          }
-          featureTensor.set(Storage[Float](featureData),
-            storageOffset = 1, sizes = Array(1, 3, height, width))
-          labelTensor.set(Storage[Float](labelData),
-            storageOffset = 1, sizes = Array(1, labelData.length))
-          roiLabelTensor.set(Storage[Float](roiLabelData),
-            storageOffset = 1, sizes = Array(1, 3, roiLabelData.length / 3))
-          if (Config.DEBUG) {
-            println("<-------------to tensor result------------->")
-            println("image size: (" + featureTensor.size().mkString(", ") + ")")
-            println("label tensor size: (" + labelTensor.size().mkString(", ") + ")")
-            println("roiLabel tensor size: (" + roiLabelTensor.size().mkString(", ") + ")")
-          }
-          (featureTensor, labelTensor, roiLabelTensor)
+          apply(imgWithRoi)
         } else {
           null
         }
