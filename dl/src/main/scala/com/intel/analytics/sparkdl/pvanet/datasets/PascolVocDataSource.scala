@@ -245,15 +245,16 @@ class ImageToTensor(batchSize: Int = 1) extends Transformer[ImageWithRoi, Tensor
   }
 
   def apply(imgWithRoi: ImageWithRoi): Tensor[Float] = {
-    var i = 0
-    var k = 0
+    assert(batchSize == 1)
+    val img = imgWithRoi.scaledImage.get
     if (featureData == null) {
-      featureData = new Array[Float](batchSize * 3 * imgWithRoi.scaledImage.get.height() * imgWithRoi.scaledImage.get.width())
+      featureData = new Array[Float](batchSize * 3 * img.height * img.width)
     }
-    copyImage(imgWithRoi.scaledImage.get, featureData, i * imgWithRoi.scaledImage.get.width() * imgWithRoi.scaledImage.get.height() * 3)
+    imgWithRoi.scaledImage.get.content.copyToArray(featureData)
+//    copyImage(imgWithRoi.scaledImage.get, featureData, 0)
 
     featureTensor.set(Storage[Float](featureData),
-      storageOffset = 1, sizes = Array(batchSize, 3, imgWithRoi.scaledImage.get.height(), imgWithRoi.scaledImage.get.width()))
+      storageOffset = 1, sizes = Array(batchSize, 3, img.height(), img.width()))
     if (Config.DEBUG) {
       println("<-------------to tensor result------------->")
       println("image size: (" + featureTensor.size().mkString(", ") + ")")
