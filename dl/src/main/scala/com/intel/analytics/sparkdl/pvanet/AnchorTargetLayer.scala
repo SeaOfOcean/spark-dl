@@ -83,7 +83,7 @@ class AnchorTargetLayer(anchorScales: Tensor[Float] = Tensor(Storage(Array[Float
     * @param gt_rois
     * @return
     */
-  def _compute_targets(ex_rois: DenseMatrix[Float], gt_rois: DenseMatrix[Float]): DenseMatrix[Float] = {
+  def computeTargets(ex_rois: DenseMatrix[Float], gt_rois: DenseMatrix[Float]): DenseMatrix[Float] = {
     require(ex_rois.rows == gt_rois.rows)
     require(ex_rois.cols == 4)
     require(gt_rois.cols == 5)
@@ -118,7 +118,8 @@ class AnchorTargetLayer(anchorScales: Tensor[Float] = Tensor(Storage(Array[Float
     val shifts = generateShifts(width, height, featStride).get
     val totalAnchors = shifts.rows * num_anchors
     var allAnchors: DenseMatrix[Float] = getAllAnchors(shifts, anchors)
-    var indsInside: ArrayBuffer[Int] = getIndsInside(width, height, allAnchors, allowedBorder)
+    var indsInside: ArrayBuffer[Int] = getIndsInside(data.scaledImage.get.width(), data.scaledImage.get.height(), allAnchors,
+      allowedBorder)
 
 
     //keep only inside anchors
@@ -133,17 +134,17 @@ class AnchorTargetLayer(anchorScales: Tensor[Float] = Tensor(Storage(Array[Float
 
     val argmax_overlaps = MatrixUtil.argmax2(overlaps, 1).get
 
-    var max_overlaps = argmax_overlaps.zipWithIndex.map(x => overlaps(x._2, x._1))
-    var gt_argmax_overlaps = MatrixUtil.argmax2(overlaps, 0).get
+    var maxOverlaps = argmax_overlaps.zipWithIndex.map(x => overlaps(x._2, x._1))
+    var gtArgmaxOverlaps = MatrixUtil.argmax2(overlaps, 0).get
 
-    val gt_max_overlaps = gt_argmax_overlaps.zipWithIndex.map(x => {
+    val gtMaxOverlaps = gtArgmaxOverlaps.zipWithIndex.map(x => {
       overlaps(x._1, x._2)
     })
 
-    gt_argmax_overlaps = Array.range(0, overlaps.rows).filter(r => {
+    gtArgmaxOverlaps = Array.range(0, overlaps.rows).filter(r => {
       def isFilter(): Boolean = {
         for (i <- 0 until overlaps.cols) {
-          if (overlaps(r, i) == gt_max_overlaps(i)) {
+          if (overlaps(r, i) == gtMaxOverlaps(i)) {
             return true
           }
         }
@@ -155,23 +156,23 @@ class AnchorTargetLayer(anchorScales: Tensor[Float] = Tensor(Storage(Array[Float
 
     if (!Config.TRAIN.RPN_CLOBBER_POSITIVES) {
       // assign bg labels first so that positive labels can clobber them
-      max_overlaps.zipWithIndex.foreach(x => {
+      maxOverlaps.zipWithIndex.foreach(x => {
         if (x._1 < Config.TRAIN.RPN_NEGATIVE_OVERLAP) labels(x._2) = 0
       })
     }
 
     // fg label: for each gt, anchor with highest overlap
-    gt_argmax_overlaps.foreach(x => labels(x) = 1)
+    gtArgmaxOverlaps.foreach(x => labels(x) = 1)
 
     // fg label: above threshold IOU
-    max_overlaps.zipWithIndex.foreach(x => {
-      if (x._1 >= Config.TRAIN.RPN_POSITIVE_OVERLAP) max_overlaps(x._2) = 1
+    maxOverlaps.zipWithIndex.foreach(x => {
+      if (x._1 >= Config.TRAIN.RPN_POSITIVE_OVERLAP) maxOverlaps(x._2) = 1
     })
 
     if (Config.TRAIN.RPN_CLOBBER_POSITIVES) {
       //assign bg labels last so that negative labels can clobber positives
-      max_overlaps.zipWithIndex.foreach(x => {
-        if (x._1 < Config.TRAIN.RPN_NEGATIVE_OVERLAP) max_overlaps(x._2) = 0
+      maxOverlaps.zipWithIndex.foreach(x => {
+        if (x._1 < Config.TRAIN.RPN_NEGATIVE_OVERLAP) maxOverlaps(x._2) = 0
       })
     }
 
@@ -183,7 +184,7 @@ class AnchorTargetLayer(anchorScales: Tensor[Float] = Tensor(Storage(Array[Float
       disable_inds.foreach(x => labels(x) = -1)
     }
 
-    var bbox_targets = _compute_targets(insideAnchors, MatrixUtil.select(data.gt_boxes.get, argmax_overlaps, 0).get)
+    var bbox_targets = computeTargets(insideAnchors, MatrixUtil.select(data.gt_boxes.get, argmax_overlaps, 0).get)
 
     var bbox_inside_weights = DenseMatrix.zeros[Float](indsInside.length, 4)
     labels.foreachPair((k, v) => {
@@ -221,14 +222,14 @@ class AnchorTargetLayer(anchorScales: Tensor[Float] = Tensor(Storage(Array[Float
 
 
     // map up to original set of anchors
-    labels = convert(_unmap(convert(DenseMatrix(labels.data.array).t, Float), totalAnchors, indsInside, -1).toDenseVector, Int)
-    bbox_targets = _unmap(bbox_targets, totalAnchors, indsInside, 0)
-    bbox_inside_weights = _unmap(bbox_inside_weights, totalAnchors, indsInside, 0)
-    bbox_outside_weights = _unmap(bbox_outside_weights, totalAnchors, indsInside, 0)
+    labels = convert(unmap(convert(DenseMatrix(labels.data.array).t, Float), totalAnchors, indsInside, -1).toDenseVector, Int)
+    bbox_targets = unmap(bbox_targets, totalAnchors, indsInside, 0)
+    bbox_inside_weights = unmap(bbox_inside_weights, totalAnchors, indsInside, 0)
+    bbox_outside_weights = unmap(bbox_outside_weights, totalAnchors, indsInside, 0)
 
     if (Config.DEBUG) {
       println("generate anchors done")
-      println("rpn: max max_overlap %s".format(if (max_overlaps.length != 0) max(max_overlaps) else ""))
+      println("rpn: max max_overlap %s".format(if (maxOverlaps.length != 0) max(maxOverlaps) else ""))
       println("rpn: num_positive %d".format(labelE1.length))
       println("rpn: num_negative %d".format(labelE0.length))
       _fg_sum += labelE1.length
@@ -243,7 +244,7 @@ class AnchorTargetLayer(anchorScales: Tensor[Float] = Tensor(Storage(Array[Float
       println("bbox_inside_weights shape: " + bbox_inside_weights.rows + ", " + bbox_inside_weights.cols)
       println("bbox_outside_weights shape: " + bbox_outside_weights.rows + ", " + bbox_outside_weights.cols)
     }
-    
+
     new AnchorTarget(labels, bbox_targets, bbox_inside_weights, bbox_outside_weights)
 
   }
@@ -279,7 +280,7 @@ class AnchorTargetLayer(anchorScales: Tensor[Float] = Tensor(Storage(Array[Float
     * @param fillValue
     * @return
     */
-  def _unmap(data: DenseMatrix[Float], count: Int, inds: ArrayBuffer[Int], fillValue: Int): DenseMatrix[Float] = {
+  def unmap(data: DenseMatrix[Float], count: Int, inds: ArrayBuffer[Int], fillValue: Int): DenseMatrix[Float] = {
     var ret = DenseMatrix.fill[Float](count, data.cols) {
       fillValue
     }

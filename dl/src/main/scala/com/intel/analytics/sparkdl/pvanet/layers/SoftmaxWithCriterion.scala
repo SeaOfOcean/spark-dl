@@ -26,7 +26,7 @@ import scala.reflect.ClassTag
 
 
 class SoftmaxWithCriterion[T: ClassTag](weights: Tensor[T] = null, ignoreLabel: Option[Int] = None, normalizeMode:
-NormMode = NormMode.BATCH_SIZE)
+NormMode = NormMode.VALID)
                                        (implicit ev: TensorNumeric[T]) extends TensorCriterion[T] {
   private val gradInput: Tensor[T] = Tensor[T]()
 
