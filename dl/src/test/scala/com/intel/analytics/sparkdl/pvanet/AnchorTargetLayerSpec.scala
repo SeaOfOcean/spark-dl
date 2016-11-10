@@ -1,11 +1,9 @@
 package com.intel.analytics.sparkdl.pvanet
 
-import breeze.linalg.{DenseMatrix, DenseVector, convert}
+import breeze.linalg.{DenseMatrix, convert, sum}
 import breeze.numerics.abs
-import com.intel.analytics.sparkdl.pvanet.datasets.{AnchorToTensor, ImageScalerAndMeanSubstractor, ImdbFactory, PascolVocDataSource}
+import com.intel.analytics.sparkdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, ImdbFactory, PascolVocDataSource}
 import org.scalatest.{FlatSpec, Matchers}
-
-import scala.util.Random
 
 
 class AnchorTargetLayerSpec extends FlatSpec with Matchers {
@@ -72,29 +70,9 @@ class AnchorTargetLayerSpec extends FlatSpec with Matchers {
       10120, 10135, 10140, 10145, 13335, 13350, 13355, 13360, 13375, 13380, 13385, 13400, 13405,
       13410, 13425, 13430, 13435, 13460)
     expected.zip(indsInside).foreach(x => assert(abs(x._1 - x._2) < 1e-6))
-
-
   }
 
 
-  //keep only inside anchors
-  val insideAnchors: DenseMatrix[Float] = anchorTargetLayer.getInsideAnchors(indsInside, allAnchors)
-  assert(insideAnchors.size == 82 * 4)
-  val expectedHead = DenseMatrix((0., 0., 47., 47. ), (5.5, 6., 73.5, 41. ), (10., 4.5, 69., 42.5))
-  convert(expectedHead, Float)
-  for (i <- 0 until expectedHead.rows) {
-    for (j <- 0 until expectedHead.cols) {
-      assert(abs(expectedHead(i, j) - insideAnchors(i, j)) < 1e-6)
-    }
-  }
-  val expectedTail = DenseMatrix((58., 52.5, 117., 90.5), (64., 48., 111., 95. ), (80., 48., 127., 95. ))
-  for (i <- 0 until expectedTail.rows) {
-    for (j <- 0 until expectedTail.cols) {
-      assert(abs(expectedTail(i, j) - insideAnchors(insideAnchors.rows - 3 + i, j)) < 1e-6)
-    }
-  }
-  // label: 1 is positive, 0 is negative, -1 is dont care
-  var labels = DenseVector.fill(indsInside.length, -1)
 
   val pascal = ImdbFactory.get_imdb("voc_2007_testcode")
   val trainDataSource = new PascolVocDataSource(imageSet = "testcode")
@@ -108,117 +86,19 @@ class AnchorTargetLayerSpec extends FlatSpec with Matchers {
   anchorTargetLayer.generateAnchors(data, data.scaledImage.get.height(), data.scaledImage.get.height())
 
   data.imagePath.substring(data.imagePath.indexOf("VOCdevkit")) should be("VOCdevkit/VOC2007/JPEGImages/000003.jpg")
-  val overlaps = Bbox.bboxOverlap(insideAnchors, data.gt_boxes.get)
-  assert(overlaps.size == 164)
-  assert(abs(overlaps(0, 0) - 0.04323438) < 1e-2)
-  assert(abs(overlaps(1, 1) - 0.00271812) < 1e-2)
-  assert(abs(overlaps(-2, -1) - 0.0558742) < 1e-2)
-  assert(abs(overlaps(-1, -1) - 0.00694012) < 1e-2)
-  assert(abs(overlaps(-1, 0)) < 1e-6)
-  assert(abs(overlaps(-1, 0)) < 1e-6)
 
-  val argmax_overlaps = MatrixUtil.argmax2(overlaps, 1).get
-
-  val expected_argmax_ol = Array(0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
-  //0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,1,1,1,1,1,1,1,1,1,0,0,0,1,1,0,1,1,0,1,1,1,1,1,1,1
-  //0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,1,1,1,1,1,1,1,1,1,0,0,0,1,1,0,1,1,1,1,1,1,1,1,1,1
-  //  todo: have one bit differnece
-  //   argmax_overlaps.zip(expected_argmax_ol).foreach(x => assert(x._2 == x._1))
-  var max_overlaps = argmax_overlaps.zipWithIndex.map(x => overlaps(x._2, x._1))
-  var gt_argmax_overlaps = MatrixUtil.argmax2(overlaps, 0).get
-  gt_argmax_overlaps.zip(Array(19, 32)).foreach(x => assert(x._1 == x._2))
-
-  val gt_max_overlaps = gt_argmax_overlaps.zipWithIndex.map(x => {
-    overlaps(x._1, x._2)
-  })
-
-
-  gt_max_overlaps.zip(Array(0.1289815, 0.12328038)).foreach(x => assert(abs(x._2 - x._1) < 1e-3))
-  gt_argmax_overlaps = Array.range(0, overlaps.rows).filter(r => overlaps(r, 0) == gt_max_overlaps(0) || overlaps(r, 1) == gt_max_overlaps(1))
-  if (!Config.TRAIN.RPN_CLOBBER_POSITIVES) {
-    // assign bg labels first so that positive labels can clobber them
-    max_overlaps.zipWithIndex.foreach(x => {
-      if (x._1 < Config.TRAIN.RPN_NEGATIVE_OVERLAP) labels(x._2) = 0
-    })
-  }
-
-  // fg label: for each gt, anchor with highest overlap
-  gt_argmax_overlaps.foreach(x => labels(x) = 1)
-
-  // fg label: above threshold IOU
-  max_overlaps.zipWithIndex.foreach(x => {
-    if (x._1 >= Config.TRAIN.RPN_POSITIVE_OVERLAP) max_overlaps(x._2) = 1
-  })
-
-  if (Config.TRAIN.RPN_CLOBBER_POSITIVES) {
-    //assign bg labels last so that negative labels can clobber positives
-    max_overlaps.zipWithIndex.foreach(x => {
-      if (x._1 < Config.TRAIN.RPN_NEGATIVE_OVERLAP) max_overlaps(x._2) = 0
-    })
-  }
-
-  // subsample positive labels if we have too many
-  val num_fg = Config.TRAIN.RPN_FG_FRACTION * Config.TRAIN.RPN_BATCHSIZE
-  val fg_inds = labels.findAll(_ == 1)
-  if (fg_inds.length > num_fg) {
-    val disable_inds = Random.shuffle(fg_inds).take(fg_inds.length - num_fg.toInt)
-    disable_inds.foreach(x => labels(x) = -1)
-  }
-
-  var bbox_targets = anchorTargetLayer._compute_targets(insideAnchors, MatrixUtil.select(data.gt_boxes.get, argmax_overlaps, 0).get)
-
-  var bbox_inside_weights = DenseMatrix.zeros[Float](indsInside.length, 4)
-  labels.foreachPair((k, v) => {
-    if (v == 1) {
-      bbox_inside_weights(k, ::) := convert(DenseVector(Config.TRAIN.RPN_BBOX_INSIDE_WEIGHTS), Float).t
-    }
-  })
-
-  var bbox_outside_weights = DenseMatrix.zeros[Float](indsInside.length, 4)
-
-  val labelGe0 = labels.findAll(x => x >= 0).toArray
-  val labelE1 = labels.findAll(x => x == 1).toArray
-  val labelE0 = labels.findAll(x => x == 0).toArray
-  var positive_weights = None: Option[DenseMatrix[Float]]
-  var negative_weights = None: Option[DenseMatrix[Float]]
-  if (Config.TRAIN.RPN_POSITIVE_WEIGHT < 0) {
-    // uniform weighting of examples (given non -uniform sampling)
-    val num_examples = labelGe0.length
-    positive_weights = Some(DenseMatrix.ones[Float](1, 4) * (1.0f / num_examples))
-    negative_weights = Some(DenseMatrix.ones[Float](1, 4) * (1.0f / num_examples))
-  }
-  else {
-    require((Config.TRAIN.RPN_POSITIVE_WEIGHT > 0) &
-      (Config.TRAIN.RPN_POSITIVE_WEIGHT < 1))
-    positive_weights = Some(DenseMatrix(Config.TRAIN.RPN_POSITIVE_WEIGHT.toFloat / labelE1.length))
-    negative_weights = Some(DenseMatrix((1.0f - Config.TRAIN.RPN_POSITIVE_WEIGHT.toFloat) / labelE0.length))
-  }
-
-  labelE1.foreach(x => bbox_outside_weights(x, ::) := positive_weights.get.toDenseVector.t)
-  labelE0.foreach(x => bbox_outside_weights(x, ::) := negative_weights.get.toDenseVector.t)
-
-  assert(labels.length == 82)
-
-  val expectedLabels = DenseVector(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-    0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
-    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-    0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
-  for (i <- 0 until expectedLabels.length) {
-    assert(labels(i) == expectedLabels(i))
-  }
-
-  assert(bbox_targets.rows == 82)
-  assert(bbox_targets.cols == 4)
-
-  assert(bbox_inside_weights(19, 0) == 1)
-  assert(bbox_inside_weights(24, 0) == 1)
-  assert(bbox_inside_weights(32, 0) == 1)
-  assert(bbox_inside_weights(46, 0) == 1)
-  assert(bbox_inside_weights(51, 0) == 1)
-  assert(bbox_inside_weights(59, 0) == 1)
-  assert(abs(bbox_outside_weights(0, 0) - 0.01219512) < 1e-6)
-
-  val toTensor = new AnchorToTensor(1, 4, 5)
-  toTensor.apply(new AnchorTarget(labels, bbox_targets, bbox_inside_weights, bbox_outside_weights))
+  val res1 = anchorTargetLayer.generateAnchors(data, height = 133, width = 100)
+  assert(res1.labels.length == 332500)
+  assert(res1.bboxInsideWeights.size == 332500 * 4)
+  assert(res1.labels.findAll(x => x == 1).length == 6)
+  assert(res1.labels.findAll(x => x == 0).length == 76)
+  assert(sum(res1.bboxInsideWeights) == 24)
+  
+  var res = anchorTargetLayer.generateAnchors(data, height = 50, width = 70)
+  assert(res.labels.length == 87500)
+  assert(res.bboxInsideWeights.size == 87500 * 4)
+  assert(res.labels.findAll(x => x == 1).length == 6)
+  assert(res.labels.findAll(x => x == 0).length == 76)
+  assert(sum(res.bboxInsideWeights) == 24)
 
 }
