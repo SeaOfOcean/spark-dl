@@ -105,20 +105,23 @@ NormMode = NormMode.VALID)
   }
 
   def getNormalizer(normalizeMode: NormMode, validCount: Int): T = {
-    normalizeMode match {
-      case NormMode.FULL => ev.fromType(outerNum * innerNum)
-      case NormMode.VALID => {
-        if (validCount == -1) {
-          ev.fromType(outerNum * innerNum)
+    def normalizer = {
+      normalizeMode match {
+        case NormMode.FULL => ev.fromType(outerNum * innerNum)
+        case NormMode.VALID => {
+          if (validCount == -1) {
+            ev.fromType(outerNum * innerNum)
+          }
+          else {
+            ev.fromType(validCount)
+          }
         }
-        else {
-          ev.fromType(validCount)
-        }
+        case NormMode.BATCH_SIZE => ev.fromType(outerNum)
+        case NormMode.NONE => ev.fromType(1)
+        case _ => throw new IllegalArgumentException("Unknown normalization mode")
       }
-      case NormMode.BATCH_SIZE => ev.fromType(outerNum)
-      case NormMode.NONE => ev.fromType(1)
-      case _ => throw new IllegalArgumentException("Unknown normalization mode")
     }
+    ev.max(ev.fromType(1), normalizer)
   }
 }
 
