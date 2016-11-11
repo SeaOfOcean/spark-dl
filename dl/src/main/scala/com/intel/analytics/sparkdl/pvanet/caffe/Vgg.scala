@@ -18,13 +18,14 @@
 package com.intel.analytics.sparkdl.pvanet.caffe
 
 import com.intel.analytics.sparkdl.nn._
+import com.intel.analytics.sparkdl.pvanet.Config
 import com.intel.analytics.sparkdl.tensor.Tensor
-import com.intel.analytics.sparkdl.utils.Table
+import com.intel.analytics.sparkdl.utils.{File, Table}
 
 object Vgg_16_RPN {
   val defName = "/home/xianyan/objectRelated/faster_rcnn_models/VGG16/faster_rcnn_alt_opt/rpn_test.pt"
   val modelName = "/home/xianyan/objectRelated/faster_rcnn_models/VGG16_faster_rcnn_final.caffemodel"
-  val caffeReader = new CaffeReader[Float](defName, modelName)
+  var caffeReader: CaffeReader[Float] = null
 
   def vggNet() = {
     val vggNet = new Sequential[Tensor[Float], Tensor[Float], Float]()
@@ -120,6 +121,12 @@ object Vgg_16_RPN {
   }
 
   def apply(): Module[Tensor[Float], Table, Float] = {
+    val filePath = Config.model_path() + "/" + "vgg16RPNWithCaffeParams.obj"
+    if (Config.existFile(filePath)) {
+      return File.loadObj[Module[Tensor[Float], Table, Float]](filePath)
+    }
+    if (caffeReader == null)
+      caffeReader = new CaffeReader[Float](defName, modelName)
     val clsAndReg = new ConcatTable[Table, Float]()
     clsAndReg.add(caffeReader.mapConvolution("rpn_cls_score"))
       .add(caffeReader.mapConvolution("rpn_bbox_pred"))
@@ -127,8 +134,11 @@ object Vgg_16_RPN {
     rpnModel.add(vggNet)
     rpnModel.add(clsAndReg)
 
+    File.save(rpnModel, filePath, true)
     rpnModel
   }
+
+
 }
 
 

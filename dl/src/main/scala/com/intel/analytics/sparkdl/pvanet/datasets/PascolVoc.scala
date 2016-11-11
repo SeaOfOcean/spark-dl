@@ -84,7 +84,7 @@ object PascolVoc {
         val target = new Table
         target.insert(anchorTensors._1)
         target.insert(anchorTensors._2)
-        val slc = new SmoothL1CriterionOD[Float](0.3f, 1)
+        val slc = new SmoothL1CriterionOD[Float](3f, 1)
         val sfm = new SoftmaxWithCriterion[Float](ignoreLabel = Some(-1))
         val pc = new ParallelCriterion[Float]()
         pc.add(sfm, 1.0f)
