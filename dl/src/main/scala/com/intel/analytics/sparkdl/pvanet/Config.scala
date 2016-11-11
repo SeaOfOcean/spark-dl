@@ -19,11 +19,10 @@ package com.intel.analytics.sparkdl.pvanet
 
 import java.io.File
 
-import akka.event.Logging
-import akka.event.slf4j.Logger
 import com.intel.analytics.sparkdl.pvanet.datasets.Imdb
 
 object Config {
+
   val DEBUG: Boolean = true
 
   var _feat_stride = 16
@@ -239,8 +238,14 @@ object Config {
 
   def cache_path() = {
     val cachePath = DATA_DIR + "/cache"
-    if (!new File(cachePath.toString).exists()) new File(cachePath.toString).mkdirs()
+    if (!existFile(cachePath)) new File(cachePath.toString).mkdirs()
     cachePath
+  }
+
+  def model_path() = {
+    val modelPath = DATA_DIR + "/model"
+    if (!existFile(modelPath)) new File(modelPath).mkdirs()
+    modelPath
   }
 
   def existFile(f: String) = new java.io.File(f).exists()
