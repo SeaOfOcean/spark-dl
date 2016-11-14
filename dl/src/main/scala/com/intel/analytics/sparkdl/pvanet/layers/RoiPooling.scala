@@ -14,6 +14,8 @@ class RoiPooling[@specialized(Float, Double) T: ClassTag](val pooled_w: Int, val
   @transient var channels = 0
   @transient var height = 0
   @transient var width = 0
+  @transient var argmax: Tensor[T] = null
+  var gradInput1: Tensor[T] = null
 
   override def updateOutput(input: Table): Tensor[T] = {
     assert(input.length() == 2, "there must have two tensors in the table")
@@ -32,7 +34,9 @@ class RoiPooling[@specialized(Float, Double) T: ClassTag](val pooled_w: Int, val
 
     output.fill(ev.fromType[Double](-Double.MaxValue))
     var outputData = output.storage().array()
-    var argmax = Tensor()
+    if (argmax == null) {
+      argmax = Tensor[T]()
+    }
     argmax.resizeAs(output)
     argmax.fill(ev.fromType(-1))
     var argmax_data = argmax.storage().array()
@@ -55,6 +59,7 @@ class RoiPooling[@specialized(Float, Double) T: ClassTag](val pooled_w: Int, val
       val roi_start_h = roundRoi(2)
       val roi_end_w = roundRoi(3)
       val roi_end_h = roundRoi(4)
+
       assert(ev.isGreaterEq(roiBatchInd, ev.fromType(0)))
       assert(ev.isGreater(ev.fromType(batchSize), roiBatchInd))
 
@@ -63,16 +68,17 @@ class RoiPooling[@specialized(Float, Double) T: ClassTag](val pooled_w: Int, val
       val binSizeH = ev.divide(ev.fromType[Double](roiHeight), ev.fromType[Int](pooled_h))
       val binSizeW = ev.divide(ev.fromType[Double](roiWidth), ev.fromType[Int](pooled_w))
       var batchDataIndex = offset(ev.toType[Int](roiBatchInd), sizes = data.size())
+
       for (c <- 0 until channels) {
         for (ph <- 0 until pooled_h) {
           for (pw <- 0 until pooled_w) {
             // Compute pooling region for this output unit:
             //  start (included) = floor(ph * roi_height / pooled_height_)
             //  end (excluded) = ceil((ph + 1) * roi_height / pooled_height_)
-            var hstart = floor(ph * ev.toType[Int](binSizeH))
-            var wstart = floor(pw * ev.toType[Int](binSizeW))
-            var hend = ceil((ph + 1) * ev.toType[Int](binSizeH))
-            var wend = ceil((pw + 1) * ev.toType[Int](binSizeW))
+            var hstart = floor(ph * ev.toType[Double](binSizeH)).toInt
+            var wstart = floor(pw * ev.toType[Double](binSizeW)).toInt
+            var hend = ceil((ph + 1) * ev.toType[Double](binSizeH)).toInt
+            var wend = ceil((pw + 1) * ev.toType[Double](binSizeW)).toInt
 
             hstart = min(max(hstart + roi_start_h, 0), height)
             hend = min(max(hend + roi_start_h, 0), height)
@@ -115,5 +121,34 @@ class RoiPooling[@specialized(Float, Double) T: ClassTag](val pooled_w: Int, val
     else ((n * sizes(1) + c) * sizes(2) + h) * sizes(3) + w
   }
 
-  override def updateGradInput(input: Table, gradOutput: Tensor[T]): Table = ???
+  override def updateGradInput(input: Table, gradOutput: Tensor[T]): Table = {
+    val data = input(1).asInstanceOf[Tensor[T]]
+    val roisData = input(2).asInstanceOf[Tensor[T]].storage().array()
+    val argmaxData = argmax.storage().array()
+    val numRois = output.size()(0)
+    if (gradInput1 == null) {
+      gradInput1 = Tensor[T]()
+      gradInput.insert(gradInput1)
+    }
+    var gradInputData = gradInput1.resizeAs(data).fill(ev.fromType(0)).storage().array()
+    val gradOutputData = gradOutput.storage().array()
+    // Accumulate gradient over all ROIs
+    for (roiN <- 0 until numRois) {
+      val roiBatchInd = roisData(roiN * 5)
+      // Accumulate gradients over each bin in this ROI
+      for (c <- 0 until channels) {
+        for (ph <- 0 until pooled_h) {
+          for (pw <- 0 until pooled_w) {
+            val outputOffset = ((roiN * channels + c) * pooled_h + ph) * pooled_w + pw
+            val argmaxIndex = argmaxData(outputOffset)
+            if (ev.toType[Double](argmaxIndex) >= 0) {
+              val inputOffset = (ev.toType[Int](roiBatchInd) * channels + c) * height * width + ev.toType[Int](argmaxIndex)
+              gradInputData(inputOffset) = ev.plus(gradInputData(inputOffset), gradOutputData(outputOffset))
+            }
+          }
+        }
+      }
+    }
+    gradInput
+  }
 }
