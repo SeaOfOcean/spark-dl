@@ -27,26 +27,24 @@ object Anchor {
     * scales wrt a reference (0, 0, 15, 15) window.
     *
     * @param base_size
-    * @param ratios
-    * @param scales
     * @return
     */
   def generateAnchors(base_size: Float = 16,
-                      ratios: Tensor[Float],
-                      scales: Tensor[Float]): DenseMatrix[Float] = {
+                      ratios: Array[Float],
+                      scales: Array[Float]): DenseMatrix[Float] = {
     //todo: not sure about -1
     val base_anchor = Tensor(Storage(Array(1 - 1, 1 - 1, base_size - 1, base_size - 1)))
-    val ratioAnchors = ratioEnum(base_anchor, ratios)
-    var anchors = new DenseMatrix[Float](scales.nElement() * ratioAnchors.size(1), 4)
+    val ratioAnchors = ratioEnum(base_anchor, Tensor(Storage(ratios)))
+    var anchors = new DenseMatrix[Float](scales.length * ratioAnchors.size(1), 4)
     //    var anchors = Tensor[Float]()
     var idx = 0
     for (i <- 0 until ratioAnchors.size(1)) {
-      val scaleAnchors = scaleEnum(ratioAnchors(i+1), scales)
+      val scaleAnchors = scaleEnum(ratioAnchors(i + 1), Tensor(Storage(scales)))
       for (j <- 0 until scaleAnchors.size(1)) {
-        anchors(idx, 0) = scaleAnchors(j+1).valueAt(1)
-        anchors(idx, 1) = scaleAnchors(j+1).valueAt(2)
-        anchors(idx, 2) = scaleAnchors(j+1).valueAt(3)
-        anchors(idx, 3) = scaleAnchors(j+1).valueAt(4)
+        anchors(idx, 0) = scaleAnchors(j + 1).valueAt(1)
+        anchors(idx, 1) = scaleAnchors(j + 1).valueAt(2)
+        anchors(idx, 2) = scaleAnchors(j + 1).valueAt(3)
+        anchors(idx, 3) = scaleAnchors(j + 1).valueAt(4)
         idx = idx + 1
       }
     }
