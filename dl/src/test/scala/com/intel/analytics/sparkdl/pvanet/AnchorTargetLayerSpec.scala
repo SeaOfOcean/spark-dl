@@ -11,7 +11,7 @@ class AnchorTargetLayerSpec extends FlatSpec with Matchers {
   val anchorTargetLayer = new AnchorTargetLayer()
   val width = 133
   val height = 100
-  val shifts = anchorTargetLayer.generateShifts(width, height, 16).get
+  val shifts = anchorTargetLayer.generateShifts(width, height, 16)
   "generateShifts" should "work properly" in {
     assert(shifts.rows == 13300)
     assert(shifts.cols == 4)
