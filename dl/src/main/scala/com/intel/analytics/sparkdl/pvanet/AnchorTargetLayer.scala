@@ -21,7 +21,6 @@ import java.util.logging.Logger
 
 import breeze.linalg.{*, DenseMatrix, DenseVector, convert, max}
 import com.intel.analytics.sparkdl.pvanet.Roidb.ImageWithRoi
-import com.intel.analytics.sparkdl.tensor.{Storage, Tensor}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
@@ -44,17 +43,17 @@ case class AnchorTarget(val labels: DenseVector[Int],
 //}
 
 
-class AnchorTargetLayer(anchorScales: Tensor[Float] = Tensor(Storage(Array[Float](3, 6, 9, 16, 32))),
-                        anchorRatios: Tensor[Float] = Tensor(Storage(Array(0.5f, 0.667f, 1.0f, 1.5f, 2.0f)))) {
+class AnchorTargetLayer(val scales: Array[Float] = Array[Float](3, 6, 9, 16, 32),
+                        val ratios: Array[Float] = Array(0.5f, 0.667f, 1.0f, 1.5f, 2.0f)) {
   val logger = Logger.getLogger(this.getClass.getName)
   //todo: now hard code
 
   val featStride = 16
-  val anchors = Anchor.generateAnchors(ratios = anchorRatios, scales = anchorScales)
+  val anchors = Anchor.generateAnchors(ratios = ratios, scales = scales)
   val num_anchors = anchors.rows
   //n_scales * n_ratios
   val allowedBorder = 0
-  assert(num_anchors == anchorRatios.nElement() * anchorScales.nElement())
+  assert(num_anchors == ratios.length * scales.length)
 
   //debug info
   var _counts = Config.EPS
@@ -62,18 +61,18 @@ class AnchorTargetLayer(anchorScales: Tensor[Float] = Tensor(Storage(Array[Float
   var _bg_sum = 0
   var _count = 0
 
-  def generateShifts(width: Int, height: Int, featStride: Float): Option[DenseMatrix[Float]] = {
+  def generateShifts(width: Int, height: Int, featStride: Float): DenseMatrix[Float] = {
     val shift_x = DenseVector.range(0, width).map(x => x * featStride)
     val shift_y = DenseVector.range(0, height).map(x => x * featStride)
     var shifts = MatrixUtil.meshgrid(shift_x, shift_y) match {
-      case Some((x1Mesh, x2Mesh)) => {
-        return Some(DenseMatrix.vertcat(x1Mesh.t.toDenseVector.toDenseMatrix,
+      case (x1Mesh, x2Mesh) => {
+        return DenseMatrix.vertcat(x1Mesh.t.toDenseVector.toDenseMatrix,
           x2Mesh.t.toDenseVector.toDenseMatrix,
           x1Mesh.t.toDenseVector.toDenseMatrix,
-          x2Mesh.t.toDenseVector.toDenseMatrix).t)
+          x2Mesh.t.toDenseVector.toDenseMatrix).t
       }
     }
-    None
+    return new DenseMatrix(0, 0)
   }
 
   /**
@@ -87,7 +86,7 @@ class AnchorTargetLayer(anchorScales: Tensor[Float] = Tensor(Storage(Array[Float
     require(ex_rois.rows == gt_rois.rows)
     require(ex_rois.cols == 4)
     require(gt_rois.cols == 5)
-    Bbox.bboxTransform(ex_rois, MatrixUtil.select(gt_rois, Array.range(0, 4), 1).get)
+    Bbox.bboxTransform(ex_rois, MatrixUtil.selectMatrix(gt_rois, Array.range(0, 4), 1))
   }
 
 
@@ -115,7 +114,7 @@ class AnchorTargetLayer(anchorScales: Tensor[Float] = Tensor(Storage(Array[Float
   def generateAnchors(data: ImageWithRoi, height: Int, width: Int): AnchorTarget = {
     logger.info("start generating anchors ----------------------")
     //1. Generate proposals from bbox deltas and shifted anchors
-    val shifts = generateShifts(width, height, featStride).get
+    val shifts = generateShifts(width, height, featStride)
     val totalAnchors = shifts.rows * num_anchors
     var allAnchors: DenseMatrix[Float] = getAllAnchors(shifts, anchors)
     var indsInside: ArrayBuffer[Int] = getIndsInside(data.scaledImage.get.width(), data.scaledImage.get.height(), allAnchors,
@@ -132,10 +131,10 @@ class AnchorTargetLayer(anchorScales: Tensor[Float] = Tensor(Storage(Array[Float
     // overlaps (ex, gt)
     val overlaps = Bbox.bboxOverlap(insideAnchors, data.gt_boxes.get)
 
-    val argmax_overlaps = MatrixUtil.argmax2(overlaps, 1).get
+    val argmax_overlaps = MatrixUtil.argmax2(overlaps, 1)
 
     var maxOverlaps = argmax_overlaps.zipWithIndex.map(x => overlaps(x._2, x._1))
-    var gtArgmaxOverlaps = MatrixUtil.argmax2(overlaps, 0).get
+    var gtArgmaxOverlaps = MatrixUtil.argmax2(overlaps, 0)
 
     val gtMaxOverlaps = gtArgmaxOverlaps.zipWithIndex.map(x => {
       overlaps(x._1, x._2)
@@ -184,7 +183,7 @@ class AnchorTargetLayer(anchorScales: Tensor[Float] = Tensor(Storage(Array[Float
       disable_inds.foreach(x => labels(x) = -1)
     }
 
-    var bbox_targets = computeTargets(insideAnchors, MatrixUtil.select(data.gt_boxes.get, argmax_overlaps, 0).get)
+    var bbox_targets = computeTargets(insideAnchors, MatrixUtil.selectMatrix(data.gt_boxes.get, argmax_overlaps, 0))
 
     var bbox_inside_weights = DenseMatrix.zeros[Float](indsInside.length, 4)
     labels.foreachPair((k, v) => {
@@ -262,7 +261,7 @@ class AnchorTargetLayer(anchorScales: Tensor[Float] = Tensor(Storage(Array[Float
     indsInside
   }
 
-  def getAllAnchors(shifts: DenseMatrix[Float], anchors: DenseMatrix[Float]): DenseMatrix[Float] = {
+  def getAllAnchors(shifts: DenseMatrix[Float], anchors: DenseMatrix[Float] = anchors): DenseMatrix[Float] = {
     var allAnchors = new DenseMatrix[Float](shifts.rows * anchors.rows, 4)
     var k = 0
     for (s <- 0 until shifts.rows) {
@@ -270,6 +269,7 @@ class AnchorTargetLayer(anchorScales: Tensor[Float] = Tensor(Storage(Array[Float
     }
     allAnchors
   }
+
 
   /**
     * Unmap a subset of item (data) back to the original set of items (of size count) 

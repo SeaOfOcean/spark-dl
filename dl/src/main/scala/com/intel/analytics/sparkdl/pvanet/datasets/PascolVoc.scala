@@ -70,9 +70,9 @@ object PascolVoc {
         val height = sizes(sizes.length - 2)
         val width = sizes(sizes.length - 1)
 
-        val scales = Tensor(Storage(Array[Float](8, 16, 32)))
-        val ratios = Tensor(Storage(Array(0.5f, 1.0f, 2.0f)))
-        val nAnchors = scales.nElement() * ratios.nElement()
+        val scales = Array[Float](8, 16, 32)
+        val ratios = Array(0.5f, 1.0f, 2.0f)
+        val nAnchors = scales.length * ratios.length
         val anchorTargetLayer = new AnchorTargetLayer(scales, ratios)
         val anchors = anchorTargetLayer.generateAnchors(d, height, width)
         val anchorToTensor = new AnchorToTensor(1, height, width)
