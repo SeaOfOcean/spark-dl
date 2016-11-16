@@ -17,7 +17,7 @@
 
 package com.intel.analytics.sparkdl.pvanet
 
-import breeze.linalg.{DenseMatrix, DenseVector, argsort, max}
+import breeze.linalg.{DenseMatrix, DenseVector, argsort, max, min}
 
 object Nms {
   def nms(dets: DenseMatrix[Float], thresh: Float): Array[Int] = {
@@ -38,17 +38,20 @@ object Nms {
         MatrixUtil.selectMatrix(vec.toDenseMatrix.t, order.slice(1, order.length), 0).map(x => max(x, vec(i)))
       val xx1 = getMax(x1)
       val yy1 = getMax(y1)
-      val xx2 = getMax(x2)
-      val yy2 = getMax(y2)
+      def getMin(vec: DenseVector[Float]) =
+        MatrixUtil.selectMatrix(vec.toDenseMatrix.t, order.slice(1, order.length), 0).map(x => min(x, vec(i)))
+      val xx2 = getMin(x2)
+      val yy2 = getMin(y2)
 
       val w = (xx2 - xx1 + 1f).map(x => max(x, 0f))
       val h = (yy2 - yy1 + 1f).map(x => max(x, 0f))
 
       val inter = w :* h
+
       val selectedArea = MatrixUtil.selectMatrix(areas.toDenseMatrix.t, order.slice(1, order.length).array, 0)
       val ovr = inter :/ (selectedArea + areas(i) :- inter)
-      val inds = ovr.findAll(x => x <= thresh).toArray
-      order = inds.zipWithIndex.map(x => order(x._1._1))
+      val inds = ovr.findAll(x => x <= thresh).map(x => x._1).toArray
+      order = inds.zipWithIndex.map(x => order(x._1 + 1))
     }
     keep
   }
