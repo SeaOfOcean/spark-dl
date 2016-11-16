@@ -74,7 +74,12 @@ object MatrixUtil {
     out
   }
 
-  def printSelect(info: String, data: DenseMatrix[Float]) = {
+  def printMatrix(info: String, data: DenseMatrix[Float]) = {
+    println(s"=========================$info======================")
+    println(data)
+  }
+
+  def printSelectMatrix(info: String, data: DenseMatrix[Float]) = {
     println(s"=========================$info======================")
     if (data.rows <= 10) println(data)
     else {
@@ -95,4 +100,48 @@ object MatrixUtil {
     println("... shape: ", data.rows, data.cols)
   }
 
+  def printSelectedVector(info: String, data: DenseVector[Float]) = {
+    println(s"=========================$info======================")
+    if (data.length <= 10) println(data)
+    else {
+      for (i <- 0 until 5) {
+        print(data.valueAt(i) + " ")
+      }
+    }
+    println("......")
+    for (i <- 1 to 5) {
+      print(data.valueAt(data.length - 6 + i) + " ")
+    }
+    println("... length: ", data.length)
+  }
+
+  def printArrayFloat(info: String, data: Array[Float]) = {
+    println(s"=========================$info======================")
+    if (data.length <= 100) println(data.mkString(" "))
+    else {
+      for (i <- 0 until 5) {
+        print(data(i) + " ")
+      }
+      print("...")
+      for (i <- 1 to 5) {
+        print(data(data.length - 6 + i) + " ")
+      }
+      println("... length: ", data.length)
+    }
+  }
+
+  def printArrayInt(info: String, data: Array[Int]) = {
+    println(s"=========================$info======================")
+    if (data.length <= 100) println(data.mkString(" "))
+    else {
+      for (i <- 0 until 5) {
+        print(data(i) + " ")
+      }
+      print("...")
+      for (i <- 1 to 5) {
+        print(data(data.length - 6 + i) + " ")
+      }
+      println("... length: ", data.length)
+    }
+  }
 }

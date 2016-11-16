@@ -26,28 +26,6 @@ class Proposal[@specialized(Float, Double) T: ClassTag](val phase: Int = 0)(impl
   //  if len(top) > 1:
   //    top[ 1].reshape(1, 1, 1, 1)
 
-
-  /**
-    * Remove all boxes with any side smaller than min_size
-    *
-    * @param boxes
-    * @param minSize
-    */
-  def _filter_boxes(boxes: DenseMatrix[Float], minSize: Float): Array[Int] = {
-    //    println("minside", minSize)
-    val ws: DenseVector[Float] = boxes(::, 2) - boxes(::, 0) + 1f
-    val hs: DenseVector[Float] = boxes(::, 3) - boxes(::, 1) + 1f
-
-    var keep = Array[Int]()
-    for (i <- 0 until boxes.rows) {
-      //      println(ws(i), hs(i))
-      if (ws(i) >= minSize && hs(i) >= minSize) {
-        keep :+= i
-      }
-    }
-    keep
-  }
-
   /**
     *
     * @param input
@@ -87,13 +65,10 @@ class Proposal[@specialized(Float, Double) T: ClassTag](val phase: Int = 0)(impl
     //the second set are the fg probs, which we want
     val dataSize = data.size()
     data.resize(dataSize(1), data.nElement() / dataSize(1))
-    //    println("data=============", data)
     var scoresTensor = data.narrow(1, at.num_anchors + 1, at.num_anchors)
     scoresTensor.resize(1, at.num_anchors, dataSize(2), dataSize(3))
-    //    println("scores=============", scores)
     // bbox_deltas: (1, 4A, H, W)
     var bbox_deltas = input(2).asInstanceOf[Tensor[Float]]
-    println(bbox_deltas.size().mkString(", "))
     // Transpose and reshape predicted bbox transformations to get them
     // into the same order as the anchors:
     //
@@ -151,7 +126,6 @@ class Proposal[@specialized(Float, Double) T: ClassTag](val phase: Int = 0)(impl
     //4. sort all (proposal, score) pairs by score from highest to lowest
     // 5. take top pre_nms_topN (e.g. 6000)
     var order = argsort(scores.toDenseVector).reverse.toArray
-    println(order.length)
     if (pre_nms_topN > 0) {
       order = order.slice(0, pre_nms_topN)
     }
@@ -161,9 +135,7 @@ class Proposal[@specialized(Float, Double) T: ClassTag](val phase: Int = 0)(impl
     // 6. apply nms (e.g. threshold = 0.7)
     // 7. take after_nms_topN (e.g. 300)
     // 8. return the top proposals (-> RoIs top)
-        keep = Nms.nms(DenseMatrix.horzcat(proposals, scores), nms_thresh.toFloat)
-//    keep = Array(0, 4, 6, 232)
-    println("keep==========", keep.mkString(","))
+    keep = Nms.nms(DenseMatrix.horzcat(proposals, scores), nms_thresh.toFloat)
     if (post_nms_topN > 0) {
       keep = keep.slice(0, post_nms_topN)
     }
@@ -183,27 +155,29 @@ class Proposal[@specialized(Float, Double) T: ClassTag](val phase: Int = 0)(impl
     }
     output.insert(tensor)
     output.insert(Tensor(Storage(scores.toArray)))
-    println(output)
     output
   }
 
+  /**
+    * Remove all boxes with any side smaller than min_size
+    *
+    * @param boxes
+    * @param minSize
+    */
+  def _filter_boxes(boxes: DenseMatrix[Float], minSize: Float): Array[Int] = {
+    val ws: DenseVector[Float] = boxes(::, 2) - boxes(::, 0) + 1f
+    val hs: DenseVector[Float] = boxes(::, 3) - boxes(::, 1) + 1f
+
+    var keep = Array[Int]()
+    for (i <- 0 until boxes.rows) {
+      if (ws(i) >= minSize && hs(i) >= minSize) {
+        keep :+= i
+      }
+    }
+    keep
+  }
 
   override def updateGradInput(input: Table, gradOutput: Table): Table = ???
 }
 
-object Proposal {
-  def loadDataFromFile(fileName: String, sizes: Array[Int]): Tensor[Float] = {
-    val lines = Source.fromFile(fileName).getLines().toArray.map(x => x.toFloat)
-    Tensor(Storage(lines)).resize(sizes)
-  }
 
-  def main(args: Array[String]): Unit = {
-    val proposal = new Proposal[Float]
-    val input = new Table
-    input.insert(loadDataFromFile("/home/xianyan/objectRelated/data1.dat", Array(1, 18, 30, 40)))
-    input.insert(loadDataFromFile("/home/xianyan/objectRelated/data2.dat", Array(1, 36, 30, 40)))
-    input.insert(Array(100f, 200f, 6.0f))
-    proposal.forward(input)
-    //    proposal.forward()
-  }
-}
