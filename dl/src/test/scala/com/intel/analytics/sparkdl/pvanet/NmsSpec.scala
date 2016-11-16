@@ -29,6 +29,8 @@ class NmsSpec extends FlatSpec {
     Tensor(Storage(lines)).resize(sizes)
   }
 
+  val classLoader = getClass().getClassLoader()
+
   behavior of "NmsSpec"
 
   it should "nms" in {
@@ -62,24 +64,24 @@ class NmsSpec extends FlatSpec {
       (0.925356872868, 0.566749924575, 0.533470884989, 0.0148600246332, 0.977899263402),
       (0.573028904033, 0.791756996277, 0.561557360276, 0.877335241565, 0.584195828531),
       (0.708849826369, 0.148533451356, 0.428450738968, 0.693890066342, 0.104619744523))
-
-    DenseMatrix
+    
     val dets2 = convert(dets, Float)
 
     val keep = Nms.nms(dets2, 0.1f)
 
     val expected = Array(27, 2, 11)
-    (expected zip keep).foreach(x => x._1 == x._2)
-    
+    (expected zip keep).foreach(x => assert(x._1 == x._2))
+
     val keep2 = Nms.nms(dets2, 0.3f)
-    
+
     val expected2 = Array(27, 26, 2, 7, 28, 19)
-    (expected2 zip keep2).foreach(x => x._1 == x._2)
+    (expected2 zip keep2).foreach(x => assert(x._1 == x._2))
     
-    val det3 = loadDataFromFile("/home/xianyan/objectRelated/nms.dat", Array(1009, 5))
+    val det3 = loadDataFromFile(classLoader.getResource("pvanet/nms.dat").getFile, Array(1009, 5))
     
     val keep3 = Nms.nms(det3.toBreezeMatrix(), 0.7f)
-    println(keep3.mkString(","))
+    val expected3 = Array(0, 4, 6, 232)
+    (expected3 zip keep3).foreach(x => assert(x._1 == x._2))
   }
 
 }
