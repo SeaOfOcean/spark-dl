@@ -21,3 +21,10 @@ project/plugins/project/
 # other
 *.txt
 *.csv
+
+data/cache/*
+data/model/*
+discard/*
+dl/data/cache/*
+dl/data/model/*
+dl/data
