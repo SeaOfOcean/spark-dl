@@ -41,10 +41,10 @@ object Config {
     var MAX_SIZE = 1000
 
     // Images to use per minibatch
-    var IMS_PER_BATCH = 2
+    var IMS_PER_BATCH = 1
 
     // Minibatch size (number of regions of interest [ROIs])
-    var BATCH_SIZE = 128
+    var BATCH_SIZE = 3
 
     // Fraction of minibatch that is labeled foreground (i.e. class > 0)
     var FG_FRACTION = 0.25
@@ -82,12 +82,12 @@ object Config {
     // Normalize the targets (subtract empirical mean, divide by empirical stddev)
     var BBOX_NORMALIZE_TARGETS = true
     // Deprecated (inside weights)
-    var BBOX_INSIDE_WEIGHTS = (1.0, 1.0, 1.0, 1.0)
+    var BBOX_INSIDE_WEIGHTS = Array(1.0f, 1.0f, 1.0f, 1.0f)
     // Normalize the targets using "precomputed" (or made up) means and stdevs
     // (BBOX_NORMALIZE_TARGETS must also be true)
     var BBOX_NORMALIZE_TARGETS_PRECOMPUTED = false
-    var BBOX_NORMALIZE_MEANS = (0.0, 0.0, 0.0, 0.0)
-    var BBOX_NORMALIZE_STDS = (0.1, 0.1, 0.2, 0.2)
+    var BBOX_NORMALIZE_MEANS = Array(0.0f, 0.0f, 0.0f, 0.0f)
+    var BBOX_NORMALIZE_STDS =  Array(0.1f, 0.1f, 0.2f, 0.2f)
 
     // Train using these proposals
     var PROPOSAL_METHOD = "gt"
@@ -98,7 +98,7 @@ object Config {
     var ASPECT_GROUPING = true
 
     // Use RPN to detect objects
-    var HAS_RPN = false
+    var HAS_RPN = true
     // IOU >= thresh: positive example
     var RPN_POSITIVE_OVERLAP = 0.7
     // IOU < thresh: negative example
