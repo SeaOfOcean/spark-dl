@@ -17,9 +17,11 @@
 
 package com.intel.analytics.sparkdl.pvanet
 
-import breeze.linalg.{DenseMatrix, DenseVector, argmax}
+import breeze.linalg.{DenseMatrix, DenseVector, argmax, max}
 
 object MatrixUtil {
+  
+
 
   def selectMatrix(matrix: DenseMatrix[Float], selectInds: Array[Int], dim: Int): DenseMatrix[Float] = {
     assert(dim == 0 || dim == 1)
@@ -48,6 +50,18 @@ object MatrixUtil {
     (x1Mesh, x2Mesh)
   }
 
+  /**
+    * return the max value in rows(d=0) or in cols(d=1)
+    * arr = [4 9
+    *        5 7
+    *        8 5]
+    * 
+    * argmax2(arr, 0) will return 2, 0
+    * argmax2(arr, 1) will return 1, 1, 0
+    * @param arr
+    * @param d
+    * @return
+    */
   def argmax2(arr: DenseMatrix[Float], d: Int): Array[Int] = {
     assert(d == 0 || d == 1)
     if (arr.size == 0) return Array[Int]()
@@ -58,6 +72,20 @@ object MatrixUtil {
     } else {
       Array.range(0, arr.rows).map(i => {
         argmax(arr(i, ::))
+      })
+    }
+  }
+
+  def max2(arr: DenseMatrix[Float], d: Int): Array[Float] = {
+    assert(d == 0 || d == 1)
+    if (arr.size == 0) return Array[Float]()
+    if (d == 0) {
+      Array.range(0, arr.cols).map(i => {
+        max(arr(::, i))
+      })
+    } else {
+      Array.range(0, arr.rows).map(i => {
+        max(arr(i, ::))
       })
     }
   }
