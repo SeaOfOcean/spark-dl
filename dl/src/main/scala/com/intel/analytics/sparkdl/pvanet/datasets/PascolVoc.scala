@@ -32,7 +32,7 @@ object PascolVoc {
   val A = scales.length * ratios.length
 
   case class PascolVocLocalParam(folder: String = "/home/xianyan/objectRelated/VOCdevkit",
-                                 net: String = "vgg")
+    net: String = "vgg")
 
   private val parser = new OptionParser[PascolVocLocalParam]("Spark-DL PascolVoc Local Example") {
     head("Spark-DL PascolVoc Local Example")
@@ -70,14 +70,14 @@ object PascolVoc {
 
         println("start generating features...")
         start = System.nanoTime()
-        val featureModel = VggCaffeModel.vgg_16
+        val featureModel = VggCaffeModel.vgg16
         val featureOut = featureModel.forward(imgTensor)
         end = System.nanoTime()
         println(s"generate features done, ${(end - start) / 1e9}s")
 
         println("start go to rpn...")
         start = System.nanoTime()
-        val rpnModel = VggCaffeModel.RPN
+        val rpnModel = VggCaffeModel.rpn
         val clsRegOut = rpnModel.forward(featureOut)
 
         val rpnClsScore = clsRegOut(1).asInstanceOf[Tensor[Float]]
@@ -102,11 +102,12 @@ object PascolVoc {
         val propoal = new Proposal[Float]
         val proposalOut = propoal.forward(proposalInput)
 
-        //todo: the resize here is used for linear which support only 2d
-        //todo: but not sure whether the resize is correct
+        // todo: the resize here is used for linear which support only 2d
+        // todo: but not sure whether the resize is correct
         val rois = proposalOut(1).asInstanceOf[Tensor[Float]]
         val propDecInput = new Table()
-//        propDecInput.insert(featureOut.resize(featureOut.size(2), featureOut.nElement() / featureOut.size(2)))
+//        propDecInput.insert(featureOut.resize(featureOut.size(2),
+// featureOut.nElement() / featureOut.size(2)))
 //        propDecInput.insert(rois.resize(rois.size(2), rois.nElement() / rois.size(2)))
         propDecInput.insert(featureOut)
         propDecInput.insert(rois)
@@ -114,7 +115,7 @@ object PascolVoc {
         println("featureOut:", featureOut.size().mkString(", "))
         println("rois: ", proposalOut(1).asInstanceOf[Tensor[Float]].size().mkString(","))
 
-        val propDecModel = VggCaffeModel.FastRCNN
+        val propDecModel = VggCaffeModel.fastRcnn
 
         val result = propDecModel.forward(propDecInput)
         end = System.nanoTime()
@@ -124,7 +125,8 @@ object PascolVoc {
     })
   }
 
-  def fullModelTest(imageToTensor: ImageToTensor, model: Module[Tensor[Float], Table, Float], d: ImageWithRoi): Unit = {
+  def fullModelTest(imageToTensor: ImageToTensor,
+    model: Module[Tensor[Float], Table, Float], d: ImageWithRoi): Unit = {
     // get rpn_cls_score and rpn_bbox_pred
     val res = model.forward(imageToTensor(d))
     val rpnClsScore = res(1).asInstanceOf[Tensor[Float]]
@@ -145,7 +147,8 @@ object PascolVoc {
   }
 
 
-  def rpnTest(imageToTensor: ImageToTensor, model: Module[Tensor[Float], Table, Float], d: ImageWithRoi): Unit = {
+  def rpnTest(imageToTensor: ImageToTensor,
+    model: Module[Tensor[Float], Table, Float], d: ImageWithRoi): Unit = {
     val res = model.forward(imageToTensor.apply(d))
     require(res.length() == 2)
     val (height: Int, width: Int, nAnchors: Int, target: Table) = getRpnTarget(d, res)

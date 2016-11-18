@@ -19,36 +19,29 @@ package com.intel.analytics.sparkdl.pvanet.layers
 
 import breeze.linalg.DenseMatrix
 import breeze.numerics.abs
-import com.intel.analytics.sparkdl.tensor.{Storage, Tensor}
+import com.intel.analytics.sparkdl.pvanet.TestUtil._
+import com.intel.analytics.sparkdl.tensor.Tensor
 import com.intel.analytics.sparkdl.utils.Table
-import org.scalatest.FlatSpec
+import org.scalatest.{FlatSpec, Matchers}
 
-import scala.io.Source
-
-class ProposalSpec extends FlatSpec {
-  def loadDataFromFile(fileName: String, sizes: Array[Int]): Tensor[Float] = {
-    val lines = Source.fromFile(fileName).getLines().toArray.map(x => x.toFloat)
-    Tensor(Storage(lines)).resize(sizes)
-  }
-
-  val classLoader = getClass().getClassLoader()
-
-  behavior of "ProposalSpec"
-
-  it should "testUpdateOutput" in {
+class ProposalSpec extends FlatSpec with Matchers {
+  "testUpdateOutput" should "be correct" in {
+    val classLoader = getClass().getClassLoader()
     val proposal = new Proposal[Float]
     val input = new Table
-    input.insert(loadDataFromFile(classLoader.getResource("pvanet/data1.dat").getFile, Array(1, 18, 30, 40)))
-    input.insert(loadDataFromFile(classLoader.getResource("pvanet/data2.dat").getFile, Array(1, 36, 30, 40)))
+    input.insert(loadDataFromFile(
+      classLoader.getResource("pvanet/data1.dat").getFile, Array(1, 18, 30, 40)))
+    input.insert(loadDataFromFile(
+      classLoader.getResource("pvanet/data2.dat").getFile, Array(1, 36, 30, 40)))
     input.insert(Array(100f, 200f, 6.0f))
     val out = proposal.forward(input)
     assert(out.length() == 2)
     val out1 = out(1).asInstanceOf[Tensor[Float]]
     val out2 = out(2).asInstanceOf[Tensor[Float]]
-    val expected1 = DenseMatrix((0., 0., 0., 199., 99. ),
-      (0., 0., 2.69759297, 127.94831848, 99. ),
-      (0., 71.59012604, 0., 199., 99. ),
-      (0., 47.27521133, 0., 152.9140625, 99. ))
+    val expected1 = DenseMatrix((0.0, 0.0, 0.0, 199.0, 99.0),
+      (0.0, 0.0, 2.69759297, 127.94831848, 99.0),
+      (0.0, 71.59012604, 0.0, 199.0, 99.0),
+      (0.0, 47.27521133, 0.0, 152.9140625, 99.0))
     val expected2 = Array(
       0.99929377,
       0.99398681,
@@ -62,8 +55,5 @@ class ProposalSpec extends FlatSpec {
     }
 
     expected2.zipWithIndex.foreach(x => assert(abs(out2.valueAt(x._2 + 1) - x._1) < 1e-4))
-
   }
-
-
 }

@@ -134,7 +134,6 @@ class ReshapeSpec extends FlatSpec {
     }
   }
 
-  //=========infer=======
   "A Reshape Module with infer" should "generate correct output and grad" in {
     val module = new Reshape2[Double](Array(3, -1))
     for (batchSize <- 1 to 4) {

@@ -27,7 +27,8 @@ import scala.Array._
 import scala.io.Source
 import scala.xml.XML
 
-class PascalVoc(val year: String = "2007", val imageSet: String, var devkitPath: String = Config.DATA_DIR + "/VOCdevkit") extends Imdb {
+class PascalVoc(val year: String = "2007", val imageSet: String,
+  var devkitPath: String = Config.DATA_DIR + "/VOCdevkit") extends Imdb {
   def this(year: String, imageSet: String) {
     this(year, imageSet, Config.DATA_DIR + "/VOCdevkit")
   }
@@ -62,47 +63,47 @@ class PascalVoc(val year: String = "2007", val imageSet: String, var devkitPath:
 
 
   /**
-    * Return the absolute path to image i in the image sequence.
-    *
-    * @param i
-    * @return
-    */
+   * Return the absolute path to image i in the image sequence.
+   *
+   * @param i
+   * @return
+   */
   def imagePathAt(i: Int): String = imagePathFromIndex(imageIndex(i))
 
-  //Construct an image path from the image"s "index" identifier.
+  // Construct an image path from the image"s "index" identifier.
   def imagePathFromIndex(index: String): String = dataPath + "/JPEGImages/" + index + imageExt
 
 
   /**
-    * Load the indexes listed in this dataset's image set file.
-    *
-    * Example path to image set file: devkit_path + /VOCdevkit2007/VOC2007/ImageSets/Main/val.txt
-    *
-    * @return
-    */
+   * Load the indexes listed in this dataset's image set file.
+   *
+   * Example path to image set file: devkit_path + /VOCdevkit2007/VOC2007/ImageSets/Main/val.txt
+   *
+   * @return
+   */
   def loadImageSetIndex(): List[String] = {
     println(dataPath)
-    val image_set_file = dataPath + "/ImageSets/Main/" + imageSet + ".txt"
-    assert(Config.existFile(image_set_file), "Path does not exist " + image_set_file)
-    Source.fromFile(image_set_file).getLines().map(line => line.trim).toList
+    val imageSetFile = dataPath + "/ImageSets/Main/" + imageSet + ".txt"
+    assert(Config.existFile(imageSetFile), "Path does not exist " + imageSetFile)
+    Source.fromFile(imageSetFile).getLines().map(line => line.trim).toList
   }
 
 
-  //Return the default path where PASCAL VOC is expected to be installed.
-  def getDefaultPath = Config.DATA_DIR + "/VOCdevkit"
+  // Return the default path where PASCAL VOC is expected to be installed.
+  private def getDefaultPath = Config.DATA_DIR + "/VOCdevkit"
 
   /**
-    * Load image and bounding boxes info from XML file in the PASCAL VOC
-    * format.
-    *
-    * @param index
-    */
+   * Load image and bounding boxes info from XML file in the PASCAL VOC
+   * format.
+   *
+   * @param index
+   */
   def loadPascalAnnotation(index: String): ImageWithRoi = {
     val xml = XML.loadFile(dataPath + "/Annotations/" + index + ".xml")
     var objs = xml \\ "object"
 
     if (config("use_diff") == false) {
-      //Exclude the samples labeled as difficult
+      // Exclude the samples labeled as difficult
       val non_diff_objs = objs.filter(obj => (obj \ "difficult").text.toInt == 0)
       objs = non_diff_objs
     }
@@ -129,34 +130,33 @@ class PascalVoc(val year: String = "2007", val imageSet: String, var devkitPath:
       overlaps.setValue(ix, cls, 1)
       seg_areas.setValue(ix, (x2 - x1 + 1) * (y2 - y1 + 1))
     }
-    //todo: overlaps = scipy.sparse.csr_matrix(overlaps)
+    // todo: overlaps = scipy.sparse.csr_matrix(overlaps)
     return ImageWithRoi(boxes, gt_classes, overlaps, false, seg_areas)
   }
 
 
   /**
-    * This function loads/saves from/to a cache file to speed up future calls.
-    *
-    * @return the database of ground-truth regions of interest.
-    */
+   * This function loads/saves from/to a cache file to speed up future calls.
+   *
+   * @return the database of ground-truth regions of interest.
+   */
   def getGroundTruth(): Array[ImageWithRoi] = {
-    val cache_file = Config.cache_path() + "/" + name + "_gt_roidb.pkl"
+    val cache_file = Config.cachePath + "/" + name + "_gt_roidb.pkl"
     if (Config.existFile(cache_file)) {
       println("%s gt roidb loaded from %s".format(name, cache_file))
       try {
         return File.loadObj[Array[ImageWithRoi]](cache_file)
       } catch {
-        case e: Exception => {
-          val gt_roidb = imageIndex.map(index => loadPascalAnnotation(index)).toArray
+        case e: Exception =>
+          val gtRoidb = imageIndex.map(index => loadPascalAnnotation(index)).toArray
           new java.io.File(cache_file).delete()
-          File.save(gt_roidb, cache_file)
-          gt_roidb
-        }
+          File.save(gtRoidb, cache_file)
+          gtRoidb
       }
     } else {
-      val gt_roidb = imageIndex.map(index => loadPascalAnnotation(index)).toArray
-      File.save(gt_roidb, cache_file)
-      gt_roidb
+      val gtRoidb = imageIndex.map(index => loadPascalAnnotation(index)).toArray
+      File.save(gtRoidb, cache_file)
+      gtRoidb
     }
   }
 }

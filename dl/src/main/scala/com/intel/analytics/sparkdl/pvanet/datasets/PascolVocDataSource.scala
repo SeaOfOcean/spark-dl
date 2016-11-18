@@ -30,14 +30,15 @@ import com.intel.analytics.sparkdl.tensor.{Storage, Tensor}
 import scala.util.Random
 
 
-class PascolVocDataSource(year: String = "2007", imageSet: String, devkitPath: String = Config.DATA_DIR + "/VOCdevkit", looped: Boolean = true)
+class PascolVocDataSource(year: String = "2007", imageSet: String,
+  devkitPath: String = Config.DATA_DIR + "/VOCdevkit", looped: Boolean = true)
   extends LocalDataSource[ImageWithRoi] {
 
   val dataset: Imdb = new PascalVoc(year, imageSet, devkitPath)
 
   val data: Array[ImageWithRoi] = Roidb.prepareRoidb(dataset).roidb()
 
-  //permutation of the data index
+  // permutation of the data index
   var perm: Array[Int] = Array()
 
   private var offset = 0
@@ -93,15 +94,15 @@ class PascolVocDataSource(year: String = "2007", imageSet: String, devkitPath: S
 }
 
 /**
-  *
-  */
+ *
+ */
 object ImageSizeUniformer extends Transformer[ImageWithRoi, ImageWithRoi] {
   override def transform(prev: Iterator[ImageWithRoi]): Iterator[ImageWithRoi] = {
-    //this is standard python version
+    // this is standard python version
     //    val maxWidth = prev.maxBy(_.width()).width()
     //    val maxHeight = prev.maxBy(_.height()).height()
-    //this is not standard python version. But actually this may not be used
-    //because the image batch is 1
+    // this is not standard python version. But actually this may not be used
+    // because the image batch is 1
     val maxWidth = Config.TRAIN.MAX_SIZE
     val maxHeight = Config.TRAIN.MAX_SIZE
     val numImages = prev.length
@@ -113,10 +114,12 @@ object ImageSizeUniformer extends Transformer[ImageWithRoi, ImageWithRoi] {
 }
 
 object ImageScalerAndMeanSubstractor {
-  def apply(dataSource: PascolVocDataSource): ImageScalerAndMeanSubstractor = new ImageScalerAndMeanSubstractor(dataSource)
+  def apply(dataSource: PascolVocDataSource): ImageScalerAndMeanSubstractor =
+    new ImageScalerAndMeanSubstractor(dataSource)
 }
 
-class ImageScalerAndMeanSubstractor(dataSource: PascolVocDataSource) extends Transformer[ImageWithRoi, ImageWithRoi] {
+class ImageScalerAndMeanSubstractor(dataSource: PascolVocDataSource)
+  extends Transformer[ImageWithRoi, ImageWithRoi] {
   def byte2Float(x: Byte): Float = x & 0xff
 
   dataSource.shuffle()
@@ -131,16 +134,21 @@ class ImageScalerAndMeanSubstractor(dataSource: PascolVocDataSource) extends Tra
       im_scale = Config.TRAIN.MAX_SIZE.toFloat / imSizeMax.toFloat
     }
 
-    val im_scale_x = (Math.floor(img.getHeight * im_scale / Config.TRAIN.SCALE_MULTIPLE_OF) * Config.TRAIN.SCALE_MULTIPLE_OF / img.getHeight).toFloat
-    val im_scale_y = (Math.floor(img.getWidth * im_scale / Config.TRAIN.SCALE_MULTIPLE_OF) * Config.TRAIN.SCALE_MULTIPLE_OF / img.getWidth).toFloat
+    val im_scale_x = (Math.floor(img.getHeight * im_scale / Config.TRAIN.SCALE_MULTIPLE_OF) *
+      Config.TRAIN.SCALE_MULTIPLE_OF / img.getHeight).toFloat
+    val im_scale_y = (Math.floor(img.getWidth * im_scale / Config.TRAIN.SCALE_MULTIPLE_OF) *
+      Config.TRAIN.SCALE_MULTIPLE_OF / img.getWidth).toFloat
 
     val scaledImage: java.awt.Image =
-      img.getScaledInstance((im_scale_y * img.getWidth).toInt, (im_scale_x * img.getHeight()).toInt, java.awt.Image.SCALE_SMOOTH)
+      img.getScaledInstance((im_scale_y * img.getWidth).toInt,
+        (im_scale_x * img.getHeight()).toInt, java.awt.Image.SCALE_SMOOTH)
 
     val imageBuff: BufferedImage =
-      new BufferedImage((im_scale_y * img.getWidth).toInt, (im_scale_x * img.getHeight()).toInt, BufferedImage.TYPE_3BYTE_BGR)
+      new BufferedImage((im_scale_y * img.getWidth).toInt, (im_scale_x * img.getHeight()).toInt,
+        BufferedImage.TYPE_3BYTE_BGR)
     imageBuff.getGraphics.drawImage(scaledImage, 0, 0, new Color(0, 0, 0), null)
-    val pixels: Array[Float] = (imageBuff.getRaster.getDataBuffer.asInstanceOf[DataBufferByte]).getData.map(x => byte2Float(x))
+    val pixels: Array[Float] = (imageBuff.getRaster.getDataBuffer
+      .asInstanceOf[DataBufferByte]).getData.map(x => byte2Float(x))
     require(pixels.length % 3 == 0)
     // mean subtract
     val meanPixels = pixels.zipWithIndex.map(x =>
@@ -151,7 +159,8 @@ class ImageScalerAndMeanSubstractor(dataSource: PascolVocDataSource) extends Tra
     val imScales = Array(im_scale_x, im_scale_y, im_scale_x, im_scale_y)
     data.imInfo = Some(Array(imageBuff.getHeight(), imageBuff.getWidth, im_scale_x))
 
-    val gt_inds = data.gt_classes.storage().array().zipWithIndex.filter(x => x._1 != 0).map(x => x._2)
+    val gt_inds = data.gt_classes.storage().array().zipWithIndex
+      .filter(x => x._1 != 0).map(x => x._2)
     var gt_boxes = new DenseMatrix[Float](gt_inds.length, 5)
     gt_inds.zipWithIndex.foreach(ind => {
       val tmp = data.boxes(ind._1, 0 until 4)
@@ -162,7 +171,7 @@ class ImageScalerAndMeanSubstractor(dataSource: PascolVocDataSource) extends Tra
       gt_boxes(ind._2, 3) = scaled(3)
       gt_boxes(ind._2, 4) = data.gt_classes.valueAt(ind._1 + 1)
     })
-    data.gt_boxes = Some(gt_boxes)
+    data.gtBoxes = Some(gt_boxes)
     data
   }
 
@@ -173,7 +182,8 @@ class ImageScalerAndMeanSubstractor(dataSource: PascolVocDataSource) extends Tra
   }
 }
 
-class AnchorToTensor(batchSize: Int = 1, height: Int, width: Int) extends Transformer[ImageWithRoi, (Tensor[Float], Tensor[Float])] {
+class AnchorToTensor(batchSize: Int = 1, height: Int, width: Int)
+  extends Transformer[ImageWithRoi, (Tensor[Float], Tensor[Float])] {
   private val labelTensor: Tensor[Float] = Tensor[Float]()
   private val roiLabelTensor: Tensor[Float] = Tensor[Float]()
   private var labelData: Array[Float] = null
@@ -189,7 +199,8 @@ class AnchorToTensor(batchSize: Int = 1, height: Int, width: Int) extends Transf
     val stride = anchorTarget.bboxTargets.rows * anchorTarget.bboxTargets.cols
     for (r <- 0 until anchorTarget.bboxTargets.rows) {
       // todo: start from 1
-      labelData(r) = if (anchorTarget.labels(r) != -1) (anchorTarget.labels(r) + 1) else anchorTarget.labels(r)
+      labelData(r) = if (anchorTarget.labels(r) != -1) (anchorTarget.labels(r) + 1)
+      else anchorTarget.labels(r)
       for (c <- 0 until anchorTarget.bboxTargets.cols) {
         roiLabelData(k) = anchorTarget.bboxTargets.valueAt(r, c)
         roiLabelData(k + stride) = anchorTarget.bboxInsideWeights.valueAt(r, c)
@@ -282,7 +293,7 @@ class ImageToTensor(batchSize: Int = 1) extends Transformer[ImageWithRoi, Tensor
 
 
 class RGBImageOD(protected var data: Array[Float], protected var _width: Int,
-                 protected var _height: Int) {
+  protected var _height: Int) {
 
   def width(): Int = _width
 

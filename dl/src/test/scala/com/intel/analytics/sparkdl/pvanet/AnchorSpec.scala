@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.intel.analytics.sparkdl.pvanet
 
 import breeze.linalg.DenseMatrix
@@ -9,15 +26,17 @@ class AnchorSpec extends FlatSpec with Matchers {
   "mkanchors" should "work properly" in {
     val hs = Tensor(Storage(Array[Float](12, 16, 22)))
     val ws = Tensor(Storage(Array[Float](23, 16, 11)))
-    val anchors = Anchor._mkanchors(ws, hs, 7.5f, 7.5f)
+    val anchors = Anchor.mkanchors(ws, hs, 7.5f, 7.5f)
     anchors.storage().toArray should be(Array(-3.5, 2.0, 18.5, 13.0,
       0.0, 0.0, 15.0, 15.0,
       2.5, -3.0, 12.5, 18.0))
   }
 
   "_whctrs" should "work properly" in {
-    Anchor.whctrs(Tensor(Storage(Array[Float](0, 0, 15, 15)))) should be(Array(16, 16, 7.5, 7.5))
-    Anchor.whctrs(Tensor(Storage(Array[Float](-3.5.toFloat, 2.0f, 18.5f, 13f)))) should be(Array(23.0, 12.0, 7.5, 7.5))
+    Anchor.whctrs(Tensor(Storage(Array[Float](0, 0, 15, 15)))) should be
+    (Array(16, 16, 7.5, 7.5))
+    Anchor.whctrs(Tensor(Storage(Array[Float](-3.5f, 2.0f, 18.5f, 13f)))) should be
+    (Array(23.0, 12.0, 7.5, 7.5))
   }
 
   "_ratio_enum" should "work properly" in {
@@ -27,7 +46,8 @@ class AnchorSpec extends FlatSpec with Matchers {
   }
 
   "_scale_enum" should "work well" in {
-    Anchor.scaleEnum(Tensor(Storage(Array(2.5f, -3.0f, 12.5f, 18.0f))), Tensor(Storage(Array[Float](8, 16, 32)))).storage().toArray should be(
+    Anchor.scaleEnum(Tensor(Storage(Array(2.5f, -3.0f, 12.5f, 18.0f))),
+      Tensor(Storage(Array[Float](8, 16, 32)))).storage().toArray should be(
       Array(-36.0, -80.0, 51.0, 95.0, -80.0, -168.0, 95.0, 183.0, -168.0, -344.0, 183.0, 359.0)
     )
   }

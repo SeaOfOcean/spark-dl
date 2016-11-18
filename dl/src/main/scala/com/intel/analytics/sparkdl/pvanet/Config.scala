@@ -31,7 +31,6 @@ object Config {
   object TRAIN {
     // Scales to use during training (can list multiple scales)
     // Each scale is the pixel size of an image"s shortest side
-    //var SCALES = List(600)
     var SCALES = List(600)
 
     // Resize test images so that its width and height are multiples of ...
@@ -58,7 +57,7 @@ object Config {
     var BG_THRESH_LO = 0.1
 
     // Use horizontally-flipped images during training?
-    //todo: change tmp
+    // todo: change tmp
     var USE_FLIPPED = false
 
     // Train bounding-box regressors
@@ -87,7 +86,7 @@ object Config {
     // (BBOX_NORMALIZE_TARGETS must also be true)
     var BBOX_NORMALIZE_TARGETS_PRECOMPUTED = false
     var BBOX_NORMALIZE_MEANS = Array(0.0f, 0.0f, 0.0f, 0.0f)
-    var BBOX_NORMALIZE_STDS =  Array(0.1f, 0.1f, 0.2f, 0.2f)
+    var BBOX_NORMALIZE_STDS = Array(0.1f, 0.1f, 0.2f, 0.2f)
 
     // Train using these proposals
     var PROPOSAL_METHOD = "gt"
@@ -125,9 +124,7 @@ object Config {
     var RPN_POSITIVE_WEIGHT = -1.0
   }
 
-  //
   // Testing options
-  //
   object TEST {
 
 
@@ -158,11 +155,11 @@ object Config {
     // Test using these proposals
     var PROPOSAL_METHOD = "gt"
 
-    //// NMS threshold used on RPN proposals
+    // NMS threshold used on RPN proposals
     var RPN_NMS_THRESH = 0.7
-    //// Number of top scoring boxes to keep before apply NMS to RPN proposals
+    // Number of top scoring boxes to keep before apply NMS to RPN proposals
     var RPN_PRE_NMS_TOP_N = 6000
-    //// Number of top scoring boxes to keep after applying NMS to RPN proposals
+    // Number of top scoring boxes to keep after applying NMS to RPN proposals
     var RPN_POST_NMS_TOP_N = 300
     // Proposal height and width both need to be greater than RPN_MIN_SIZE (at orig image scale)
     var RPN_MIN_SIZE = 16
@@ -172,9 +169,7 @@ object Config {
 
   }
 
-  //
   // MISC
-  //
 
   // The mapping from image coordinates to feature map coordinates might cause
   // some boxes that are distinct in image space to become identical in feature
@@ -216,7 +211,7 @@ object Config {
   var GPU_ID = 0
 
 
-  def get_output_dir(imdb: Imdb, netName: String): String = {
+  def getOutputDir(imdb: Imdb, netName: String): String = {
     // Return the directory where experimental artifacts are placed.
     // If the directory does not exist, it is created.
 
@@ -232,21 +227,21 @@ object Config {
     outdir
   }
 
-  def get_output_dir(imdb: Imdb): String = {
-    get_output_dir(imdb, "")
+  def getOutputDir(imdb: Imdb): String = {
+    getOutputDir(imdb, "")
   }
 
-  def cache_path() = {
-    val cachePath = DATA_DIR + "/cache"
-    if (!existFile(cachePath)) new File(cachePath.toString).mkdirs()
-    cachePath
+  def cachePath: String = {
+    val path = DATA_DIR + "/cache"
+    if (!existFile(path)) new File(path.toString).mkdirs()
+    path
   }
 
-  def model_path() = {
-    val modelPath = DATA_DIR + "/model"
-    if (!existFile(modelPath)) new File(modelPath).mkdirs()
-    modelPath
+  def modelPath: String = {
+    val path = DATA_DIR + "/model"
+    if (!existFile(path)) new File(path).mkdirs()
+    path
   }
 
-  def existFile(f: String) = new java.io.File(f).exists()
+  def existFile(f: String): Boolean = new java.io.File(f).exists()
 }

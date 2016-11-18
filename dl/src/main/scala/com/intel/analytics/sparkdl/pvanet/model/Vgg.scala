@@ -63,7 +63,7 @@ object Vgg_16 {
     vggNet.add(new SpatialConvolution[T](512, 512, 3, 3, 1, 1, 1, 1))
     vggNet.add(new ReLU[T](true))
 
-    //todo lr
+    // todo lr
     vggNet.add(new SpatialConvolution[T](512, 512, 3, 3, 1, 1, 1, 1))
     vggNet.add(new ReLU[T](true))
 

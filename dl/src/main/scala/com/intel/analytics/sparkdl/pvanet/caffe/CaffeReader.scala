@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.intel.analytics.sparkdl.pvanet.caffe
 
 import java.io.{File, FileInputStream, InputStream, InputStreamReader}
@@ -19,8 +36,10 @@ object ModuleType extends Enumeration {
 object CaffeReader {
 
   def main(args: Array[String]): Unit = {
-    val defName = "/home/xianyan/objectRelated/faster_rcnn_models/VGG16/faster_rcnn_alt_opt/rpn_test.pt"
-    val modelName = "/home/xianyan/objectRelated/faster_rcnn_models/VGG16_faster_rcnn_final.caffemodel"
+    val defName = "/home/xianyan/objectRelated/faster_rcnn_models/VGG16/" +
+      "faster_rcnn_alt_opt/rpn_test.pt"
+    val modelName = "/home/xianyan/objectRelated/faster_rcnn_models/" +
+      "VGG16_faster_rcnn_final.caffemodel"
     val caffeReader = new CaffeReader[Float](defName, modelName)
     val conv = caffeReader.mapConvolution("conv1_1")
   }
@@ -43,17 +62,17 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)(implicit ev: 
     var padH = param.getPadH
 
     if (kW == 0 || kH == 0) {
-      //todo: not sure, with a size list
+      // todo: not sure, with a size list
       kW = param.getKernelSize
       kH = kW
     }
     if (dW == 0 || dH == 0) {
-      //todo: not sure
+      // todo: not sure
       dW = param.getStride()
       dH = dW
     }
     if (padW == 0 || padH == 0) {
-      //todo: not sure, with a size list
+      // todo: not sure, with a size list
       padW = param.getPad()
       padH = padW
     }
@@ -103,12 +122,12 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)(implicit ev: 
     var padH = param.getPadH
 
     if (kW == 0 || kH == 0) {
-      //todo: not sure, with a size list
+      // todo: not sure, with a size list
       kW = param.getKernelSize(0)
       kH = kW
     }
     if (dW == 0 || dH == 0) {
-      //todo: not sure
+      // todo: not sure
       if (param.getStrideCount == 0) {
         dW = 1
       } else {
@@ -118,7 +137,7 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)(implicit ev: 
 
     }
     if (padW == 0 || padH == 0) {
-      //todo: not sure, with a size list
+      // todo: not sure, with a size list
       if (param.getPadCount == 0) {
         padW = 1
       } else {
@@ -205,8 +224,8 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)(implicit ev: 
   private def loadBinary(prototxtName: String, modelName: String): Caffe.NetParameter = {
     val f: File = new File(prototxtName)
     assert(f.exists(), prototxtName + "does not exists")
-    val raw_input: InputStream = new FileInputStream(f)
-    val reader: InputStreamReader = new InputStreamReader(raw_input, "ASCII")
+    val rawInput: InputStream = new FileInputStream(f)
+    val reader: InputStreamReader = new InputStreamReader(rawInput, "ASCII")
     val builder: Caffe.NetParameter.Builder = NetParameter.newBuilder
     TextFormat.merge(reader, builder)
     println("start loading caffe model")
