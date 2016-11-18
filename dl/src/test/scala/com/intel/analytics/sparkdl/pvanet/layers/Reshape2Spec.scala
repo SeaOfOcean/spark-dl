@@ -20,7 +20,7 @@ package com.intel.analytics.sparkdl.pvanet.layers
 import com.intel.analytics.sparkdl.tensor.Tensor
 import org.scalatest.FlatSpec
 
-class ReshapeSpec extends FlatSpec {
+class Reshape2Spec extends FlatSpec {
 
   "A Reshape Module " should "generate correct output and grad" in {
     val module = new Reshape2[Double](Array(3, 2))
@@ -253,6 +253,13 @@ class ReshapeSpec extends FlatSpec {
     val expectedShape = Array(2, 4, 16, 8)
     val out = model.forward(tensor).size()
     (out zip expectedShape).foreach(x => x._1 == x._2)
+
+    val tensor2 = Tensor.randperm[Float](1024)
+    tensor2.resize(2, 16, 4, 8)
+    val model2 = new Reshape2[Float](Array(-1, 4))
+    val expectedShape2 = Array(256, 4)
+    val out2 = model2.forward(tensor).size()
+    (out2 zip expectedShape2).foreach(x => x._1 == x._2)
   }
 
 }

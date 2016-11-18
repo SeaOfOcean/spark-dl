@@ -19,7 +19,7 @@ package com.intel.analytics.sparkdl.pvanet.caffe
 
 import com.intel.analytics.sparkdl.nn._
 import com.intel.analytics.sparkdl.pvanet.Config
-import com.intel.analytics.sparkdl.pvanet.layers.RoiPooling
+import com.intel.analytics.sparkdl.pvanet.layers.{Reshape2, RoiPooling}
 import com.intel.analytics.sparkdl.tensor.Tensor
 import com.intel.analytics.sparkdl.utils.{File, Table}
 
@@ -193,17 +193,17 @@ object VggCaffeModel {
 
   def fastRcnn: Module[Table, Table, Float] = {
     val cache = Config.modelPath + "/" + "vgg16FastRcnnWithCaffeParams.obj"
-    if (Config.existFile(cache)) {
-      return File.loadObj[Module[Table, Table, Float]](cache)
-    }
+//    if (Config.existFile(cache)) {
+//      return File.loadObj[Module[Table, Table, Float]](cache)
+//    }
     if (caffeReader == null) {
       caffeReader = new CaffeReader[Float](defName, modelName)
     }
     val model = new Sequential[Table, Table, Float]()
     model.add(new RoiPooling[Float](7, 7, 0.0625f))
-    //    model.add(new Reshape[Float]())
+    model.add(new Reshape2[Float](Array(25088, -1)))
 
-    //    model.add(new Linear[Float](4096, 4096).setName("fc6"))
+    //    model.add(new Linear[Float](25088, 4096).setName("fc6"))
     val fc6 = caffeReader.mapInnerProduct("fc6")
     model.add(fc6)
     println("fc6", "out", fc6.weight.size(1), "in", fc6.weight.size(2))
@@ -227,7 +227,9 @@ object VggCaffeModel {
     cls.add(new SoftMax[Float]())
     clsReg.add(cls)
     //    clsReg.add(new Linear[Float](4096, 84))
-    cls.add(caffeReader.mapInnerProduct("bbox_pred"))
+    val bboxPred = caffeReader.mapInnerProduct("bbox_pred")
+    println("bbox_pred", "out", bboxPred.weight.size(1), "in", bboxPred.weight.size(2))
+    cls.add(bboxPred)
 
     model.add(clsReg)
 

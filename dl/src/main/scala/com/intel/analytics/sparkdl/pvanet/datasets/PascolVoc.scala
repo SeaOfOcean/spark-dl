@@ -45,84 +45,85 @@ object PascolVoc {
   }
 
   def main(args: Array[String]) {
-    parser.parse(args, new PascolVocLocalParam()).map(param => {
-      val year = "2007"
+    val param = parser.parse(args, new PascolVocLocalParam()).get
+    //    parser.parse(args, new PascolVocLocalParam()).map(param => {
+    val year = "2007"
 
-      val validationDataSource = new PascolVocDataSource(year, "val", param.folder, false)
-      val trainDataSource = new PascolVocDataSource(year, imageSet = "train", param.folder, false)
+    val validationDataSource = new PascolVocDataSource(year, "val", param.folder, false)
+    val trainDataSource = new PascolVocDataSource(year, imageSet = "train", param.folder, false)
 
-      val imageScaler = ImageScalerAndMeanSubstractor(trainDataSource)
-      val imageToTensor = new ImageToTensor(batchSize = 1)
+    val imageScaler = ImageScalerAndMeanSubstractor(trainDataSource)
+    val imageToTensor = new ImageToTensor(batchSize = 1)
 
-      val data = trainDataSource -> imageScaler
+    val data = trainDataSource -> imageScaler
 
-      //      val model = param.net match {
-      //        case "vgg" => VggCaffeModel.Vgg_16_RPN
-      //        case _ => throw new IllegalArgumentException
-      //      }
+    //      val model = param.net match {
+    //        case "vgg" => VggCaffeModel.Vgg_16_RPN
+    //        case _ => throw new IllegalArgumentException
+    //      }
 
-      var start = 0L
-      var end = 0L
-      for (i <- 0 until 10) {
-        val d = data.next()
-        println(s"process ${d.imagePath} ...............")
-        val imgTensor = imageToTensor(d)
+    var start = 0L
+    var end = 0L
+    for (i <- 0 until 10) {
+      val d = data.next()
+      println(s"process ${d.imagePath} ...............")
+      val imgTensor = imageToTensor(d)
 
-        println("start generating features...")
-        start = System.nanoTime()
-        val featureModel = VggCaffeModel.vgg16
-        val featureOut = featureModel.forward(imgTensor)
-        end = System.nanoTime()
-        println(s"generate features done, ${(end - start) / 1e9}s")
+      println("start generating features =====================================")
+      start = System.nanoTime()
+      val featureModel = VggCaffeModel.vgg16
+      val featureOut = featureModel.forward(imgTensor)
+      end = System.nanoTime()
+      println(s"generate features done, generate features: (${featureOut.size().mkString(",")})" +
+        s"using time ${(end - start) / 1e9}s")
 
-        println("start go to rpn...")
-        start = System.nanoTime()
-        val rpnModel = VggCaffeModel.rpn
-        val clsRegOut = rpnModel.forward(featureOut)
+      println("start go to rpn =====================================")
+      start = System.nanoTime()
+      val rpnModel = VggCaffeModel.rpn
+      val clsRegOut = rpnModel.forward(featureOut)
 
-        val rpnClsScore = clsRegOut(1).asInstanceOf[Tensor[Float]]
-        val clsProc = new Sequential[Tensor[Float], Tensor[Float], Float]()
-        clsProc.add(new Reshape2[Float](Array(0, 2, -1, 0)))
-        clsProc.add(new SoftMax[Float]())
-        clsProc.add(new Reshape2[Float](Array(0, 2 * A, -1, 0)))
-        val rpn_bbox_pred = clsRegOut(2).asInstanceOf[Tensor[Float]]
-        end = System.nanoTime()
-        println(s"rpn done, ${(end - start) / 1e9}s")
+      val rpnClsScore = clsRegOut(1).asInstanceOf[Tensor[Float]]
+      val clsProc = new Sequential[Tensor[Float], Tensor[Float], Float]()
+      clsProc.add(new Reshape2[Float](Array(0, 2, -1, 0)))
+      clsProc.add(new SoftMax[Float]())
+      clsProc.add(new Reshape2[Float](Array(0, 2 * A, -1, 0)))
+      val rpn_bbox_pred = clsRegOut(2).asInstanceOf[Tensor[Float]]
+      end = System.nanoTime()
+      println(s"rpn done, using time ${(end - start) / 1e9}s")
 
-        println("start fast rcnn...")
-        start = System.nanoTime()
-        val proposalInput = new Table
-        proposalInput.insert(rpnClsScore)
-        proposalInput.insert(rpn_bbox_pred)
-        proposalInput.insert(d.imInfo.get)
+      println("start fast rcnn...")
+      start = System.nanoTime()
+      val proposalInput = new Table
+      proposalInput.insert(rpnClsScore)
+      proposalInput.insert(rpn_bbox_pred)
+      proposalInput.insert(d.imInfo.get)
 
-        println("rpnClsScore: ", rpnClsScore.size().mkString(","))
-        println("bbox pred: ", rpn_bbox_pred.size().mkString(","))
-        println(d.imInfo.get.mkString(", "))
-        val propoal = new Proposal[Float]
-        val proposalOut = propoal.forward(proposalInput)
+      println("rpnClsScore: ", rpnClsScore.size().mkString(","))
+      println("bbox pred: ", rpn_bbox_pred.size().mkString(","))
+      val propoal = new Proposal[Float]
+      val proposalOut = propoal.forward(proposalInput)
 
-        // todo: the resize here is used for linear which support only 2d
-        // todo: but not sure whether the resize is correct
-        val rois = proposalOut(1).asInstanceOf[Tensor[Float]]
-        val propDecInput = new Table()
+      // todo: the resize here is used for linear which support only 2d
+      // todo: but not sure whether the resize is correct
+      val rois = proposalOut(1).asInstanceOf[Tensor[Float]]
+      val propDecInput = new Table()
 //        propDecInput.insert(featureOut.resize(featureOut.size(2),
 // featureOut.nElement() / featureOut.size(2)))
 //        propDecInput.insert(rois.resize(rois.size(2), rois.nElement() / rois.size(2)))
-        propDecInput.insert(featureOut)
-        propDecInput.insert(rois)
+      propDecInput.insert(featureOut)
+      propDecInput.insert(rois)
 
-        println("featureOut:", featureOut.size().mkString(", "))
-        println("rois: ", proposalOut(1).asInstanceOf[Tensor[Float]].size().mkString(","))
+      println(s"featureOut: ${featureOut.size().mkString(", ")}")
+      println(s"rois: ${proposalOut(1).asInstanceOf[Tensor[Float]].size().mkString(",")}")
 
-        val propDecModel = VggCaffeModel.fastRcnn
+      val propDecModel = VggCaffeModel.fastRcnn
 
-        val result = propDecModel.forward(propDecInput)
-        end = System.nanoTime()
-        println(s"fast rcnn done, ${(end - start) / 1e9}s")
-        println(result)
-      }
-    })
+      val result = propDecModel.forward(propDecInput)
+      end = System.nanoTime()
+      println(s"fast rcnn done, ${(end - start) / 1e9}s")
+      println(result)
+    }
+//    })
   }
 
   def fullModelTest(imageToTensor: ImageToTensor,

@@ -68,6 +68,8 @@ class Proposal[@specialized(Float, Double) T: ClassTag](val phase: Int = 0)
     // return the top proposals (-> RoIs top, scores top)
     val data = input(1).asInstanceOf[Tensor[Float]]
     assert(data.size(1) == 1, "Only single item batches are supported")
+
+    println("proposal input score size", data.size().mkString(", "))
     var pre_nms_topN = Config.TRAIN.RPN_PRE_NMS_TOP_N
     var post_nms_topN = Config.TRAIN.RPN_POST_NMS_TOP_N
     var nms_thresh = Config.TRAIN.RPN_NMS_THRESH
@@ -86,6 +88,7 @@ class Proposal[@specialized(Float, Double) T: ClassTag](val phase: Int = 0)
     scoresTensor.resize(1, at.numAnchors, dataSize(2), dataSize(3))
     // bbox_deltas: (1, 4A, H, W)
     var bboxDeltas = input(2).asInstanceOf[Tensor[Float]]
+    println("bbox size ", bboxDeltas.size().mkString(", "))
     // Transpose and reshape predicted bbox transformations to get them
     // into the same order as the anchors:
     //
@@ -156,6 +159,7 @@ class Proposal[@specialized(Float, Double) T: ClassTag](val phase: Int = 0)
     if (post_nms_topN > 0) {
       keep = keep.slice(0, post_nms_topN)
     }
+    println("keep length", keep.length)
     proposals = MatrixUtil.selectMatrix(proposals, keep, 0)
     scores = MatrixUtil.selectMatrix(scores, keep, 0)
 
@@ -164,8 +168,6 @@ class Proposal[@specialized(Float, Double) T: ClassTag](val phase: Int = 0)
     // batch inds are 0
     val mat = DenseMatrix.horzcat(DenseMatrix.zeros[Float](proposals.rows, 1), proposals)
     val v1 = Tensor(mat)
-    println(v1)
-    println(mat)
     val rpn_rois = Tensor[Float]()
     rpn_rois.resize(mat.rows, mat.cols)
     for (i <- 1 to mat.rows) {

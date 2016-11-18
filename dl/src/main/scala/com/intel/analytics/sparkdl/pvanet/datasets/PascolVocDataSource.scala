@@ -262,14 +262,9 @@ class ImageToTensor(batchSize: Int = 1) extends Transformer[ImageWithRoi, Tensor
       featureData = new Array[Float](batchSize * 3 * img.height * img.width)
     }
     imgWithRoi.scaledImage.get.content.copyToArray(featureData)
-//    copyImage(imgWithRoi.scaledImage.get, featureData, 0)
 
     featureTensor.set(Storage[Float](featureData),
       storageOffset = 1, sizes = Array(batchSize, 3, img.height(), img.width()))
-    if (Config.DEBUG) {
-      println("<-------------to tensor result------------->")
-      println("image size: (" + featureTensor.size().mkString(", ") + ")")
-    }
     featureTensor
   }
 
