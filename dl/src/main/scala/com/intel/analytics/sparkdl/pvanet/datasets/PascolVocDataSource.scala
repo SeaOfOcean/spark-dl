@@ -149,7 +149,7 @@ class ImageScalerAndMeanSubstractor(dataSource: PascolVocDataSource) extends Tra
 
     data.scaledImage = Some(new RGBImageOD(meanPixels, imageBuff.getWidth, imageBuff.getHeight))
     val imScales = Array(im_scale_x, im_scale_y, im_scale_x, im_scale_y)
-    data.imInfo = Some(imScales)
+    data.imInfo = Some(Array(imageBuff.getHeight(), imageBuff.getWidth, im_scale_x))
 
     val gt_inds = data.gt_classes.storage().array().zipWithIndex.filter(x => x._1 != 0).map(x => x._2)
     var gt_boxes = new DenseMatrix[Float](gt_inds.length, 5)

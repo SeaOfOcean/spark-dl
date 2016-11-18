@@ -23,7 +23,7 @@ import org.scalatest.FlatSpec
 class ReshapeSpec extends FlatSpec {
 
   "A Reshape Module " should "generate correct output and grad" in {
-    val module = new Reshape[Double](Array(3, 2))
+    val module = new Reshape2[Double](Array(3, 2))
     for (batchSize <- 1 to 4) {
       val input = Tensor[Double](batchSize, 1, 6)
       input.rand()
@@ -58,7 +58,7 @@ class ReshapeSpec extends FlatSpec {
   }
 
   "A Reshape Module default batch" should "generate correct output and grad" in {
-    val module = new Reshape[Double](Array(3, 2))
+    val module = new Reshape2[Double](Array(3, 2))
     val input = Tensor[Double](2, 3)
     input.rand()
     val inputOrg = input.clone()
@@ -79,7 +79,7 @@ class ReshapeSpec extends FlatSpec {
   }
 
   "A Reshape Module disable batch" should "generate correct output and grad" in {
-    val module = new Reshape[Double](Array(3, 2), Some(false))
+    val module = new Reshape2[Double](Array(3, 2), Some(false))
     val input = Tensor[Double](1, 2, 3)
     input.rand()
     val inputOrg = input.clone()
@@ -104,7 +104,7 @@ class ReshapeSpec extends FlatSpec {
   }
 
   "A Reshape Module enable batch" should "generate correct output and grad" in {
-    val module = new Reshape[Double](Array(3, 2), Some(true))
+    val module = new Reshape2[Double](Array(3, 2), Some(true))
     for (batchSize <- 1 to 4) {
       val input = Tensor[Double](batchSize, 1, 6)
       input.rand()
@@ -136,7 +136,7 @@ class ReshapeSpec extends FlatSpec {
 
   //=========infer=======
   "A Reshape Module with infer" should "generate correct output and grad" in {
-    val module = new Reshape[Double](Array(3, -1))
+    val module = new Reshape2[Double](Array(3, -1))
     for (batchSize <- 1 to 4) {
       val input = Tensor[Double](batchSize, 1, 6)
       input.rand()
@@ -171,7 +171,7 @@ class ReshapeSpec extends FlatSpec {
   }
 
   "A Reshape Module default batch with infer" should "generate correct output and grad" in {
-    val module = new Reshape[Double](Array(-1, 2))
+    val module = new Reshape2[Double](Array(-1, 2))
     val input = Tensor[Double](2, 3)
     input.rand()
     val inputOrg = input.clone()
@@ -192,7 +192,7 @@ class ReshapeSpec extends FlatSpec {
   }
 
   "A Reshape Module disable batch with infer" should "generate correct output and grad" in {
-    val module = new Reshape[Double](Array(3, -1), Some(false))
+    val module = new Reshape2[Double](Array(3, -1), Some(false))
     val input = Tensor[Double](1, 2, 3)
     input.rand()
     val inputOrg = input.clone()
@@ -217,7 +217,7 @@ class ReshapeSpec extends FlatSpec {
   }
 
   "A Reshape Module enable batch with infer" should "generate correct output and grad" in {
-    val module = new Reshape[Double](Array(-1, 2), Some(true))
+    val module = new Reshape2[Double](Array(-1, 2), Some(true))
     for (batchSize <- 1 to 4) {
       val input = Tensor[Double](batchSize, 1, 6)
       input.rand()
@@ -250,7 +250,7 @@ class ReshapeSpec extends FlatSpec {
   "reshape with 0 and -1" should "work well" in {
     val tensor = Tensor.randperm[Float](1024)
     tensor.resize(2, 16, 4, 8)
-    val model = new Reshape[Float](Array(0, 4, -1, 0))
+    val model = new Reshape2[Float](Array(0, 4, -1, 0))
     val expectedShape = Array(2, 4, 16, 8)
     val out = model.forward(tensor).size()
     (out zip expectedShape).foreach(x => x._1 == x._2)

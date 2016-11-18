@@ -23,8 +23,8 @@ import com.intel.analytics.sparkdl.tensor.TensorNumericMath.TensorNumeric
 
 import scala.reflect.ClassTag
 
-class SmoothL1CriterionOD[T: ClassTag](@transient val sigma: T, @transient val num: Int)
-                                      (implicit ev: TensorNumeric[T]) extends TensorCriterion[T] {
+class SmoothL1Criterion2[T: ClassTag](@transient val sigma: T, @transient val num: Int)
+                                     (implicit ev: TensorNumeric[T]) extends TensorCriterion[T] {
   @transient var gradInput: Tensor[T] = null
   @transient var buffer: Tensor[T] = null
   // diff holds (input - gt) * w_in

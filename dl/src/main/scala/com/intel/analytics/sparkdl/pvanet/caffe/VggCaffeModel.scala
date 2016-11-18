@@ -19,15 +19,25 @@ package com.intel.analytics.sparkdl.pvanet.caffe
 
 import com.intel.analytics.sparkdl.nn._
 import com.intel.analytics.sparkdl.pvanet.Config
+import com.intel.analytics.sparkdl.pvanet.layers.RoiPooling
 import com.intel.analytics.sparkdl.tensor.Tensor
 import com.intel.analytics.sparkdl.utils.{File, Table}
 
-object Vgg_16_RPN {
+object VggCaffeModel {
+  val scales = Array[Float](8, 16, 32)
+  val ratios = Array(0.5f, 1.0f, 2.0f)
+  var caffeReader: CaffeReader[Float] = null
   val defName = "/home/xianyan/objectRelated/faster_rcnn_models/VGG16/faster_rcnn_alt_opt/rpn_test.pt"
   val modelName = "/home/xianyan/objectRelated/faster_rcnn_models/VGG16_faster_rcnn_final.caffemodel"
-  var caffeReader: CaffeReader[Float] = null
 
-  def vggNet() = {
+  
+  def vgg_16: Module[Tensor[Float], Tensor[Float], Float] = {
+    val cache = Config.model_path() + "/" + "vgg16WithCaffeParams.obj"
+    if (Config.existFile(cache)) {
+      return File.loadObj[Module[Tensor[Float], Tensor[Float], Float]](cache)
+    }
+    if (caffeReader == null)
+      caffeReader = new CaffeReader[Float](defName, modelName)
     val vggNet = new Sequential[Tensor[Float], Tensor[Float], Float]()
     val conv1_1 = caffeReader.mapConvolution("conv1_1")
     vggNet.add(conv1_1)
@@ -113,33 +123,114 @@ object Vgg_16_RPN {
     //    vggNet.add(new SpatialConvolution[Float](512, 512, 3, 3, 1, 1, 1, 1))
     vggNet.add(new ReLU[Float](true))
 
-    val rpn_conv = caffeReader
-    vggNet.add(caffeReader.mapConvolution("rpn_conv/3x3"))
-    vggNet.add(new ReLU[Float](true))
-
+    File.save(vggNet, cache, true)
     vggNet
   }
 
-  def apply(): Module[Tensor[Float], Table, Float] = {
-    val filePath = Config.model_path() + "/" + "vgg16RPNWithCaffeParams.obj"
-    if (Config.existFile(filePath)) {
-      return File.loadObj[Module[Tensor[Float], Table, Float]](filePath)
+  def RPN: Module[Tensor[Float], Table, Float] = {
+    val cache = Config.model_path() + "/" + "RPNWithCaffeParams.obj"
+    if (Config.existFile(cache)) {
+      return File.loadObj[Module[Tensor[Float], Table, Float]](cache)
+    }
+    if (caffeReader == null)
+      caffeReader = new CaffeReader[Float](defName, modelName)
+    val rpnModel = new Sequential[Tensor[Float], Table, Float]()
+    rpnModel.add(caffeReader.mapConvolution("rpn_conv/3x3"))
+    rpnModel.add(new ReLU[Float](true))
+    val clsAndReg = new ConcatTable[Table, Float]()
+    clsAndReg.add(caffeReader.mapConvolution("rpn_cls_score"))
+      .add(caffeReader.mapConvolution("rpn_bbox_pred"))
+    rpnModel.add(clsAndReg)
+    File.save(rpnModel, cache, true)
+    rpnModel
+  }
+
+  def Vgg_16_RPN: Module[Tensor[Float], Table, Float] = {
+    val cache = Config.model_path() + "/" + "vgg16RPNWithCaffeParams.obj"
+    if (Config.existFile(cache)) {
+      return File.loadObj[Module[Tensor[Float], Table, Float]](cache)
+    }
+    if (caffeReader == null)
+      caffeReader = new CaffeReader[Float](defName, modelName)
+    val vggRpnModel = new Sequential[Tensor[Float], Table, Float]()
+    vggRpnModel.add(vgg_16)
+    vggRpnModel.add(RPN)
+    File.save(vggRpnModel, cache, true)
+    vggRpnModel
+  }
+
+  def Vgg_full: Module[Tensor[Float], Table, Float] = {
+    val cache = Config.model_path() + "/" + "vgg16FullWithCaffeParams.obj"
+    if (Config.existFile(cache)) {
+      return File.loadObj[Module[Tensor[Float], Table, Float]](cache)
     }
     if (caffeReader == null)
       caffeReader = new CaffeReader[Float](defName, modelName)
     val clsAndReg = new ConcatTable[Table, Float]()
-    clsAndReg.add(caffeReader.mapConvolution("rpn_cls_score"))
+    val cls = new Sequential[Tensor[Float], Tensor[Float], Float]()
+    cls.add(caffeReader.mapConvolution("rpn_cls_score"))
+    //    cls.add(new Reshape[Float](Array(0,2, -1, 0)))
+    cls.add(new SoftMax[Float]())
+    //    cls.add(new Reshape[Float](Array(0, 18, -1, 0)))
+    clsAndReg.add(cls)
       .add(caffeReader.mapConvolution("rpn_bbox_pred"))
-    val rpnModel = new Sequential[Tensor[Float], Table, Float]()
-    rpnModel.add(vggNet)
-    rpnModel.add(clsAndReg)
+    val fullModel = new Sequential[Tensor[Float], Table, Float]()
+    fullModel.add(vgg_16)
+    fullModel.add(clsAndReg)
+    val proposalInput = new ConcatTable[Table, Float]()
+    proposalInput.add(fullModel)
+    //    proposalInput.add()
 
-    File.save(rpnModel, filePath, true)
-    rpnModel
+    File.save(fullModel, cache, true)
+    fullModel
   }
 
+  def FastRCNN: Module[Table, Table, Float] = {
+    val cache = Config.model_path() + "/" + "vgg16FastRcnnWithCaffeParams.obj"
+    if (Config.existFile(cache)) {
+      return File.loadObj[Module[Table, Table, Float]](cache)
+    }
+    if (caffeReader == null)
+      caffeReader = new CaffeReader[Float](defName, modelName)
+    val model = new Sequential[Table, Table, Float]()
+    model.add(new RoiPooling[Float](7, 7, 0.0625f))
+//    model.add(new Reshape[Float]())
+
+//    model.add(new Linear[Float](4096, 4096).setName("fc6"))
+    val fc6 = caffeReader.mapInnerProduct("fc6")
+    model.add(fc6)
+    println("fc6", "out", fc6.weight.size(1), "in", fc6.weight.size(2))
+    model.add(new ReLU[Float]())
+    model.add(new Dropout[Float]())
+
+//    model.add(new Linear[Float](4096, 4096).setName("fc7"))
+    val fc7 = caffeReader.mapInnerProduct("fc7")
+    println("fc7", "out", fc7.weight.size(1), "in", fc7.weight.size(2))
+    model.add(fc7)
+    model.add(new ReLU[Float]())
+    model.add(new Dropout[Float]())
+
+    val clsReg = new ConcatTable[Table, Float]()
+
+    val cls = new Sequential[Tensor[Float], Tensor[Float], Float]()
+//    cls.add(new Linear[Float](4096, 21).setName("cls_score"))
+    val cls_score =  caffeReader.mapInnerProduct("cls_score")
+    println("cls_score", "out", cls_score.weight.size(1), "in", cls_score.weight.size(2))
+    cls.add(cls_score)
+    cls.add(new SoftMax[Float]())
+    clsReg.add(cls)
+//    clsReg.add(new Linear[Float](4096, 84))
+    cls.add(caffeReader.mapInnerProduct("bbox_pred"))
+
+    model.add(clsReg)
+    
+    File.save(model, cache, true)
+    model
+  }
+
+  def main(args: Array[String]): Unit = {
+    FastRCNN
+  }
+  
 
 }
-
-
-
