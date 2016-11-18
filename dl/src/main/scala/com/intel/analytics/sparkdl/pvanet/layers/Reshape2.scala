@@ -26,8 +26,8 @@ import scala.reflect.ClassTag
 
 
 class Reshape2[@specialized(Float, Double) T: ClassTag](
-  size: Array[Int], var batchMode: Option[Boolean] = None)(
-  implicit ev: TensorNumeric[T]) extends TensorModule[T] {
+                                                        size: Array[Int], var batchMode: Option[Boolean] = None)(
+                                                        implicit ev: TensorNumeric[T]) extends TensorModule[T] {
   val batchSize = new Array[Int](size.length + 1)
   var nElement: Int = 1
   for (i <- 1 to size.length) {
@@ -36,12 +36,10 @@ class Reshape2[@specialized(Float, Double) T: ClassTag](
   }
 
   override def updateOutput(input: Tensor[T]): Tensor[T] = {
-    println("input of reshape2:", input.size().mkString(", "))
     if (size.contains(-1)) {
       var inferIndex = -1
       var count = 1
-      assert(sum(size.map(x => if (x == ev.fromType(-1)) 1 else 0)) == 1,
-        "at most a single (1) value of -1 may be specified")
+      assert(sum(size.map(x => if (x == ev.fromType(-1)) 1 else 0)) == 1, "at most a single (1) value of -1 may be specified")
       (size zip Stream.from(1)).foreach(x => {
         if (x._1 == 0) {
           batchSize(x._2) = input.size(x._2)
@@ -59,8 +57,6 @@ class Reshape2[@specialized(Float, Double) T: ClassTag](
       size(inferIndex - 1) = batchSize(inferIndex)
       nElement = input.nElement()
     }
-
-    println("reshape after reshape: ", batchSize.mkString(", "))
 
     if ((batchMode.nonEmpty && batchMode.get == false) ||
       (input.nElement() == nElement && batchMode.isEmpty && input.size(1) != 1)) {
