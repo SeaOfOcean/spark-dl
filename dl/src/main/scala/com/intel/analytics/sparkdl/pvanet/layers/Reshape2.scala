@@ -25,7 +25,7 @@ import com.intel.analytics.sparkdl.tensor.TensorNumericMath.TensorNumeric
 import scala.reflect.ClassTag
 
 
-class Reshape[@specialized(Float, Double) T: ClassTag](
+class Reshape2[@specialized(Float, Double) T: ClassTag](
                                                         size: Array[Int], var batchMode: Option[Boolean] = None)(
                                                         implicit ev: TensorNumeric[T]) extends TensorModule[T] {
   val batchSize = new Array[Int](size.length + 1)
@@ -93,10 +93,10 @@ class Reshape[@specialized(Float, Double) T: ClassTag](
       return false
     }
 
-    if (!obj.isInstanceOf[Reshape[T]]) {
+    if (!obj.isInstanceOf[Reshape2[T]]) {
       return false
     }
-    val other = obj.asInstanceOf[Reshape[T]]
+    val other = obj.asInstanceOf[Reshape2[T]]
     if (this.eq(other)) {
       return true
     }

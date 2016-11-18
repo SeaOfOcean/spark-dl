@@ -31,7 +31,7 @@ class SmoothL1CriterionODSpec extends FlatSpec with Matchers {
   val target = Tensor(Storage((targetArr ++ inWArr ++ outWArr).map(x => x.toFloat)))
 
   "a smoothl1criterion of object detection with sigma 2.4" should "generate correct loss and grad" in {
-    val smcod = new SmoothL1CriterionOD[Float](2.4f, 2)
+    val smcod = new SmoothL1Criterion2[Float](2.4f, 2)
     val expectedOutput = -2.2134404182434082031
     val actualOutput = smcod.forward(input, target)
     assert(abs(actualOutput - expectedOutput) < 1e-6)
@@ -49,7 +49,7 @@ class SmoothL1CriterionODSpec extends FlatSpec with Matchers {
   val target2 = Tensor(Storage((targetArr ++ inWArr ++ outWArr).map(x => x.toFloat))).resize(3, 2, 2, 2)
 
   "a smoothl1criterion of object detection with sigma 2.4 and 4 dims" should "generate correct loss and grad" in {
-    val smcod = new SmoothL1CriterionOD[Float](2.4f, 2)
+    val smcod = new SmoothL1Criterion2[Float](2.4f, 2)
     val expectedOutput = -2.2134404182434082031
     val actualOutput = smcod.forward(input2, target2)
     assert(abs(actualOutput - expectedOutput) < 1e-6)
@@ -71,7 +71,7 @@ class SmoothL1CriterionODSpec extends FlatSpec with Matchers {
 
   "SmoothL1CriterionOD with sigma 1 and without weights" should "have the same result as SmoothL1Criterion" in {
     val targetNoWeight = Tensor(Storage((targetArr).map(x => x.toFloat)))
-    val smcod = new SmoothL1CriterionOD[Float](1f, input.nElement())
+    val smcod = new SmoothL1Criterion2[Float](1f, input.nElement())
     val smc = new SmoothL1Criterion[Float](true)
     val out1 = smcod.forward(input, targetNoWeight)
     val out2 = smc.forward(input, targetNoWeight)

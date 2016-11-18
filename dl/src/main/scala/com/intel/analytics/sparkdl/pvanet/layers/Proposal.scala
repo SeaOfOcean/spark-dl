@@ -146,14 +146,17 @@ class Proposal[@specialized(Float, Double) T: ClassTag](val phase: Int = 0)(impl
     // Our RPN implementation only supports a single input image, so all
     // batch inds are 0
     val mat = DenseMatrix.horzcat(DenseMatrix.zeros[Float](proposals.rows, 1), proposals)
-    val tensor = Tensor[Float]()
-    tensor.resize(mat.rows, mat.cols)
+    val v1 = Tensor(mat)
+    println(v1)
+    println(mat)
+    val rpn_rois = Tensor[Float]()
+    rpn_rois.resize(mat.rows, mat.cols)
     for (i <- 1 to mat.rows) {
       for (j <- 1 to mat.cols) {
-        tensor.setValue(i, j, mat(i - 1, j - 1))
+        rpn_rois.setValue(i, j, mat(i - 1, j - 1))
       }
     }
-    output.insert(tensor)
+    output.insert(rpn_rois)
     output.insert(Tensor(Storage(scores.toArray)))
     output
   }

@@ -31,7 +31,7 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)(implicit ev: 
   var numOutput = 0
 
   val name2layer = loadCaffe(defName, modelName)
-  
+
   def mapPooling(layer: LayerParameter): TensorModule[T] = {
     val param = layer.getPoolingParam
     val ptype = if (param.getPool == caffe.Caffe.PoolingParameter.PoolMethod.MAX) "Max" else "Avg"
@@ -63,6 +63,19 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)(implicit ev: 
       case "Avg" => new SpatialAveragePooling[T](kW, kH, dW, dH, padW, padH)
       case _ => throw new NotImplementedError(ptype + " pooling is not supported")
     }
+  }
+
+  def mapInnerProduct(name: String): Linear[T] = {
+    val layer = name2layer(name)
+    val param = layer.getInnerProductParam
+    val wB = layer.getBlobs(0)
+    val nInputPlane = if (wB.hasShape) wB.getShape.getDim(1) else wB.getWidth
+    val nOutputPlane = param.getNumOutput
+    val module = new Linear[T](nInputPlane.toInt, nOutputPlane)
+    val (weight, bias) = loadModule(name2layer(name), name)
+    module.weight.copy(weight)
+    module.bias.copy(bias)
+    module
   }
 
   def mapConvolution(name: String): SpatialConvolution[T] = {
