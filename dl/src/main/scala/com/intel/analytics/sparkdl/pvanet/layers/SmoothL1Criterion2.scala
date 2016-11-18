@@ -112,9 +112,9 @@ class SmoothL1Criterion2[T: ClassTag](@transient val sigma: T, @transient val nu
     var alpha = ev.divide(sign, ev.fromType(num))
     gradInput.resizeAs(diff).copy(diff).mul(alpha)
     if (hasWeights) {
-      //scale by inside weight
+      // scale by inside weight
       gradInput.cmul(target.apply(2))
-      //scale by outside weight
+      // scale by outside weight
       gradInput.cmul(target.apply(3))
     }
     target.resize(target.nElement())

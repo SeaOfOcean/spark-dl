@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.intel.analytics.sparkdl.pvanet
 
 import breeze.linalg.{DenseMatrix, convert}
@@ -22,12 +39,12 @@ class MatrixUtilSpec extends FlatSpec with Matchers {
   "select " should "work properly" in {
     val gt = DenseMatrix((0.39796564, 0.09962627, 0.38716339, 0.78216441),
       (0.35269534, 0.7103468, 0.5326144, 0.03050023))
-    MatrixUtil.selectMatrix(ar, Array(0, 2), 0) should be (convert(gt, Float))
+    MatrixUtil.selectMatrix(ar, Array(0, 2), 0) should be(convert(gt, Float))
 
     val gt2 = DenseMatrix((0.39796564, 0.38716339, 0.78216441),
       (0.8748918, 0.34264925, 0.28663851),
       (0.35269534, 0.5326144, 0.03050023))
-    MatrixUtil.selectMatrix(ar, Array(0, 2, 3),1 ) should be (convert(gt2, Float))
+    MatrixUtil.selectMatrix(ar, Array(0, 2, 3), 1) should be(convert(gt2, Float))
   }
 
   it should "selectCols" in {

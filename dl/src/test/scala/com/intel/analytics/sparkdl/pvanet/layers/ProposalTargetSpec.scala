@@ -47,7 +47,9 @@ class ProposalTargetSpec extends FlatSpec {
   )
 
 
-  val labels = Array(0.508698893238, 0.0884601730029, 0.528035223318, 0.992158036511, 0.395035931758, 0.335596441719, 0.805450537329, 0.754348994582, 0.313066441589, 0.634036682962).map(x => x.toFloat)
+  val labels = Array(0.508698893238, 0.0884601730029, 0.528035223318, 0.992158036511,
+    0.395035931758, 0.335596441719, 0.805450537329, 0.754348994582, 0.313066441589,
+    0.634036682962).map(x => x.toFloat)
 
 
   behavior of "ProposalTargetSpec"
@@ -64,7 +66,8 @@ class ProposalTargetSpec extends FlatSpec {
       (0.313066, 0.53096, 0.0968626, 0.649668, -0.870967),
       (0.634037, -0.576122, 0.0550574, -0.924834, -0.300604))
 
-    val targets = proposalTarget.computeTargets(convert(exRois, Float), convert(gtRois, Float), labels)
+    val targets = proposalTarget.computeTargets(convert(exRois, Float),
+      convert(gtRois, Float), labels)
 
     TestUtil.assertMatrixEqualFD(targets, expected, 1e-4)
   }
@@ -83,7 +86,8 @@ class ProposalTargetSpec extends FlatSpec {
 
     Config.TRAIN.BBOX_NORMALIZE_TARGETS_PRECOMPUTED = true
 
-    val targets = proposalTarget.computeTargets(convert(exRois, Float), convert(gtRois, Float), labels)
+    val targets = proposalTarget.computeTargets(convert(exRois, Float),
+      convert(gtRois, Float), labels)
 
     TestUtil.assertMatrixEqualFD(targets, expected, 1e-4)
   }
@@ -159,9 +163,11 @@ class ProposalTargetSpec extends FlatSpec {
 
   }
 
-  // the following test code should fix keep_inds to Array(13 28  4) since there is random shuffle when getting the fg_inds and bg_inds
+  // the following test code should fix keep_inds to Array(13 28  4) since
+  // there is random shuffle when getting the fg_inds and bg_inds
   //  it should "get right proposal target " in {
-  //    val data1 = DenseMatrix((0.0, 0.543404941791, 0.278369385094, 0.424517590749, 0.84477613232),
+  //    val data1 = DenseMatrix(
+  // (0.0, 0.543404941791, 0.278369385094, 0.424517590749, 0.84477613232),
   //      (0.0, 0.00471885619097, 0.121569120783, 0.670749084727, 0.825852755105),
   //      (0.0, 0.136706589685, 0.575093329427, 0.891321954312, 0.209202122117),
   //      (0.0, 0.18532821955, 0.108376890464, 0.219697492625, 0.978623784707),
@@ -192,7 +198,8 @@ class ProposalTargetSpec extends FlatSpec {
   //      (0.0, 0.923496825259, 0.95354984988, 0.210978418718, 0.360525250815),
   //      (0.0, 0.549375261628, 0.271830849177, 0.460601621075, 0.696161564823))
   //
-  //    val data2 = DenseMatrix((0.500355896675, 0.716070990564, 0.52595593623, 0.00139902311904, 0.39470028669),
+  //    val data2 = DenseMatrix(
+  // (0.500355896675, 0.716070990564, 0.52595593623, 0.00139902311904, 0.39470028669),
   //      (0.492166969901, 0.402880331379, 0.354298300106, 0.500614319443, 0.445176628831),
   //      (0.0904327881964, 0.273562920027, 0.943477097743, 0.0265446413339, 0.0399986896407),
   //      (0.28314035972, 0.582344170217, 0.990892802925, 0.992642237403, 0.993117372481),
@@ -230,7 +237,8 @@ class ProposalTargetSpec extends FlatSpec {
   //    input.insert(matrix2tensor(fd2))
   //    val out = proposalTarget.forward(input)
   //
-  //    val expectedO1 = DenseMatrix((0.0, 0.359507843937, 0.598858945876, 0.354795611657, 0.340190215371),
+  //    val expectedO1 = DenseMatrix(
+  // (0.0, 0.359507843937, 0.598858945876, 0.354795611657, 0.340190215371),
   //      (0.0, 0.923496825259, 0.95354984988, 0.210978418718, 0.360525250815),
   //      (0.0, 0.811683149089, 0.171941012733, 0.816224748726, 0.274073747042))
   //    val labels = DenseMatrix(0.321331932009, 0.0, 0.0)

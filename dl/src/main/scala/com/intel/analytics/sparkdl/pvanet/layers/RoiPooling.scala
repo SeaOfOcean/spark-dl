@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.intel.analytics.sparkdl.pvanet.layers
 
 import breeze.linalg.{max, min}
@@ -9,8 +26,9 @@ import com.intel.analytics.sparkdl.utils.Table
 
 import scala.reflect.ClassTag
 
-class RoiPooling[@specialized(Float, Double) T: ClassTag](val pooled_w: Int, val pooled_h: Int, val spatial_scale: T)
-                                                         (implicit ev: TensorNumeric[T]) extends Module[Table, Tensor[T], T] {
+class RoiPooling[@specialized(Float, Double) T: ClassTag]
+(val pooled_w: Int, val pooled_h: Int, val spatial_scale: T)
+  (implicit ev: TensorNumeric[T]) extends Module[Table, Tensor[T], T] {
   @transient var channels = 0
   @transient var height = 0
   @transient var width = 0
@@ -52,9 +70,8 @@ class RoiPooling[@specialized(Float, Double) T: ClassTag](val pooled_w: Int, val
     var bottomRoisIndex = 0
     for (n <- 0 until numRois) {
       val roiBatchInd = roiData(bottomRoisIndex)
-      def roundRoi(ind: Int) = round(ev.toType[Double](roiData(bottomRoisIndex + ind)) * ev.toType[Double]
-        (spatial_scale))
-        .toInt
+      def roundRoi(ind: Int) = round(ev.toType[Double](roiData(bottomRoisIndex + ind))
+        * ev.toType[Double](spatial_scale)).toInt
       val roi_start_w = roundRoi(1)
       val roi_start_h = roundRoi(2)
       val roi_end_w = roundRoi(3)
@@ -96,7 +113,8 @@ class RoiPooling[@specialized(Float, Double) T: ClassTag](val pooled_w: Int, val
             for (h <- hstart until hend) {
               for (w <- wstart until wend) {
                 val index = h * width + w
-                if (ev.isGreater(bottom_data(batchDataIndex + index), outputData(topDataIndex + pool_index))) {
+                if (ev.isGreater(bottom_data(batchDataIndex + index),
+                  outputData(topDataIndex + pool_index))) {
                   outputData(topDataIndex + pool_index) = bottom_data(batchDataIndex + index)
                   argmax_data(argmaxIndex + pool_index) = ev.fromType(index)
                 }
@@ -142,8 +160,10 @@ class RoiPooling[@specialized(Float, Double) T: ClassTag](val pooled_w: Int, val
             val outputOffset = ((roiN * channels + c) * pooled_h + ph) * pooled_w + pw
             val argmaxIndex = argmaxData(outputOffset)
             if (ev.toType[Double](argmaxIndex) >= 0) {
-              val inputOffset = (ev.toType[Int](roiBatchInd) * channels + c) * height * width + ev.toType[Int](argmaxIndex)
-              gradInputData(inputOffset) = ev.plus(gradInputData(inputOffset), gradOutputData(outputOffset))
+              val inputOffset = (ev.toType[Int](roiBatchInd) * channels + c) * height * width
+              +ev.toType[Int](argmaxIndex)
+              gradInputData(inputOffset) =
+                ev.plus(gradInputData(inputOffset), gradOutputData(outputOffset))
             }
           }
         }

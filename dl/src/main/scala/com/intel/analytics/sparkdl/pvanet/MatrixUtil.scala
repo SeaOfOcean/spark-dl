@@ -20,12 +20,12 @@ package com.intel.analytics.sparkdl.pvanet
 import breeze.linalg.{DenseMatrix, DenseVector, argmax, max}
 
 object MatrixUtil {
-  
 
 
-  def selectMatrix(matrix: DenseMatrix[Float], selectInds: Array[Int], dim: Int): DenseMatrix[Float] = {
+  def selectMatrix(matrix: DenseMatrix[Float],
+    selectInds: Array[Int], dim: Int): DenseMatrix[Float] = {
     assert(dim == 0 || dim == 1)
-    //select rows
+    // select rows
     if (dim == 0) {
       val res = new DenseMatrix[Float](selectInds.length, matrix.cols)
       selectInds.zipWithIndex.map(x => res(x._2, ::) := matrix(x._1, ::))
@@ -38,7 +38,8 @@ object MatrixUtil {
   }
 
 
-  def meshgrid(x1: DenseVector[Float], x2: DenseVector[Float]): (DenseMatrix[Float], DenseMatrix[Float]) = {
+  def meshgrid(x1: DenseVector[Float],
+    x2: DenseVector[Float]): (DenseMatrix[Float], DenseMatrix[Float]) = {
     val x1Mesh = DenseMatrix.zeros[Float](x2.length, x1.length)
     for (i <- 0 until x2.length) {
       x1Mesh(i, ::) := x1.t
@@ -51,17 +52,18 @@ object MatrixUtil {
   }
 
   /**
-    * return the max value in rows(d=0) or in cols(d=1)
-    * arr = [4 9
-    *        5 7
-    *        8 5]
-    * 
-    * argmax2(arr, 0) will return 2, 0
-    * argmax2(arr, 1) will return 1, 1, 0
-    * @param arr
-    * @param d
-    * @return
-    */
+   * return the max value in rows(d=0) or in cols(d=1)
+   * arr = [4 9
+   * 5 7
+   * 8 5]
+   *
+   * argmax2(arr, 0) will return 2, 0
+   * argmax2(arr, 1) will return 1, 1, 0
+   *
+   * @param arr
+   * @param d
+   * @return
+   */
   def argmax2(arr: DenseMatrix[Float], d: Int): Array[Int] = {
     assert(d == 0 || d == 1)
     if (arr.size == 0) return Array[Int]()
@@ -90,7 +92,8 @@ object MatrixUtil {
     }
   }
 
-  def selectCol(mat: DenseMatrix[Float], cid: Int) = MatrixUtil.selectMatrix(mat, Array(cid), 1)
+  def selectCol(mat: DenseMatrix[Float], cid: Int): DenseMatrix[Float] =
+    selectMatrix(mat, Array(cid), 1)
 
   def selectCols(mat: DenseMatrix[Float], cid: Int, step: Int): DenseMatrix[Float] = {
     val out = new DenseMatrix[Float](mat.rows, mat.cols / step)
@@ -102,12 +105,12 @@ object MatrixUtil {
     out
   }
 
-  def printMatrix(info: String, data: DenseMatrix[Float]) = {
+  def printMatrix(info: String, data: DenseMatrix[Float]): Unit = {
     println(s"=========================$info======================")
     println(data)
   }
 
-  def printSelectMatrix(info: String, data: DenseMatrix[Float]) = {
+  def printSelectMatrix(info: String, data: DenseMatrix[Float]): Unit = {
     println(s"=========================$info======================")
     if (data.rows <= 10) println(data)
     else {
@@ -128,7 +131,7 @@ object MatrixUtil {
     println("... shape: ", data.rows, data.cols)
   }
 
-  def printSelectedVector(info: String, data: DenseVector[Float]) = {
+  def printSelectedVector(info: String, data: DenseVector[Float]): Unit = {
     println(s"=========================$info======================")
     if (data.length <= 10) println(data)
     else {
@@ -143,7 +146,7 @@ object MatrixUtil {
     println("... length: ", data.length)
   }
 
-  def printArrayFloat(info: String, data: Array[Float]) = {
+  def printArrayFloat(info: String, data: Array[Float]): Unit = {
     println(s"=========================$info======================")
     if (data.length <= 100) println(data.mkString(" "))
     else {
@@ -158,7 +161,7 @@ object MatrixUtil {
     }
   }
 
-  def printArrayInt(info: String, data: Array[Int]) = {
+  def printArrayInt(info: String, data: Array[Int]): Unit = {
     println(s"=========================$info======================")
     if (data.length <= 100) println(data.mkString(" "))
     else {
