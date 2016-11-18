@@ -67,7 +67,7 @@ object Roidb {
   def getImageSizes(imdb: Imdb): Array[Array[Int]] = {
     val cache_file = Config.cachePath + "/" + imdb.name + "_image_sizes.pkl"
     if (Config.existFile(cache_file)) {
-      logger.info("%s image sizes loaded from %s".format(imdb.name, cache_file))
+//      logger.info("%s image sizes loaded from %s".format(imdb.name, cache_file))
       return File.loadObj[Array[Array[Int]]](cache_file)
     }
     var sizes = Array.ofDim[Int](imdb.numImages, 2)
@@ -77,7 +77,7 @@ object Roidb {
       sizes(i)(1) = bimg.getHeight()
     }
     File.save(sizes, cache_file)
-    logger.info("save image sizes to cache file %s".format(cache_file))
+//    logger.info("save image sizes to cache file %s".format(cache_file))
     sizes
   }
 
