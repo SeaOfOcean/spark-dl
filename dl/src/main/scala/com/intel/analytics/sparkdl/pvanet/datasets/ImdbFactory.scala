@@ -19,15 +19,14 @@ package com.intel.analytics.sparkdl.pvanet.datasets
 
 object ImdbFactory {
   /**
-    * Get an imdb (image database) by name
-    *
-    * @param name
-    * @return
-    */
-  def get_imdb(name: String): Imdb = {
+   * Get an imdb (image database) by name
+   *
+   * @param name
+   * @return
+   */
+  def getImdb(name: String): Imdb = {
     val items = name.split("_")
-    if (items.length != 3)
-      throw new Exception("dataset name error")
+    if (items.length != 3) throw new Exception("dataset name error")
     if (items(0) == "voc") {
       return new PascalVoc(items(1), items(2))
     }

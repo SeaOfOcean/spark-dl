@@ -27,12 +27,12 @@ abstract class Imdb {
   var _roidb = Array[ImageWithRoi]()
 
   /**
-    * A roidb is a list of dictionaries, each with the following keys:
-    * boxes
-    * gt_overlaps
-    * gt_classes
-    * flipped
-    */
+   * A roidb is a list of dictionaries, each with the following keys:
+   * boxes
+   * gt_overlaps
+   * gt_classes
+   * flipped
+   */
   def roidb(): Array[ImageWithRoi] = {
     if (_roidb.length > 0) return _roidb
     _roidb = getGroundTruth()
@@ -43,13 +43,15 @@ abstract class Imdb {
   def getGroundTruth(): Array[ImageWithRoi]
 
 
-  def numClasses = classes.length
+  def numClasses: Int = classes.length
 
 
-  def numImages() = imageIndex.length
+  def numImages: Int = imageIndex.length
 
   def imagePathAt(i: Int): String
 
-  def appendFlippedImages() = ???
+  def appendFlippedImages(): Unit = {
+    throw new UnsupportedOperationException
+  }
 }
 

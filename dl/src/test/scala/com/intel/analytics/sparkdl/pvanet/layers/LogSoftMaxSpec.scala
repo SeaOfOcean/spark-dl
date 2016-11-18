@@ -17,7 +17,6 @@
 
 package com.intel.analytics.sparkdl.pvanet.layers
 
-import com.intel.analytics.sparkdl.pvanet.layers.LogSoftMax
 import com.intel.analytics.sparkdl.tensor.Tensor
 import com.intel.analytics.sparkdl.torch.TH
 import org.scalatest.{BeforeAndAfter, FlatSpec, Matchers}
@@ -36,7 +35,7 @@ class LogSoftMaxSpec extends FlatSpec with BeforeAndAfter with Matchers {
     Random.setSeed(100)
     val input = Tensor[Double](2, 10).apply1(e => Random.nextDouble())
     val data = Tensor[Double](2, 20).randn()
-//    val gradOutput = data.narrow(2, 1, 10)
+    //    val gradOutput = data.narrow(2, 1, 10)
     val gradOutput = Tensor[Double](2, 10).rand()
 
     val start = System.nanoTime()
@@ -63,8 +62,8 @@ class LogSoftMaxSpec extends FlatSpec with BeforeAndAfter with Matchers {
   "A LogSoftMax Module with 3 dims" should "generate correct output and grad" in {
     val module = new LogSoftMax[Double]()
     Random.setSeed(100)
-    val input = Tensor[Double](4, 10,5).apply1(e => Random.nextDouble())
-    val gradOutput = Tensor[Double](4, 10,5).randn()
+    val input = Tensor[Double](4, 10, 5).apply1(e => Random.nextDouble())
+    val gradOutput = Tensor[Double](4, 10, 5).randn()
 
     val start = System.nanoTime()
     val output = module.forward(input)
@@ -90,12 +89,12 @@ class LogSoftMaxSpec extends FlatSpec with BeforeAndAfter with Matchers {
   "A LogSoftMax Module with 4 dims" should "generate correct output and grad" in {
     val module = new LogSoftMax[Double]()
     Random.setSeed(100)
-    val input = Tensor[Double](4, 10,5,7).apply1(e => Random.nextDouble())
-    val gradOutput = Tensor[Double](4, 10,5,7).randn()
+    val input = Tensor[Double](4, 10, 5, 7).apply1(e => Random.nextDouble())
+    val gradOutput = Tensor[Double](4, 10, 5, 7).randn()
 
     val start = System.nanoTime()
     val output = module.forward(input)
-        val gradInput = module.backward(input, gradOutput)
+    val gradInput = module.backward(input, gradOutput)
     val end = System.nanoTime()
     val scalaTime = end - start
 
@@ -109,7 +108,7 @@ class LogSoftMaxSpec extends FlatSpec with BeforeAndAfter with Matchers {
     val luaGradInput = torchResult("output2").asInstanceOf[Tensor[Double]]
 
     luaOutput should be(output)
-        luaGradInput should be(gradInput)
+    luaGradInput should be(gradInput)
 
     println("Test case : LogSoft, Torch : " + luaTime + " s, Scala : " + scalaTime / 1e9 + " s")
   }

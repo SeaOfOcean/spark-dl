@@ -19,11 +19,14 @@ package com.intel.analytics.sparkdl.pvanet
 
 import breeze.linalg.DenseMatrix
 import breeze.numerics._
-import com.intel.analytics.sparkdl.tensor.Tensor
+import com.intel.analytics.sparkdl.tensor.{Storage, Tensor}
+
+import scala.io.Source
 
 object TestUtil {
-  def assertMatrixEqualTM(actual: Tensor[Float], expected: DenseMatrix[Double], diff: Double): Unit = {
-    if(actual.dim() == 1) {
+  def assertMatrixEqualTM(actual: Tensor[Float],
+    expected: DenseMatrix[Double], diff: Double): Unit = {
+    if (actual.dim() == 1) {
       assert(actual.nElement() == expected.size)
       var d = 1
       for (r <- 0 until expected.rows) {
@@ -36,15 +39,16 @@ object TestUtil {
       assert(actual.size(1) == expected.rows && actual.size(2) == expected.cols)
       for (r <- 0 until expected.rows) {
         for (c <- 0 until expected.cols) {
-          assert(abs(expected(r, c) - actual.valueAt(r+1, c+1)) < diff)
+          assert(abs(expected(r, c) - actual.valueAt(r + 1, c + 1)) < diff)
         }
       }
     }
-    
+
   }
 
 
-  def assertMatrixEqual(actual: DenseMatrix[Float], expected: DenseMatrix[Float], diff: Float) = {
+  def assertMatrixEqual(actual: DenseMatrix[Float],
+    expected: DenseMatrix[Float], diff: Float): Unit = {
     for (r <- 0 until expected.rows) {
       for (c <- 0 until expected.cols) {
         assert(abs(expected(r, c) - actual(r, c)) < diff)
@@ -52,13 +56,21 @@ object TestUtil {
     }
   }
 
-  def assertMatrixEqualFD(actual: DenseMatrix[Float], expected: DenseMatrix[Double], diff: Double) = {
-    assert((actual.rows == expected.rows) && (actual.cols == expected.cols), 
-      s"actual shape is (${actual.rows}, ${actual.cols}), while expected shape is (${expected.rows}, ${expected.cols})")
+  def assertMatrixEqualFD(actual: DenseMatrix[Float],
+    expected: DenseMatrix[Double], diff: Double): Unit = {
+    assert((actual.rows == expected.rows) && (actual.cols == expected.cols),
+      s"actual shape is (${actual.rows}, ${actual.cols}), " +
+        s"while expected shape is (${expected.rows}, ${expected.cols})")
     for (r <- 0 until expected.rows) {
       for (c <- 0 until expected.cols) {
         assert(abs(expected(r, c) - actual(r, c)) < diff)
       }
     }
+  }
+
+
+  def loadDataFromFile(fileName: String, sizes: Array[Int]): Tensor[Float] = {
+    val lines = Source.fromFile(fileName).getLines().toArray.map(x => x.toFloat)
+    Tensor(Storage(lines)).resize(sizes)
   }
 }

@@ -23,8 +23,8 @@ import com.intel.analytics.sparkdl.tensor.TensorNumericMath.TensorNumeric
 
 import scala.reflect.ClassTag
 
-class LogSoftMax[@specialized(Float, Double) T: ClassTag](
-                                                           implicit ev: TensorNumeric[T]) extends TensorModule[T] {
+class LogSoftMax[@specialized(Float, Double) T: ClassTag]
+(implicit ev: TensorNumeric[T]) extends TensorModule[T] {
   //  @transient
   //  private var results: Array[Future[Unit]] = null
 
@@ -90,7 +90,7 @@ class LogSoftMax[@specialized(Float, Double) T: ClassTag](
         (1, output.size(1), output.size(2) * output.size(3))
       }
       else {
-        //if (output -> nDimension == 4)
+        // if (output -> nDimension == 4)
         (output.size(1), output.size(2), output.size(3) * output.size(4))
       }
 

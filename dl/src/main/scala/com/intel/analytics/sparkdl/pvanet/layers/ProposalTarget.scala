@@ -29,23 +29,26 @@ import scala.reflect.ClassTag
 import scala.util.Random
 
 /**
-  * Assign object detection proposals to ground-truth targets. Produces proposal
-  * classification labels and bounding-box regression targets.
-  *
-  * @param ev$1
-  * @param ev
-  * @tparam T
-  */
-class ProposalTarget[@specialized(Float, Double) T: ClassTag](numClasses: Int)(implicit ev: TensorNumeric[T]) extends Module[Table, Table, T] {
+ * Assign object detection proposals to ground-truth targets. Produces proposal
+ * classification labels and bounding-box regression targets.
+ *
+ * @param ev$1
+ * @param ev
+ * @tparam T
+ */
+class ProposalTarget[@specialized(Float, Double) T: ClassTag](numClasses: Int)
+  (implicit ev: TensorNumeric[T]) extends Module[Table, Table, T] {
 
   /**
-    * Compute bounding-box regression targets for an image.
-    *
-    * @param ex_rois
-    * @param gt_rois
-    * @param labels
-    */
-  def computeTargets(ex_rois: DenseMatrix[Float], gt_rois: DenseMatrix[Float], labels: Array[Float]): DenseMatrix[Float] = {
+   * Compute bounding-box regression targets for an image.
+   *
+   * @param ex_rois
+   * @param gt_rois
+   * @param labels
+   */
+  def computeTargets(ex_rois: DenseMatrix[Float],
+    gt_rois: DenseMatrix[Float],
+    labels: Array[Float]): DenseMatrix[Float] = {
     assert(ex_rois.rows == gt_rois.rows)
     assert(ex_rois.cols == 4)
     assert(gt_rois.cols == 4)
@@ -63,20 +66,21 @@ class ProposalTarget[@specialized(Float, Double) T: ClassTag](numClasses: Int)(i
   }
 
   /**
-    * Bounding-box regression targets (bbox_target_data) are stored in a
-    * compact form N x (class, tx, ty, tw, th)
-    * *
-    * This function expands those targets into the 4-of-4*K representation used
-    * by the network (i.e. only one class has non-zero targets).
-    * *
-    * Returns:
-    * bbox_target (ndarray): N x 4K blob of regression targets
-    * bbox_inside_weights (ndarray): N x 4K blob of loss weights
-    *
-    * @param bbox_target_data
-    * @param numClasses
-    */
-  def getBboxRegressionLabels(bbox_target_data: DenseMatrix[Float], numClasses: Int): (DenseMatrix[Float], DenseMatrix[Float]) = {
+   * Bounding-box regression targets (bbox_target_data) are stored in a
+   * compact form N x (class, tx, ty, tw, th)
+   * *
+   * This function expands those targets into the 4-of-4*K representation used
+   * by the network (i.e. only one class has non-zero targets).
+   * *
+   * Returns:
+   * bbox_target (ndarray): N x 4K blob of regression targets
+   * bbox_inside_weights (ndarray): N x 4K blob of loss weights
+   *
+   * @param bbox_target_data
+   * @param numClasses
+   */
+  def getBboxRegressionLabels(bbox_target_data: DenseMatrix[Float],
+    numClasses: Int): (DenseMatrix[Float], DenseMatrix[Float]) = {
     val clss = bbox_target_data(::, 0).toArray
     val bbox_targets = DenseMatrix.zeros[Float](clss.size, 4 * numClasses)
     val bbox_inside_weights = DenseMatrix.zeros[Float](bbox_targets.rows, bbox_targets.cols)
@@ -93,8 +97,12 @@ class ProposalTarget[@specialized(Float, Double) T: ClassTag](numClasses: Int)(i
     (bbox_targets, bbox_inside_weights)
   }
 
-  //Generate a random sample of RoIs comprising foreground and background examples.
-  def sampleRois(all_rois: DenseMatrix[Float], gt_boxes: DenseMatrix[Float], fg_rois_per_image: Int, rois_per_image: Int, numClasses: Int)
+  // Generate a random sample of RoIs comprising foreground and background examples.
+  def sampleRois(all_rois: DenseMatrix[Float],
+    gt_boxes: DenseMatrix[Float],
+    fg_rois_per_image: Int,
+    rois_per_image: Int,
+    numClasses: Int)
   : (Array[Float], DenseMatrix[Float], DenseMatrix[Float], DenseMatrix[Float]) = {
     // overlaps: (rois x gt_boxes)
     val overlaps = Bbox.bboxOverlap(all_rois(::, 1 until 5), gt_boxes(::, 0 until 4))
@@ -103,7 +111,8 @@ class ProposalTarget[@specialized(Float, Double) T: ClassTag](numClasses: Int)(i
     var labels = MatrixUtil.selectMatrix(gt_boxes, gt_assignment, 0)(::, 4).toArray
 
     // Select foreground RoIs as those with >= FG_THRESH overlap
-    var fg_inds = max_overlaps.zipWithIndex.filter(x => x._1 >= Config.TRAIN.FG_THRESH).map(x => x._2)
+    var fg_inds = max_overlaps.zipWithIndex
+      .filter(x => x._1 >= Config.TRAIN.FG_THRESH).map(x => x._2)
     // Guard against the case when an image has fewer than fg_rois_per_image
     // foreground RoIs
     val fg_rois_per_this_image = min(fg_rois_per_image, fg_inds.size)
@@ -146,7 +155,7 @@ class ProposalTarget[@specialized(Float, Double) T: ClassTag](numClasses: Int)(i
 
   override def updateOutput(input: Table): Table = {
 
-    //Proposal ROIs (0, x1, y1, x2, y2) coming from RPN
+    // Proposal ROIs (0, x1, y1, x2, y2) coming from RPN
     // (i.e., rpn.proposal_layer.ProposalLayer), or any other source
     val all_roisTen = input(1).asInstanceOf[Tensor[Float]]
     // GT boxes (x1, y1, x2, y2, label)
@@ -156,7 +165,8 @@ class ProposalTarget[@specialized(Float, Double) T: ClassTag](numClasses: Int)(i
 
     // Include ground-truth boxes in the set of candidate rois
     val zeros = DenseMatrix.zeros[Float](gt_boxes.rows, 1)
-    val all_rois = DenseMatrix.vertcat(all_roisTen.toBreezeMatrix(), DenseMatrix.horzcat(zeros, gt_boxes(::, 0 until gt_boxes.cols - 1)))
+    val all_rois = DenseMatrix.vertcat(all_roisTen.toBreezeMatrix(),
+      DenseMatrix.horzcat(zeros, gt_boxes(::, 0 until gt_boxes.cols - 1)))
     // Sanity check: single batch only
     assert(all_rois(::, 0).forall(x => x == 0), "Only single item batches are supported")
 
@@ -200,5 +210,7 @@ class ProposalTarget[@specialized(Float, Double) T: ClassTag](numClasses: Int)(i
     out
   }
 
-  override def updateGradInput(input: Table, gradOutput: Table): Table = ???
+  override def updateGradInput(input: Table, gradOutput: Table): Table = {
+    null
+  }
 }

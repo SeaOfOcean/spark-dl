@@ -25,16 +25,16 @@ import com.intel.analytics.sparkdl.tensor.TensorNumericMath.TensorNumeric
 import scala.reflect.ClassTag
 
 
-class SoftmaxWithCriterion[T: ClassTag](weights: Tensor[T] = null, ignoreLabel: Option[Int] = None, normalizeMode:
-NormMode = NormMode.VALID)
-                                       (implicit ev: TensorNumeric[T]) extends TensorCriterion[T] {
+class SoftmaxWithCriterion[T: ClassTag](weights: Tensor[T] = null,
+  ignoreLabel: Option[Int] = None, normalizeMode: NormMode = NormMode.VALID)
+  (implicit ev: TensorNumeric[T]) extends TensorCriterion[T] {
   private val gradInput: Tensor[T] = Tensor[T]()
 
   @transient var softmax: SoftMax[T] = null
 
   @transient var prob: Tensor[T] = null
 
-  @transient var outerNum = 0 //batchsize
+  @transient var outerNum = 0 // batchsize
 
   @transient var innerNum = 1
 
@@ -87,7 +87,8 @@ NormMode = NormMode.VALID)
       for (j <- 0 until innerNum) {
         val curTarget = ev.toType[Int](labelData(i * innerNum + j))
         if (ignoreLabel == None || ignoreLabel.get != curTarget) {
-          gradData(i * dim + curTarget * innerNum + j) = ev.minus(gradData(i * dim + curTarget * innerNum + j), ev.fromType(1))
+          gradData(i * dim + curTarget * innerNum + j) =
+            ev.minus(gradData(i * dim + curTarget * innerNum + j), ev.fromType(1))
           count = count + 1
         } else {
           for (c <- 0 until nClasses) {
@@ -108,14 +109,13 @@ NormMode = NormMode.VALID)
     def normalizer = {
       normalizeMode match {
         case NormMode.FULL => ev.fromType(outerNum * innerNum)
-        case NormMode.VALID => {
+        case NormMode.VALID =>
           if (validCount == -1) {
             ev.fromType(outerNum * innerNum)
           }
           else {
             ev.fromType(validCount)
           }
-        }
         case NormMode.BATCH_SIZE => ev.fromType(outerNum)
         case NormMode.NONE => ev.fromType(1)
         case _ => throw new IllegalArgumentException("Unknown normalization mode")

@@ -35,11 +35,13 @@ object Nms {
       val i = order(0)
       keep :+= i
       def getMax(vec: DenseVector[Float]) =
-        MatrixUtil.selectMatrix(vec.toDenseMatrix.t, order.slice(1, order.length), 0).map(x => max(x, vec(i)))
+        MatrixUtil.selectMatrix(vec.toDenseMatrix.t, order.slice(1, order.length), 0)
+          .map(x => max(x, vec(i)))
       val xx1 = getMax(x1)
       val yy1 = getMax(y1)
       def getMin(vec: DenseVector[Float]) =
-        MatrixUtil.selectMatrix(vec.toDenseMatrix.t, order.slice(1, order.length), 0).map(x => min(x, vec(i)))
+        MatrixUtil.selectMatrix(vec.toDenseMatrix.t, order.slice(1, order.length), 0)
+          .map(x => min(x, vec(i)))
       val xx2 = getMin(x2)
       val yy2 = getMin(y2)
 
@@ -48,7 +50,8 @@ object Nms {
 
       val inter = w :* h
 
-      val selectedArea = MatrixUtil.selectMatrix(areas.toDenseMatrix.t, order.slice(1, order.length).array, 0)
+      val selectedArea = MatrixUtil.selectMatrix(areas.toDenseMatrix.t,
+        order.slice(1, order.length).array, 0)
       val ovr = inter :/ (selectedArea + areas(i) :- inter)
       val inds = ovr.findAll(x => x <= thresh).map(x => x._1).toArray
       order = inds.zipWithIndex.map(x => order(x._1 + 1))

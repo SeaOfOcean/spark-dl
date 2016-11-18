@@ -19,11 +19,21 @@ package com.intel.analytics.sparkdl.pvanet
 
 object TrainAltOpt {
 
-  def train_rpn(imdbName: String, initModel: String, maxIters: Int): String = ???
+  def trainRpn(imdbName: String, initModel: String, maxIters: Int): String = {
+    ""
+  }
 
-  def rpn_generate(imdbName: String, rpnModelPath: String) = ???
+  def rpnGenerate(imdbName: String, rpnModelPath: String): String = {
+    ""
+  }
 
-  def train_fast_rcnn(imdbName: String, initModel: String, maxIters: Int, rpn_proposals: String) = ???
+  def trainFastRcnn(
+    imdbName: String,
+    initModel: String,
+    maxIters: Int,
+    rpnProposals: String): String = {
+    ""
+  }
 
 
   def main(args: Array[String]): Unit = {
@@ -31,36 +41,38 @@ object TrainAltOpt {
     println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
     println("Stage 1 RPN, init from ImageNet model")
     println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-    val rpn_stage1_model = train_rpn(imdbName, "pretrained_path", 10)
+    val rpnStage1Model = trainRpn(imdbName, "pretrained_path", 10)
 
     println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
     println("Stage 1 RPN, generate proposals")
     println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-    val rpn_stage1_proposals = rpn_generate(imdbName, rpn_stage1_model)
+    val rpnStage1Proposals = rpnGenerate(imdbName, rpnStage1Model)
     println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
     println("Stage 1 Fast R-CNN using RPN proposals, init from ImageNet model")
     println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
-    val fast_rcnn_stage1_model = train_fast_rcnn(imdbName, "pretrained_path", 10, rpn_stage1_proposals)
+    val fastRcnnStage1Model = trainFastRcnn(
+      imdbName, "pretrained_path", 10, rpnStage1Proposals)
 
     println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
     println("Stage 2 RPN, init from stage 1 Fast R-CNN model")
     println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
-    val rpn_stage2_model = train_rpn(imdbName, fast_rcnn_stage1_model, 10)
+    val rpnStage2Model = trainRpn(imdbName, fastRcnnStage1Model, 10)
 
     println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
     println("Stage 2 RPN, generate proposals")
     println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-    val rpn_stage2_proposals = rpn_generate(imdbName, rpn_stage2_model)
+    val rpnStage2Proposals = rpnGenerate(imdbName, rpnStage2Model)
 
 
 
     println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
     println("Stage 2 Fast R-CNN, init from stage 2 RPN R-CNN model")
     println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-    val fast_rcnn_stage2_model = train_fast_rcnn(imdbName, rpn_stage2_model, 10, rpn_stage2_proposals)
-    val finalModelPath = fast_rcnn_stage2_model
+    val fastRcnnStage2Model = trainFastRcnn(
+      imdbName, rpnStage2Model, 10, rpnStage2Proposals)
+    val finalModelPath = fastRcnnStage2Model
 
   }
 }
