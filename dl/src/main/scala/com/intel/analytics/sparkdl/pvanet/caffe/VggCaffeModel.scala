@@ -201,7 +201,7 @@ object VggCaffeModel {
     }
     val model = new Sequential[Table, Table, Float]()
     model.add(new RoiPooling[Float](7, 7, 0.0625f))
-    model.add(new Reshape2[Float](Array(25088, -1)))
+    model.add(new Reshape2[Float](Array(-1, 25088)))
 
     //    model.add(new Linear[Float](25088, 4096).setName("fc6"))
     val fc6 = caffeReader.mapInnerProduct("fc6")
@@ -229,7 +229,7 @@ object VggCaffeModel {
     //    clsReg.add(new Linear[Float](4096, 84))
     val bboxPred = caffeReader.mapInnerProduct("bbox_pred")
     println("bbox_pred", "out", bboxPred.weight.size(1), "in", bboxPred.weight.size(2))
-    cls.add(bboxPred)
+    clsReg.add(bboxPred)
 
     model.add(clsReg)
 
