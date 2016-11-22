@@ -21,6 +21,8 @@ import breeze.linalg.{DenseMatrix, DenseVector, argsort, max, min}
 
 object Nms {
   def nms(dets: DenseMatrix[Float], thresh: Float): Array[Int] = {
+    var keep = Array[Int]()
+    if (dets.size == 0) return keep
     val x1 = dets(::, 0)
     val y1 = dets(::, 1)
     val x2 = dets(::, 2)
@@ -30,7 +32,6 @@ object Nms {
     val areas = (x2 - x1 + 1f) :* (y2 - y1 + 1f)
     var order = argsort(scores).reverse.toArray
 
-    var keep = Array[Int]()
     while (order.size > 0) {
       val i = order(0)
       keep :+= i
