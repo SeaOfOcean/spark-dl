@@ -34,9 +34,9 @@ class PascolVocDataSource(year: String = "2007", imageSet: String,
   devkitPath: String = Config.DATA_DIR + "/VOCdevkit", looped: Boolean = true)
   extends LocalDataSource[ImageWithRoi] {
 
-  val dataset: Imdb = new PascalVoc(year, imageSet, devkitPath)
+  val imdb: Imdb = new PascalVoc(year, imageSet, devkitPath)
 
-  val data: Array[ImageWithRoi] = Roidb.prepareRoidb(dataset).roidb()
+  val data: Array[ImageWithRoi] = Roidb.prepareRoidb(imdb).roidb()
 
   // permutation of the data index
   var perm: Array[Int] = Array()
@@ -91,6 +91,10 @@ class PascolVocDataSource(year: String = "2007", imageSet: String,
     data(perm(r))
   }
 
+  def next(i: Int): ImageWithRoi = {
+    data(i)
+  }
+
 }
 
 /**
@@ -107,7 +111,7 @@ object ImageSizeUniformer extends Transformer[ImageWithRoi, ImageWithRoi] {
     val maxHeight = Config.TRAIN.MAX_SIZE
     val numImages = prev.length
     prev.map(data => {
-      data.scaledImage = Some(new RGBImageOD(maxWidth, maxHeight).copyContent(data.scaledImage.get))
+      data.scaledImage = new RGBImageOD(maxWidth, maxHeight).copyContent(data.scaledImage)
       data
     })
   }
@@ -155,7 +159,7 @@ class ImageScalerAndMeanSubstractor(dataSource: PascolVocDataSource)
       (pixels(x._2) - Config.PIXEL_MEANS(0)(0)(x._2 % 3)).toFloat
     )
 
-    data.scaledImage = Some(new RGBImageOD(meanPixels, imageBuff.getWidth, imageBuff.getHeight))
+    data.scaledImage = new RGBImageOD(meanPixels, imageBuff.getWidth, imageBuff.getHeight)
     val imScales = Array(im_scale_x, im_scale_y, im_scale_x, im_scale_y)
     data.imInfo = Some(Array(imageBuff.getHeight(), imageBuff.getWidth, im_scale_x))
 
@@ -257,11 +261,11 @@ class ImageToTensor(batchSize: Int = 1) extends Transformer[ImageWithRoi, Tensor
 
   def apply(imgWithRoi: ImageWithRoi): Tensor[Float] = {
     assert(batchSize == 1)
-    val img = imgWithRoi.scaledImage.get
+    val img = imgWithRoi.scaledImage
     if (featureData == null) {
       featureData = new Array[Float](batchSize * 3 * img.height * img.width)
     }
-    imgWithRoi.scaledImage.get.content.copyToArray(featureData)
+    imgWithRoi.scaledImage.content.copyToArray(featureData)
 
     featureTensor.set(Storage[Float](featureData),
       storageOffset = 1, sizes = Array(batchSize, 3, img.height(), img.width()))

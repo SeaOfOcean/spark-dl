@@ -20,6 +20,16 @@ package com.intel.analytics.sparkdl.pvanet
 import breeze.linalg.{DenseMatrix, DenseVector, argmax, max}
 
 object MatrixUtil {
+  def selectMatrix2(mat: DenseMatrix[Float],
+    rows: Array[Int], cols: Array[Int]): DenseMatrix[Float] = {
+    val out = new DenseMatrix[Float](rows.length, cols.length)
+    rows.zipWithIndex.map(r => {
+      cols.zipWithIndex.map(c => {
+        out(r._2, c._2) = mat(r._1, c._1)
+      })
+    })
+    out
+  }
 
 
   def selectMatrix(matrix: DenseMatrix[Float],

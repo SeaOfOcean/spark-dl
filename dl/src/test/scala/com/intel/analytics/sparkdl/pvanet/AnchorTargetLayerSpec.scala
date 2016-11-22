@@ -111,8 +111,8 @@ class AnchorTargetLayerSpec extends FlatSpec with Matchers {
     data = sc.next()
   }
 
-  anchorTargetLayer.generateAnchors(data, data.scaledImage.get.height(),
-    data.scaledImage.get.height())
+  anchorTargetLayer.generateAnchors(data, data.height(),
+    data.height())
 
   data.imagePath.substring(data.imagePath.indexOf("VOCdevkit")) should be(
     "VOCdevkit/VOC2007/JPEGImages/000003.jpg")

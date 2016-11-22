@@ -107,8 +107,8 @@ class AnchorTargetLayer(val scales: Array[Float] = Array[Float](3, 6, 9, 16, 32)
     val shifts = generateShifts(width, height, featStride)
     val totalAnchors = shifts.rows * numAnchors
     var allAnchors: DenseMatrix[Float] = getAllAnchors(shifts, anchors)
-    var indsInside: ArrayBuffer[Int] = getIndsInside(data.scaledImage.get.width(),
-      data.scaledImage.get.height(), allAnchors, allowedBorder)
+    var indsInside: ArrayBuffer[Int] = getIndsInside(data.width(),
+      data.height(), allAnchors, allowedBorder)
 
 
     // keep only inside anchors

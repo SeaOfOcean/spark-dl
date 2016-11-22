@@ -59,7 +59,7 @@ class Reshape2[@specialized(Float, Double) T: ClassTag](
       size(inferIndex - 1) = batchSize(inferIndex)
       nElement = input.nElement()
     }
-    
+
     println("reshape after reshape: ", batchSize.mkString(", "))
 
     if ((batchMode.nonEmpty && batchMode.get == false) ||
