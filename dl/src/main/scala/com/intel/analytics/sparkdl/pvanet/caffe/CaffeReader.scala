@@ -23,8 +23,10 @@ import caffe.Caffe
 import caffe.Caffe.{LayerParameter, NetParameter}
 import com.google.protobuf.{CodedInputStream, TextFormat}
 import com.intel.analytics.sparkdl.nn._
+import com.intel.analytics.sparkdl.pvanet.Config
 import com.intel.analytics.sparkdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.sparkdl.tensor.{Storage, Tensor}
+import com.intel.analytics.sparkdl.utils.{File => DlFile}
 
 import scala.reflect.ClassTag
 
@@ -46,10 +48,11 @@ object CaffeReader {
 }
 
 class CaffeReader[T: ClassTag](defName: String, modelName: String)(implicit ev: TensorNumeric[T]) {
+  private def cachePath(name: String) = Config.cachePath + "/vgg16/" + name.replaceAll("/", "_")
   var netparam: Caffe.NetParameter = null
   var numOutput = 0
 
-  val name2layer = loadCaffe(defName, modelName)
+  var name2layer = Map[String, LayerParameter]()
 
   def mapPooling(layer: LayerParameter): TensorModule[T] = {
     val param = layer.getPoolingParam
@@ -85,6 +88,13 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)(implicit ev: 
   }
 
   def mapInnerProduct(name: String): Linear[T] = {
+    if (Config.existFile(cachePath(name))) {
+      return DlFile.loadObj[Linear[T]](cachePath(name))
+    }
+    if (name2layer.isEmpty) {
+      loadCaffe(defName, modelName)
+    }
+
     val layer = name2layer(name)
     val param = layer.getInnerProductParam
     val wB = layer.getBlobs(0)
@@ -98,6 +108,12 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)(implicit ev: 
   }
 
   def mapConvolution(name: String): SpatialConvolution[T] = {
+    if (Config.existFile(cachePath(name))) {
+      return DlFile.loadObj[SpatialConvolution[T]](cachePath(name))
+    }
+    if (name2layer.isEmpty) {
+      loadCaffe(defName, modelName)
+    }
     val layer = name2layer(name)
     val param = layer.getConvolutionParam
     val groups = param.getGroup() match {
@@ -157,18 +173,26 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)(implicit ev: 
     module
   }
 
+  
+
   private def loadCaffe(prototxtName: String, modelName: String): Map[String, LayerParameter] = {
     netparam = loadBinary(prototxtName, modelName)
 
     numOutput = netparam.getInputShapeCount() * 4
 
     assert(netparam.getLayerCount > 0, "only support proto V2")
-    var name2param = Map[String, LayerParameter]()
     for (i <- 0 until netparam.getLayerCount) {
       val layer = netparam.getLayer(i)
-      name2param += (layer.getName -> layer)
+      name2layer += (layer.getName -> layer)
+      layer.getType match {
+        case "InnerProduct" =>
+          DlFile.save(mapInnerProduct(layer.getName), cachePath(layer.getName), true)
+        case "Convolution" =>
+          DlFile.save(mapConvolution(layer.getName), cachePath(layer.getName), true)
+        case _ =>
+      }
     }
-    name2param
+    name2layer
   }
 
 
