@@ -34,13 +34,13 @@ object Roidb {
     val gt_overlaps: Tensor[Float],
     val flipped: Boolean,
     var seg_areas: Tensor[Float]) {
-    def width(): Int = scaledImage.get.width()
+    def width(): Int = scaledImage.width()
 
-    def height(): Int = scaledImage.get.height()
+    def height(): Int = scaledImage.height()
 
     var gtBoxes = None: Option[DenseMatrix[Float]]
 
-    var scaledImage = None: Option[RGBImageOD]
+    var scaledImage: RGBImageOD = null
 
     var oriWidth = 0
     var oriHeight = 0
@@ -57,8 +57,8 @@ object Roidb {
         "\nflipped: " + flipped +
         "\nseg_areas: " + seg_areas +
         "\nimage: " + imagePath +
-        "\nwidth: " + scaledImage.get.width() +
-        "\nheight: " + scaledImage.get.height() +
+        "\nwidth: " + scaledImage.width() +
+        "\nheight: " + scaledImage.height() +
         "\nmax_classes: " + max_classes +
         "\nmax_overlaps: " + max_overlaps
     }

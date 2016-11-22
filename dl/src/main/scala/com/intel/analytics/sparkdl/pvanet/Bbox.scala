@@ -17,10 +17,13 @@
 
 package com.intel.analytics.sparkdl.pvanet
 
-import breeze.linalg.{DenseMatrix, max, min}
+import breeze.linalg.{DenseMatrix, DenseVector, Transpose, max, min}
 import breeze.numerics._
 
 object Bbox {
+  def bboxVote(detsNMSed: DenseMatrix[Float], clsDets: DenseMatrix[Float]): DenseMatrix[Float] = {
+    throw new UnsupportedOperationException
+  }
 
 
   /**

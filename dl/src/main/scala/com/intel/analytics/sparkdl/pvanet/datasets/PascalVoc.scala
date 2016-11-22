@@ -17,15 +17,18 @@
 
 package com.intel.analytics.sparkdl.pvanet.datasets
 
+import java.io.{File, PrintWriter}
+
 import breeze.linalg.DenseMatrix
-import com.intel.analytics.sparkdl.pvanet.Config
 import com.intel.analytics.sparkdl.pvanet.Roidb.ImageWithRoi
+import com.intel.analytics.sparkdl.pvanet.{Config, VocEval}
 import com.intel.analytics.sparkdl.tensor.Tensor
-import com.intel.analytics.sparkdl.utils.File
+import com.intel.analytics.sparkdl.utils.{File => DlFile}
 
 import scala.Array._
 import scala.io.Source
 import scala.xml.XML
+
 
 class PascalVoc(val year: String = "2007", val imageSet: String,
   var devkitPath: String = Config.DATA_DIR + "/VOCdevkit") extends Imdb {
@@ -145,18 +148,98 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
     if (Config.existFile(cache_file)) {
       println("%s gt roidb loaded from %s".format(name, cache_file))
       try {
-        return File.loadObj[Array[ImageWithRoi]](cache_file)
+        return DlFile.loadObj[Array[ImageWithRoi]](cache_file)
       } catch {
         case e: Exception =>
           val gtRoidb = imageIndex.map(index => loadPascalAnnotation(index)).toArray
           new java.io.File(cache_file).delete()
-          File.save(gtRoidb, cache_file)
+          DlFile.save(gtRoidb, cache_file)
           gtRoidb
       }
     } else {
       val gtRoidb = imageIndex.map(index => loadPascalAnnotation(index)).toArray
-      File.save(gtRoidb, cache_file)
+      DlFile.save(gtRoidb, cache_file)
       gtRoidb
     }
+  }
+
+  /**
+   * VOCdevkit / results / VOC2007 / Main /< comp_id > _det_test_aeroplane.txt
+   */
+  def getVocResultsFileTemplate(): String = {
+    val filename = compId + "_det_" + imageSet + "_%s.txt"
+    devkitPath + s"/results/VOC$year/Main/$filename"
+  }
+
+  private def writeVocResultsFile(allBoxes:Array[Array[DenseMatrix[Float]]]) = {
+    def writeResult(clsInd: Int, imInd: Int, of: PrintWriter): Unit = {
+      val dets = allBoxes(clsInd)(imInd)
+      if (dets.size == 0) return
+      // the VOCdevkit expects 1-based indices
+      for (k <- 0 until dets.rows) {
+        of.write("%s %.3f %.1f %.1f %.1f %.1f\n".format())
+      }
+    }
+    classToInd.foreach {
+      case (cls, clsInd) =>
+        if (cls != "__background__") {
+          println(s"writing ${cls} VOC results file")
+          val filename = getVocResultsFileTemplate().format(cls)
+          val of = new PrintWriter(new java.io.File(filename))
+          imageIndex.zip(Stream.from(1)).foreach {
+            case (imInd, index) =>
+              val dets = allBoxes(clsInd)(imInd.toInt)
+              if (dets.size > 0) {
+                // the VOCdevkit expects 1-based indices
+                for (k <- 0 until dets.rows) {
+                  of.write("%s %.3f %.1f %.1f %.1f %.1f\n".format(
+                    index, dets(k, dets.cols - 1),
+                    dets(k, 0) + 1, dets(k, 1) + 1,
+                    dets(k, 2) + 1, dets(k, 3) + 1
+                  ))
+                }
+              }
+          }
+          of.close()
+        }
+    }
+  }
+
+  private def eval(outputDir: String = "output"): Unit = {
+    val annopath = s"$devkitPath/VOC$year/Annotations/%s.xml"
+    val imagesetfile = s"$devkitPath/VOC$year/ImageSets/Main/$imageSet.txt"
+    val cachedir = s"$devkitPath/annotations_cache"
+    var aps = List[Double]()
+    // The PASCAL VOC metric changed in 2010
+    val use_07_metric = if (year.toInt < 2010) true else false
+    println("VOC07 metric ? " + (if (use_07_metric) "yes" else "No"))
+    if (!Config.existFile(outputDir)) {
+      new File(outputDir).mkdirs()
+    }
+    classes.zipWithIndex.foreach {
+      case (cls, i) =>
+        if (cls != "__background__") {
+          val filename = getVocResultsFileTemplate().format(cls)
+          val (rec, prec, ap) = VocEval.eval(filename, annopath, imagesetfile, cls,
+            cachedir, ovthresh = 0.5, use_07_metric = use_07_metric)
+          aps :+= ap
+          println(s"AP for $cls = $ap%.4f")
+          // todo: with open(os.path.join(output_dir, cls + '_pr.pkl'), 'w') as f:
+          // cPickle.dump({'rec': rec, 'prec': prec, 'ap': ap}, f)
+        }
+    }
+    println(s"Mean AP = ${aps.sum / aps.length}%.4f")
+    println("~~~~~~~~")
+    println("Results:")
+    aps.foreach(ap => println(s"$ap%.3f"))
+    println("${aps.sum / aps.length}%.3f")
+    println("~~~~~~~~")
+
+  }
+
+  def evaluateDetections(allBoxes: Array[Array[DenseMatrix[Float]]],
+    outputDir: String): Unit = {
+    writeVocResultsFile(allBoxes)
+    eval(outputDir)
   }
 }

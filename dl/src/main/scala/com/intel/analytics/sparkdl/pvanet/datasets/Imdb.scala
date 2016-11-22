@@ -17,6 +17,7 @@
 
 package com.intel.analytics.sparkdl.pvanet.datasets
 
+import breeze.linalg.DenseMatrix
 import com.intel.analytics.sparkdl.pvanet.Roidb.ImageWithRoi
 
 abstract class Imdb {
@@ -53,5 +54,8 @@ abstract class Imdb {
   def appendFlippedImages(): Unit = {
     throw new UnsupportedOperationException
   }
+
+  def evaluateDetections(allBoxes: Array[Array[DenseMatrix[Float]]],
+    outputDir: String): Unit
 }
 
