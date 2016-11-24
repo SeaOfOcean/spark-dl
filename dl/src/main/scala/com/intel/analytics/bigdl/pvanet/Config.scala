@@ -244,4 +244,10 @@ object Config {
   }
 
   def existFile(f: String): Boolean = new java.io.File(f).exists()
+
+  def demoPath: String = {
+    val path = DATA_DIR + "/demo"
+    if (!existFile(path)) new File(path).mkdirs()
+    path
+  }
 }

@@ -70,7 +70,8 @@ object PascolVoc {
   }
 
   def visDetection(d: ImageWithRoi, clsname: String, clsDets: DenseMatrix[Float]): Unit = {
-    throw new UnsupportedOperationException()
+    Draw.vis(d.imagePath, clsname, clsDets,
+      Config.demoPath + "/" + d.imagePath.substring(d.imagePath.lastIndexOf("/") + 1))
   }
 
   def loadFeatures(s: String, size: Array[Int]): Tensor[Float] = {
@@ -177,11 +178,8 @@ object PascolVoc {
       // unscale back to raw image space
       println("=====================================  post process")
       val boxes = rois.narrow(2, 2, 4).div(d.imInfo.get(2))
-      //      println(s"------- rois: ${rois.size().mkString(",")}")
-//      println(s"------- boxes: ${boxes.size().mkString(",")}")
-//      println(s"------- boxDeltas: ${boxDeltas.size().mkString(",")}")
-// Apply bounding-box regression deltas
-var predBoxes = Bbox.bboxTransformInv(boxes.toBreezeMatrix(), boxDeltas.toBreezeMatrix())
+      // Apply bounding-box regression deltas
+      var predBoxes = Bbox.bboxTransformInv(boxes.toBreezeMatrix(), boxDeltas.toBreezeMatrix())
       predBoxes = Bbox.clipBoxes(predBoxes, d.height(), d.width())
       println(s"------- scores: (${scores.size().mkString(",")})")
       println(s"------- predBoxes: (${predBoxes.rows}, ${predBoxes.cols})")
@@ -193,12 +191,10 @@ var predBoxes = Bbox.bboxTransformInv(boxes.toBreezeMatrix(), boxDeltas.toBreeze
       println(s"process ${d.imagePath} ...............")
 
       val (scores: DenseMatrix[Float], boxes: DenseMatrix[Float]) = imDetect(d)
-//      MatrixUtil.printSelectMatrix("scores", scores)
-//      MatrixUtil.printSelectMatrix("boxes", boxes)
 
       // todo: parameter of testNet
       val thresh = 0.5
-      val vis = false
+      val vis = true
       // skip j = 0, because it's the background class
       for (j <- 1 until imdb.numClasses) {
         def getClsDet: DenseMatrix[Float] = {
@@ -209,9 +205,7 @@ var predBoxes = Bbox.bboxTransformInv(boxes.toBreezeMatrix(), boxDeltas.toBreeze
           val clsBoxes = MatrixUtil.selectMatrix2(boxes,
             inds, Range(j * 4, (j + 1) * 4).toArray)
 
-          //          println(s"clsScores: ${clsScores.rows}, ${clsScores.cols}")
-//          println(s"bbox: ${clsBoxes.rows}, ${clsBoxes.cols}")
-var clsDets = DenseMatrix.horzcat(clsBoxes, clsScores)
+          var clsDets = DenseMatrix.horzcat(clsBoxes, clsScores)
           println("becore nms====================", clsDets.rows, clsDets.cols)
           val keep = Nms.nms(clsDets, Config.TEST.NMS.toFloat)
 
@@ -227,7 +221,7 @@ var clsDets = DenseMatrix.horzcat(clsBoxes, clsScores)
         }
         val clsDets = getClsDet
         if (vis) {
-          visDetection(d, imdb.classes(j - 1), clsDets)
+          visDetection(d, imdb.classes(j), clsDets)
         }
         // this i need to be modified to image index
         allBoxes(j)(i) = clsDets
@@ -238,7 +232,6 @@ var clsDets = DenseMatrix.horzcat(clsBoxes, clsScores)
       if (maxPerImage > 0) {
         // todo
       }
-//      println(result)
 
     }
 
@@ -246,7 +239,6 @@ var clsDets = DenseMatrix.horzcat(clsBoxes, clsScores)
 
     val outputDir = Config.getOutputDir(imdb, "VGG16")
     imdb.evaluateDetections(allBoxes, outputDir)
-//    })
   }
 
 
