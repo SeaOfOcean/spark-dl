@@ -148,7 +148,7 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
     if (Config.existFile(cache_file)) {
       println("%s gt roidb loaded from %s".format(name, cache_file))
       try {
-        return DlFile.loadObj[Array[ImageWithRoi]](cache_file)
+        return DlFile.load[Array[ImageWithRoi]](cache_file)
       } catch {
         case e: Exception =>
           val gtRoidb = imageIndex.map(index => loadPascalAnnotation(index)).toArray
@@ -171,7 +171,7 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
     devkitPath + s"/results/VOC$year/Main/$filename"
   }
 
-  private def writeVocResultsFile(allBoxes:Array[Array[DenseMatrix[Float]]]) = {
+  private def writeVocResultsFile(allBoxes: Array[Array[DenseMatrix[Float]]]) = {
     def writeResult(clsInd: Int, imInd: Int, of: PrintWriter): Unit = {
       val dets = allBoxes(clsInd)(imInd)
       if (dets.size == 0) return
@@ -186,9 +186,9 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
           println(s"writing ${cls} VOC results file")
           val filename = getVocResultsFileTemplate().format(cls)
           val of = new PrintWriter(new java.io.File(filename))
-          imageIndex.zip(Stream.from(1)).foreach {
+          imageIndex.zipWithIndex.foreach {
             case (imInd, index) =>
-              val dets = allBoxes(clsInd)(imInd.toInt)
+              val dets = allBoxes(clsInd - 1)(index)
               if (dets.size > 0) {
                 // the VOCdevkit expects 1-based indices
                 for (k <- 0 until dets.rows) {
@@ -205,7 +205,7 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
     }
   }
 
-  private def eval(outputDir: String = "output"): Unit = {
+  def eval(outputDir: String = "output"): Unit = {
     val annopath = s"$devkitPath/VOC$year/Annotations/%s.xml"
     val imagesetfile = s"$devkitPath/VOC$year/ImageSets/Main/$imageSet.txt"
     val cachedir = s"$devkitPath/annotations_cache"
@@ -223,16 +223,14 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
           val (rec, prec, ap) = VocEval.eval(filename, annopath, imagesetfile, cls,
             cachedir, ovthresh = 0.5, use_07_metric = use_07_metric)
           aps :+= ap
-          println(s"AP for $cls = $ap%.4f")
-          // todo: with open(os.path.join(output_dir, cls + '_pr.pkl'), 'w') as f:
-          // cPickle.dump({'rec': rec, 'prec': prec, 'ap': ap}, f)
+          println(s"AP for $cls = ${"%.4f".format(ap)}")
         }
     }
-    println(s"Mean AP = ${aps.sum / aps.length}%.4f")
+    println(s"Mean AP = ${"%.4f".format(aps.sum / aps.length)}")
     println("~~~~~~~~")
     println("Results:")
-    aps.foreach(ap => println(s"$ap%.3f"))
-    println("${aps.sum / aps.length}%.3f")
+    aps.foreach(ap => println(s"${"%.3f".format(ap)}"))
+    println(s"${"%.3f".format(aps.sum / aps.length)}")
     println("~~~~~~~~")
 
   }
