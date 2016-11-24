@@ -268,8 +268,8 @@ class ImageToTensor(batchSize: Int = 1) extends Transformer[ImageWithRoi, Tensor
     imgWithRoi.scaledImage.content.copyToArray(featureData)
 
     featureTensor.set(Storage[Float](featureData),
-      storageOffset = 1, sizes = Array(batchSize, 3, img.height(), img.width()))
-    featureTensor
+      storageOffset = 1, sizes = Array(batchSize, img.height(), img.width(), 3))
+    featureTensor.transpose(2, 3).transpose(2, 4).contiguous()
   }
 
   override def transform(prev: Iterator[ImageWithRoi]): Iterator[Tensor[Float]] = {

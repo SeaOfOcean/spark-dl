@@ -71,7 +71,7 @@ object PascolVoc {
 
   def visDetection(d: ImageWithRoi, clsname: String, clsDets: DenseMatrix[Float]): Unit = {
     Draw.vis(d.imagePath, clsname, clsDets,
-      Config.demoPath + "/" + d.imagePath.substring(d.imagePath.lastIndexOf("/") + 1))
+      Config.demoPath + s"/${clsname}_" + d.imagePath.substring(d.imagePath.lastIndexOf("/") + 1))
   }
 
   def loadFeatures(s: String, size: Array[Int]): Tensor[Float] = {
@@ -110,17 +110,17 @@ object PascolVoc {
     var end = 0L
     def imDetect(d: ImageWithRoi): (DenseMatrix[Float], DenseMatrix[Float]) = {
       val imgTensor = imageToTensor(d)
-//      println("===================================== start generating features")
-//      println(s"------- input size: ${imgTensor.size().mkString(",")}")
-//      start = System.nanoTime()
-//      val featureModel = VggCaffeModel.vgg16
-//      val featureOut = featureModel.forward(imgTensor)
-//      println(s"------- output size: ${featureOut.size().mkString(",")}")
-//      println(s"------- time: ${(System.nanoTime() - start) / 1e9}s")
-//      println()
+      println("===================================== start generating features")
+      println(s"------- input size: ${imgTensor.size().mkString(",")}")
+      start = System.nanoTime()
+      val featureModel = VggCaffeModel.vgg16
+      val featureOut = featureModel.forward(imgTensor)
+      println(s"------- output size: ${featureOut.size().mkString(",")}")
+      println(s"------- time: ${(System.nanoTime() - start) / 1e9}s")
+      println()
 
-      val featureOut = loadFeatures("/home/xianyan/code/intel/pvanet/roi_poolbottom0.dat",
-        Array(1, 512, 54, 38))
+//      val featureOut = loadFeatures("/home/xianyan/code/intel/pvanet/roi_poolbottom0.dat",
+//        Array(1, 512, 54, 38))
 
 
       println("===================================== start rpn ")
