@@ -68,7 +68,7 @@ object Roidb {
     val cache_file = Config.cachePath + "/" + imdb.name + "_image_sizes.pkl"
     if (Config.existFile(cache_file)) {
 //      logger.info("%s image sizes loaded from %s".format(imdb.name, cache_file))
-      return File.loadObj[Array[Array[Int]]](cache_file)
+      return File.load[Array[Array[Int]]](cache_file)
     }
     var sizes = Array.ofDim[Int](imdb.numImages, 2)
     for (i <- 0 until imdb.numImages) {

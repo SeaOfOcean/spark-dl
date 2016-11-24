@@ -48,7 +48,7 @@ class PascolVocDataSource(year: String = "2007", imageSet: String,
     offset = 0
   }
 
-  override def finished(): Boolean = (offset >= data.length)
+  def finished(): Boolean = (offset >= data.length)
 
   override def hasNext: Boolean = {
     if (looped) {
