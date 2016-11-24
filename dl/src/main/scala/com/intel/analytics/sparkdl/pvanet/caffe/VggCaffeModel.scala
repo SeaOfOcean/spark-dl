@@ -36,7 +36,7 @@ object VggCaffeModel {
   def vgg16: Module[Tensor[Float], Tensor[Float], Float] = {
     val cache = Config.modelPath + "/" + "vgg16WithCaffeParams.obj"
     if (Config.existFile(cache)) {
-      return File.loadObj[Module[Tensor[Float], Tensor[Float], Float]](cache)
+      return File.load[Module[Tensor[Float], Tensor[Float], Float]](cache)
     }
     if (caffeReader == null) {
       caffeReader = new CaffeReader[Float](defName, modelName)
@@ -133,7 +133,7 @@ object VggCaffeModel {
   def rpn: Module[Tensor[Float], Table, Float] = {
     val cache = Config.modelPath + "/" + "RPNWithCaffeParams.obj"
     if (Config.existFile(cache)) {
-      return File.loadObj[Module[Tensor[Float], Table, Float]](cache)
+      return File.load[Module[Tensor[Float], Table, Float]](cache)
     }
     if (caffeReader == null) {
       caffeReader = new CaffeReader[Float](defName, modelName)
@@ -152,7 +152,7 @@ object VggCaffeModel {
   def vgg16rpn: Module[Tensor[Float], Table, Float] = {
     val cache = Config.modelPath + "/" + "vgg16RPNWithCaffeParams.obj"
     if (Config.existFile(cache)) {
-      return File.loadObj[Module[Tensor[Float], Table, Float]](cache)
+      return File.load[Module[Tensor[Float], Table, Float]](cache)
     }
     if (caffeReader == null) {
       caffeReader = new CaffeReader[Float](defName, modelName)
@@ -167,7 +167,7 @@ object VggCaffeModel {
   def vggFull: Module[Tensor[Float], Table, Float] = {
     val cache = Config.modelPath + "/" + "vgg16FullWithCaffeParams.obj"
     if (Config.existFile(cache)) {
-      return File.loadObj[Module[Tensor[Float], Table, Float]](cache)
+      return File.load[Module[Tensor[Float], Table, Float]](cache)
     }
     if (caffeReader == null) {
       caffeReader = new CaffeReader[Float](defName, modelName)
@@ -193,15 +193,15 @@ object VggCaffeModel {
 
   def fastRcnn: Module[Table, Table, Float] = {
     val cache = Config.modelPath + "/" + "vgg16FastRcnnWithCaffeParams.obj"
-//    if (Config.existFile(cache)) {
-//      return File.loadObj[Module[Table, Table, Float]](cache)
-//    }
+    if (Config.existFile(cache)) {
+      return File.load[Module[Table, Table, Float]](cache)
+    }
     if (caffeReader == null) {
       caffeReader = new CaffeReader[Float](defName, modelName)
     }
     val model = new Sequential[Table, Table, Float]()
     model.add(new RoiPooling[Float](7, 7, 0.0625f))
-    model.add(new Reshape2[Float](Array(-1, 25088)))
+    model.add(new Reshape2[Float](Array(-1, 25088), Some(false)))
 
     //    model.add(new Linear[Float](25088, 4096).setName("fc6"))
     val fc6 = caffeReader.mapInnerProduct("fc6")

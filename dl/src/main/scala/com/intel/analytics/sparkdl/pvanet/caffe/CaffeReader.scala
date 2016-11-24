@@ -44,6 +44,8 @@ object CaffeReader {
       "VGG16_faster_rcnn_final.caffemodel"
     val caffeReader = new CaffeReader[Float](defName, modelName)
     val conv = caffeReader.mapConvolution("conv1_1")
+    if(conv == null) println("conv is null")
+    else println(conv.getName())
   }
 }
 
@@ -53,6 +55,8 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)(implicit ev: 
   var numOutput = 0
 
   var name2layer = Map[String, LayerParameter]()
+  
+//  loadCaffe(defName, modelName)
 
   def mapPooling(layer: LayerParameter): TensorModule[T] = {
     val param = layer.getPoolingParam
@@ -89,7 +93,7 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)(implicit ev: 
 
   def mapInnerProduct(name: String): Linear[T] = {
     if (Config.existFile(cachePath(name))) {
-      return DlFile.loadObj[Linear[T]](cachePath(name))
+      return DlFile.load[Linear[T]](cachePath(name))
     }
     if (name2layer.isEmpty) {
       loadCaffe(defName, modelName)
@@ -109,7 +113,7 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)(implicit ev: 
 
   def mapConvolution(name: String): SpatialConvolution[T] = {
     if (Config.existFile(cachePath(name))) {
-      return DlFile.loadObj[SpatialConvolution[T]](cachePath(name))
+      return DlFile.load[SpatialConvolution[T]](cachePath(name))
     }
     if (name2layer.isEmpty) {
       loadCaffe(defName, modelName)
