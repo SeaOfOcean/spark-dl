@@ -21,6 +21,7 @@ import java.io.File
 import java.util
 
 import breeze.linalg.{DenseMatrix, DenseVector, argmax, argsort, convert, max}
+import com.intel.analytics.sparkdl.pvanet.datasets.PascalVoc
 import com.intel.analytics.sparkdl.utils.{File => DlFile}
 
 import scala.io.Source
@@ -93,10 +94,10 @@ object VocEval {
    * [use_07_metric])
    * Top level function that does the PASCAL VOC evaluation.
    *
-   * @param detpath       Path to detections 
-   *                 detpath.format(classname) should produce the detection results file.
-   * @param annopath      Path to annotations 
-   *                 annopath.format(imagename) should be the xml annotations file.
+   * @param detpath       Path to detections
+   *                      detpath.format(classname) should produce the detection results file.
+   * @param annopath      Path to annotations
+   *                      annopath.format(imagename) should be the xml annotations file.
    * @param imagesetfile  Text file containing the list of images, one image per line.
    * @param classname     Category name (duh)
    * @param cachedir      Directory for caching the annotations
@@ -112,48 +113,54 @@ object VocEval {
     // assumes imagesetfile is a text file with each line an image name
     // cachedir caches the annotations in a pickle file
 
-    //first load gt
+    // first load gt
     if (!Config.existFile(cachedir)) {
       new File(cachedir).mkdirs()
     }
-    val cachefile = cachedir + "/annots.pkl"
+    val cachefile = cachedir + s"/annots.pkl"
     // read list of images
     val imagenames = Source.fromFile(imagesetfile).getLines().toList.map(x => x.trim)
 
-    var recs: util.HashMap[String, List[Object]] = null
-    if (!Config.existFile(cachefile)) {
-      // load annots
-      recs = new util.HashMap[String, List[Object]]()
+    var recs: util.HashMap[Int, List[Object]] = null
+    def loadAnnots: Unit = {
+// load annots
+      recs = new util.HashMap[Int, List[Object]]()
       imagenames.zipWithIndex.foreach {
         case (imagename, i) =>
-          recs.put(imagename, parseRec(annopath.format(imagename)))
-          if (i % 100 == 0) {
-            println(s"Reading annotations to $cachefile")
-          }
+          recs.put(imagename.toInt, parseRec(annopath.format(imagename)))
       }
       DlFile.save(recs, cachefile)
-    } else {
-      recs = DlFile.loadObj[util.HashMap[String, List[Object]]](cachefile)
     }
-    // extract gt objects for this class
+    if (!Config.existFile(cachefile)) {
+      loadAnnots
+    } else {
+      try {
+        recs = DlFile.load[util.HashMap[Int, List[Object]]](cachefile)
+      } catch {
+        case e: Exception =>
+          new File(cachefile).delete()
+          loadAnnots
+      }
 
+    }
+
+    // extract gt objects for this class
     var npos = 0
-    var classRecs = Map[String, (DenseMatrix[Int], List[Boolean], Array[Boolean])]()
+    var classRecs = Map[Int, (DenseMatrix[Int], List[Boolean], Array[Boolean])]()
     imagenames.foreach { imagename =>
-      val R = recs.get(imagename).filter(obj => obj.name == classname)
+      val R = recs.get(imagename.toInt).filter(obj => obj.name == classname)
       var bbox = new DenseMatrix[Int](R.length, 4)
       R.zipWithIndex.foreach(x => Range(0, 4).foreach(j => bbox(x._2, j) = x._1.bbox(j)))
-      //      val bbox = DenseMatrix(R.map(x => x.bbox))
       val difficult = R.map(x => x.difficult)
       val det = new Array[Boolean](R.length)
       npos = npos + difficult.map(x => if (!x) 1 else 0).sum
-      classRecs += (imagename -> (bbox, difficult, det))
+      classRecs += (imagename.toInt -> (bbox, difficult, det))
     }
     // read dets
     val detfile = detpath.format(classname)
     val splitlines = Source.fromFile(detfile).getLines().map(x =>
       x.trim.split(" ")).toList
-    var imageIds = splitlines.map(x => x(0))
+    var imageIds = splitlines.map(x => x(0).toInt)
     val confidence = splitlines.map(x => x(1).toFloat)
     var BB = splitlines.map(x => {
       x.slice(2, x.length).map(z => z.toFloat)
@@ -168,17 +175,16 @@ object VocEval {
     var fp = new Array[Int](nd)
     for (d <- 0 until nd) {
       val R = classRecs(imageIds(d))
-      val bb = BB.slice(d, BB.length)
-      val ovmax = -Float.MaxValue
+      val bb = BB.slice(d, d + 1)(0)
+      var ovmax = -Float.MaxValue
       val BBGT = R._1
-
+      var jmax = 0
       if (BBGT.size > 0) {
-        // compute overlaps
-        // intersection
-        val ixmin = (BBGT(::, 0).toArray zip bb(0)).map(x => Math.max(x._1, x._2))
-        val iymin = (BBGT(::, 1).toArray zip bb(1)).map(x => Math.max(x._1, x._2))
-        val ixmax = (BBGT(::, 2).toArray zip bb(2)).map(x => Math.min(x._1, x._2))
-        val iymax = (BBGT(::, 3).toArray zip bb(3)).map(x => Math.min(x._1, x._2))
+        // compute overlaps intersection
+        val ixmin = BBGT(::, 0).toArray.map(x => Math.max(x, bb(0)))
+        val iymin = BBGT(::, 1).toArray.map(x => Math.max(x, bb(1)))
+        val ixmax = BBGT(::, 2).toArray.map(x => Math.min(x, bb(2)))
+        val iymax = BBGT(::, 3).toArray.map(x => Math.min(x, bb(3)))
 
         val iw = (ixmax zip ixmin).map(x => Math.max(x._1 - x._2 + 1, 0))
         val ih = (iymax zip iymin).map(x => Math.max(x._1 - x._2 + 1, 0))
@@ -186,36 +192,37 @@ object VocEval {
 
         // union
         val xx = convert((BBGT(::, 2) - BBGT(::, 0) + 1) :* (BBGT(::, 3) :- BBGT(::, 1) :+ 1), Float)
-
-        val uni = (DenseVector(bb(2)) - DenseVector(bb(0)) :+ 1f) :*
-          (DenseVector(bb(3)) - DenseVector(bb(1)) :+ 1f) :+ xx :- inters
+        val tmp = (bb(2) - bb(0) + 1f) * (bb(3) - bb(1) + 1f)
+        val uni = xx :- inters :+ tmp
 
 
         val overlaps = inters :/ uni
-        val ovmax = max(overlaps)
-        val jmax = argmax(overlaps)
+        ovmax = max(overlaps)
+        jmax = argmax(overlaps)
+      }
 
-        if (ovmax > ovthresh) {
-          if (!R._2(jmax)) {
-            if (!R._3(jmax)) {
-              tp(d) = 1
-              R._3(jmax) = true
-            } else {
-              fp(d) = 1
-            }
+      if (ovmax > ovthresh) {
+        if (!R._2(jmax)) {
+          if (!R._3(jmax)) {
+            tp(d) = 1
+            R._3(jmax) = true
+          } else {
+            fp(d) = 1
           }
-        } else {
-          fp(d) = 1
         }
+      } else {
+        fp(d) = 1
       }
     }
+
     // compute precision recall
     fp = cumsum(fp)
     tp = cumsum(tp)
     val rec = tp.map(x => x / npos.toDouble)
     // avoid divide by zero in case the first detection matches a difficult
     // ground truth
-    val prec = (tp zip (tp zip fp).map(x => x._1 + x._2).map(x => Math.max(x, 2.2204460492503131e-16)))
+    val prec = (tp zip (tp zip fp).map(x => x._1 + x._2)
+      .map(x => Math.max(x, 2.2204460492503131e-16)))
       .map(x => x._1 / x._2)
     val ap = vocAp(rec, prec, use_07_metric)
     (rec, prec, ap)
@@ -227,7 +234,7 @@ object VocEval {
     val boxes = new Array[Int](4)
     var objects = List[Object]()
     // Load object bounding boxes into a data frame.
-    for ((obj, ix) <- objs.zip(Stream from 1)) {
+    for (obj <- objs) {
       // pixel indexes 1-based
       val bndbox = obj \ "bndbox"
       val x1 = (bndbox \ "xmin").text.toInt
@@ -235,9 +242,14 @@ object VocEval {
       val x2 = (bndbox \ "xmax").text.toInt
       val y2 = (bndbox \ "ymax").text.toInt
       objects :+= new Object((obj \ "name").text, (obj \ "pose").text,
-        (obj \ "truncated").text.toInt, (obj \ "difficult").text.toBoolean, Array(x1, y1, x2, y2))
+        (obj \ "truncated").text.toInt, (obj \ "difficult").text == "1", Array(x1, y1, x2, y2))
     }
     objects
+  }
+
+  def main(args: Array[String]): Unit = {
+    val dataset = new PascalVoc(year = "2007", imageSet = "testcode")
+    dataset.eval()
   }
 
 }
