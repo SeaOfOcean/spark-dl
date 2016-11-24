@@ -108,6 +108,7 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)(implicit ev: 
     val (weight, bias) = loadModule(name2layer(name), name)
     module.weight.copy(weight)
     module.bias.copy(bias)
+    DlFile.save(module, cachePath(layer.getName), true)
     module
   }
 
@@ -174,6 +175,7 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)(implicit ev: 
     val (weight, bias) = loadModule(name2layer(name), name)
     module.weight.copy(weight)
     module.bias.copy(bias)
+    DlFile.save(module, cachePath(layer.getName), true)
     module
   }
 
@@ -188,13 +190,6 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)(implicit ev: 
     for (i <- 0 until netparam.getLayerCount) {
       val layer = netparam.getLayer(i)
       name2layer += (layer.getName -> layer)
-      layer.getType match {
-        case "InnerProduct" =>
-          DlFile.save(mapInnerProduct(layer.getName), cachePath(layer.getName), true)
-        case "Convolution" =>
-          DlFile.save(mapConvolution(layer.getName), cachePath(layer.getName), true)
-        case _ =>
-      }
     }
     name2layer
   }
