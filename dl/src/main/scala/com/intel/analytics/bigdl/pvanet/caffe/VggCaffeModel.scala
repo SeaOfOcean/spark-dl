@@ -238,10 +238,8 @@ object VggCaffeModel {
   }
 
   def main(args: Array[String]): Unit = {
-    fastRcnn
-    rpn
     vgg16
+    rpn
+    fastRcnn
   }
-
-
 }

@@ -117,7 +117,7 @@ object VocEval {
     if (!Config.existFile(cachedir)) {
       new File(cachedir).mkdirs()
     }
-    val cachefile = cachedir + s"/annots.pkl"
+    val cachefile = s"${cachedir}/annots.pkl"
     // read list of images
     val imagenames = Source.fromFile(imagesetfile).getLines().toList.map(x => x.trim)
 

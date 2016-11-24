@@ -18,6 +18,7 @@
 package com.intel.analytics.bigdl.pvanet.datasets
 
 import java.io.{File, PrintWriter}
+import java.util.UUID
 
 import breeze.linalg.DenseMatrix
 import com.intel.analytics.bigdl.pvanet.Roidb.ImageWithRoi
@@ -52,6 +53,7 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
   imageIndex = loadImageSetIndex()
 
   val compId = "comp4"
+  val salt = UUID.randomUUID().toString
   // PASCAL specific config options
   val config = Map("cleanup" -> true,
     "use_salt" -> true,
@@ -163,6 +165,10 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
     }
   }
 
+  def getCompId: String = {
+    if (config("use_salt").asInstanceOf[Boolean]) s"${compId}_${salt}" else compId
+  }
+
   /**
    * VOCdevkit / results / VOC2007 / Main /< comp_id > _det_test_aeroplane.txt
    */
@@ -172,14 +178,6 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
   }
 
   private def writeVocResultsFile(allBoxes: Array[Array[DenseMatrix[Float]]]) = {
-    def writeResult(clsInd: Int, imInd: Int, of: PrintWriter): Unit = {
-      val dets = allBoxes(clsInd)(imInd)
-      if (dets.size == 0) return
-      // the VOCdevkit expects 1-based indices
-      for (k <- 0 until dets.rows) {
-        of.write("%s %.3f %.1f %.1f %.1f %.1f\n".format())
-      }
-    }
     classToInd.foreach {
       case (cls, clsInd) =>
         if (cls != "__background__") {
@@ -193,7 +191,7 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
                 // the VOCdevkit expects 1-based indices
                 for (k <- 0 until dets.rows) {
                   of.write("%s %.3f %.1f %.1f %.1f %.1f\n".format(
-                    index, dets(k, dets.cols - 1),
+                    imInd, dets(k, dets.cols - 1),
                     dets(k, 0) + 1, dets(k, 1) + 1,
                     dets(k, 2) + 1, dets(k, 3) + 1
                   ))
@@ -232,7 +230,10 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
     aps.foreach(ap => println(s"${"%.3f".format(ap)}"))
     println(s"${"%.3f".format(aps.sum / aps.length)}")
     println("~~~~~~~~")
-
+    def cleanup = {
+      new File(cachedir).listFiles().foreach(f => f.delete())
+    }
+    cleanup
   }
 
   def evaluateDetections(allBoxes: Array[Array[DenseMatrix[Float]]],
