@@ -27,7 +27,7 @@ import org.scalatest.{FlatSpec, Matchers}
 class ProposalSpec extends FlatSpec with Matchers {
   "testUpdateOutput" should "be correct" in {
     val classLoader = getClass().getClassLoader()
-    val proposal = new Proposal[Float]
+    val proposal = new Proposal[Float](0)
     val input = new Table
     input.insert(loadDataFromFile(
       classLoader.getResource("pvanet/data1.dat").getFile, Array(1, 18, 30, 40)))

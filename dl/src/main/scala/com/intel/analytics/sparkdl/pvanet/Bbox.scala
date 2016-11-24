@@ -17,7 +17,7 @@
 
 package com.intel.analytics.sparkdl.pvanet
 
-import breeze.linalg.{DenseMatrix, DenseVector, Transpose, max, min}
+import breeze.linalg.{*, DenseMatrix, max, min}
 import breeze.numerics._
 
 object Bbox {
@@ -105,9 +105,8 @@ object Bbox {
    */
   def bboxTransformInv(boxes: DenseMatrix[Float],
     deltas: DenseMatrix[Float]): DenseMatrix[Float] = {
-    assert(boxes.cols == 4 && deltas.cols == 4)
     if (boxes.rows == 0) {
-      return DenseMatrix.fill(0, boxes.cols) {
+      return DenseMatrix.fill(0, deltas.cols) {
         0f
       }
     }
@@ -118,20 +117,24 @@ object Bbox {
 
     val dx = MatrixUtil.selectCols(deltas, 0, 4)
     val dy = MatrixUtil.selectCols(deltas, 1, 4)
-    val dw = MatrixUtil.selectCols(deltas, 2, 4)
-    val dh = MatrixUtil.selectCols(deltas, 3, 4)
-
-    val predCtrX = dx :* widths :+ ctrX
-    val predCtrY = dy :* heights :+ ctrY
-    val predW = exp(dw) :* widths
-    val predH = exp(dh) :* heights
+    var dw = MatrixUtil.selectCols(deltas, 2, 4)
+    var dh = MatrixUtil.selectCols(deltas, 3, 4)
+    
+    dx(::, *) :*= widths.toDenseVector
+    dx(::, *) :+= ctrX.toDenseVector
+    dy(::, *) :*= heights.toDenseVector
+    dy(::, *) :+= ctrY.toDenseVector
+    dw = exp(dw)
+    dw(::, *) :*= widths.toDenseVector
+    dh = exp(dh)
+    dh(::, *) :*= heights.toDenseVector
 
     val predBoxes = DenseMatrix.zeros[Float](deltas.rows, deltas.cols)
 
-    setCols(predBoxes, 0, 4, predCtrX - predW * 0.5f)
-    setCols(predBoxes, 1, 4, predCtrY - predH * 0.5f)
-    setCols(predBoxes, 2, 4, predCtrX + predW * 0.5f)
-    setCols(predBoxes, 3, 4, predCtrY + predH * 0.5f)
+    setCols(predBoxes, 0, 4, dx - dw * 0.5f)
+    setCols(predBoxes, 1, 4, dy - dh * 0.5f)
+    setCols(predBoxes, 2, 4, dx + dw * 0.5f)
+    setCols(predBoxes, 3, 4, dy + dh * 0.5f)
 
     predBoxes
   }

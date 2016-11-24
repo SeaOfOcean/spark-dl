@@ -36,7 +36,6 @@ class Reshape2[@specialized(Float, Double) T: ClassTag](
   }
 
   override def updateOutput(input: Tensor[T]): Tensor[T] = {
-    println("input of reshape2:", input.size().mkString(", "))
     if (size.contains(-1)) {
       var inferIndex = -1
       var count = 1
@@ -59,8 +58,6 @@ class Reshape2[@specialized(Float, Double) T: ClassTag](
       size(inferIndex - 1) = batchSize(inferIndex)
       nElement = input.nElement()
     }
-
-    println("reshape after reshape: ", batchSize.mkString(", "))
 
     if ((batchMode.nonEmpty && batchMode.get == false) ||
       (input.nElement() == nElement && batchMode.isEmpty && input.size(1) != 1)) {

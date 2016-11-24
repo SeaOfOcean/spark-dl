@@ -26,7 +26,7 @@ import com.intel.analytics.sparkdl.utils.Table
 
 import scala.reflect.ClassTag
 
-class Proposal[@specialized(Float, Double) T: ClassTag](val phase: Int = 0)
+class Proposal[@specialized(Float, Double) T: ClassTag](val phase: Int)
   (implicit ev: TensorNumeric[T]) extends Module[Table, Table, T] {
   /**
    * Outputs object detection proposals by applying estimated bounding-box
@@ -75,10 +75,10 @@ class Proposal[@specialized(Float, Double) T: ClassTag](val phase: Int = 0)
     var nms_thresh = Config.TRAIN.RPN_NMS_THRESH
     var min_size = Config.TRAIN.RPN_MIN_SIZE
     if (phase != 0) {
-      var pre_nms_topN = Config.TEST.RPN_PRE_NMS_TOP_N
-      var post_nms_topN = Config.TEST.RPN_POST_NMS_TOP_N
-      var nms_thresh = Config.TEST.RPN_NMS_THRESH
-      var min_size = Config.TEST.RPN_MIN_SIZE
+      pre_nms_topN = Config.TEST.RPN_PRE_NMS_TOP_N
+      post_nms_topN = Config.TEST.RPN_POST_NMS_TOP_N
+      nms_thresh = Config.TEST.RPN_NMS_THRESH
+      min_size = Config.TEST.RPN_MIN_SIZE
     }
     // the first set of _num_anchors channels are bg probs
     // the second set are the fg probs, which we want
