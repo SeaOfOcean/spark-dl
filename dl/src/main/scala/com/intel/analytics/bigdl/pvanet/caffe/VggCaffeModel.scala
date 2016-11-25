@@ -208,14 +208,14 @@ object VggCaffeModel {
     model.add(fc6)
     println("fc6", "out", fc6.weight.size(1), "in", fc6.weight.size(2))
     model.add(new ReLU[Float]())
-    model.add(new Dropout[Float]())
+//    model.add(new Dropout[Float]())
 
     //    model.add(new Linear[Float](4096, 4096).setName("fc7"))
     val fc7 = caffeReader.mapInnerProduct("fc7")
     println("fc7", "out", fc7.weight.size(1), "in", fc7.weight.size(2))
     model.add(fc7)
     model.add(new ReLU[Float]())
-    model.add(new Dropout[Float]())
+//    model.add(new Dropout[Float]())
 
     val clsReg = new ConcatTable[Table, Float]()
 

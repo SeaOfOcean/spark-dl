@@ -22,7 +22,7 @@ import com.intel.analytics.bigdl.nn._
 import com.intel.analytics.bigdl.pvanet.Roidb.ImageWithRoi
 import com.intel.analytics.bigdl.pvanet._
 import com.intel.analytics.bigdl.pvanet.caffe.VggCaffeModel
-import com.intel.analytics.bigdl.pvanet.layers.{Proposal, Reshape2, SmoothL1Criterion2, SoftmaxWithCriterion}
+import com.intel.analytics.bigdl.pvanet.layers._
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import com.intel.analytics.bigdl.utils.Table
 import scopt.OptionParser
@@ -74,8 +74,11 @@ object PascolVoc {
       Config.demoPath + s"/${clsname}_" + d.imagePath.substring(d.imagePath.lastIndexOf("/") + 1))
   }
 
-  def loadFeatures(s: String, size: Array[Int]): Tensor[Float] = {
-    Tensor(Storage(Source.fromFile(s).getLines().map(x => x.toFloat).toArray)).reshape(size)
+  def loadFeatures(s: String): Tensor[Float] = {
+    val middleRoot = "/home/xianyan/code/intel/pvanet/spark-dl/middle/"
+    val size = s.substring(s.lastIndexOf("-") + 1, s.lastIndexOf(".")).split("_").map(x => x.toInt)
+    Tensor(Storage(Source.fromFile(middleRoot + s).getLines()
+      .map(x => x.toFloat).toArray)).reshape(size)
   }
 
   def main(args: Array[String]) {
@@ -110,17 +113,17 @@ object PascolVoc {
     var end = 0L
     def imDetect(d: ImageWithRoi): (DenseMatrix[Float], DenseMatrix[Float]) = {
       val imgTensor = imageToTensor(d)
-      println("===================================== start generating features")
-      println(s"------- input size: ${imgTensor.size().mkString(",")}")
-      start = System.nanoTime()
-      val featureModel = VggCaffeModel.vgg16
-      val featureOut = featureModel.forward(imgTensor)
-      println(s"------- output size: ${featureOut.size().mkString(",")}")
-      println(s"------- time: ${(System.nanoTime() - start) / 1e9}s")
-      println()
+//      val imgTensor = loadFeatures("/home/xianyan/code/intel/pvanet/spark-dl/middle/data_1_3_600_901.txt")
+//      println("===================================== start generating features")
+//      println(s"------- input size: ${imgTensor.size().mkString(",")}")
+//      start = System.nanoTime()
+//      val featureModel = VggCaffeModel.vgg16
+//      val featureOut = featureModel.forward(imgTensor)
+//      println(s"------- output size: ${featureOut.size().mkString(",")}")
+//      println(s"------- time: ${(System.nanoTime() - start) / 1e9}s")
+//      println()
 
-//      val featureOut = loadFeatures("/home/xianyan/code/intel/pvanet/roi_poolbottom0.dat",
-//        Array(1, 512, 54, 38))
+      val featureOut = loadFeatures("conv5_3-1_512_38_57.txt")
 
 
       println("===================================== start rpn ")
@@ -149,7 +152,10 @@ object PascolVoc {
       val propoal = new Proposal[Float](phase = 1)
       val proposalOut = propoal.forward(proposalInput)
 
-      val rois = proposalOut(1).asInstanceOf[Tensor[Float]]
+      // todo: temp
+//      val rois = proposalOut(1).asInstanceOf[Tensor[Float]]
+val rois = loadFeatures("rois-300_5.txt")
+
       println(s"------- output size: rois (${rois.size().mkString(",")})")
       println(s"------- time:  ${(System.nanoTime() - start) / 1e9}s")
 
@@ -165,13 +171,20 @@ object PascolVoc {
 //      println(s"featureOut: ${featureOut.size().mkString(", ")}")
 //      println(s"rois: ${proposalOut(1).asInstanceOf[Tensor[Float]].size().mkString(",")}")
 
+
       val propDecModel = VggCaffeModel.fastRcnn
 
+      //todo: temp
       val result = propDecModel.forward(propDecInput)
       println(s"------- time: ${(System.nanoTime() - start) / 1e9}s")
 
+      //      // todo: temp
       val scores = result(1).asInstanceOf[Tensor[Float]]
       val boxDeltas = result(2).asInstanceOf[Tensor[Float]]
+
+//      val (scores: Tensor[Float], boxDeltas: Tensor[Float]) =
+//        (loadFeatures("cls_prob-300_21.txt"),
+//          loadFeatures("bbox_pred-300_84.txt"))
 
 
       // post process
@@ -187,26 +200,30 @@ object PascolVoc {
     }
 
     for (i <- 0 until imdb.numImages) {
-      val d = data.next()
+      //      val d = data.next()
+      val img = validationDataSource.next(i)
+      val d = imageScaler.apply(img)
       println(s"process ${d.imagePath} ...............")
 
       val (scores: DenseMatrix[Float], boxes: DenseMatrix[Float]) = imDetect(d)
 
+
       // todo: parameter of testNet
-      val thresh = 0.5
+      val thresh = 0.05
       val vis = true
       // skip j = 0, because it's the background class
       for (j <- 1 until imdb.numClasses) {
         def getClsDet: DenseMatrix[Float] = {
           val inds = Range(0, scores.rows).filter(ind => scores(ind, j) > thresh).toArray
           if (inds.length == 0) return new DenseMatrix[Float](0, 5)
+          println(scores(::, j))
           println(s"class ${j}, inds: ${inds.mkString(",")}")
           val clsScores = MatrixUtil.selectMatrix2(scores, inds, Array(j))
           val clsBoxes = MatrixUtil.selectMatrix2(boxes,
             inds, Range(j * 4, (j + 1) * 4).toArray)
 
           var clsDets = DenseMatrix.horzcat(clsBoxes, clsScores)
-          println("becore nms====================", clsDets.rows, clsDets.cols)
+          println("cls det before nms", clsDets)
           val keep = Nms.nms(clsDets, Config.TEST.NMS.toFloat)
 
           val detsNMSed = MatrixUtil.selectMatrix(clsDets, keep, 0)
@@ -217,6 +234,8 @@ object PascolVoc {
           else {
             clsDets = detsNMSed
           }
+
+          println("cls det after nms", clsDets)
           clsDets
         }
         val clsDets = getClsDet

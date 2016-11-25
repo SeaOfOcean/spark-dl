@@ -20,10 +20,12 @@ package com.intel.analytics.bigdl.pvanet.layers
 import breeze.linalg.{max, min}
 import breeze.numerics.{ceil, floor, round}
 import com.intel.analytics.bigdl.nn.Module
-import com.intel.analytics.bigdl.tensor.Tensor
+import com.intel.analytics.bigdl.pvanet.datasets.PascolVoc
+import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.utils.Table
 
+import scala.io.Source
 import scala.reflect.ClassTag
 
 class RoiPooling[@specialized(Float, Double) T: ClassTag]
@@ -117,9 +119,11 @@ class RoiPooling[@specialized(Float, Double) T: ClassTag]
                   outputData(topDataIndex + pool_index))) {
                   outputData(topDataIndex + pool_index) = bottom_data(batchDataIndex + index)
                   argmax_data(argmaxIndex + pool_index) = ev.fromType(index)
+//                  println("pool here",bottom_data(batchDataIndex + index), ev.fromType(index))
                 }
               }
             }
+            outputData(topDataIndex + pool_index)
           }
         }
         // Increment all data pointers by one channel
@@ -128,9 +132,16 @@ class RoiPooling[@specialized(Float, Double) T: ClassTag]
         argmaxIndex += offset(0, 1, sizes = argmax.size())
       }
       bottomRoisIndex += offset(1, sizes = rois.size())
-
     }
     output
+//    loadFeatures("pool5-300_512_7_7.txt")
+  }
+
+  def loadFeatures(s: String): Tensor[T] = {
+    val middleRoot = "/home/xianyan/code/intel/pvanet/spark-dl/middle/"
+    val size = s.substring(s.lastIndexOf("-") + 1, s.lastIndexOf(".")).split("_").map(x => x.toInt)
+    Tensor(Storage(Source.fromFile(middleRoot + s).getLines()
+      .map(x => ev.fromType(x.toFloat)).toArray)).reshape(size)
   }
 
   def offset(n: Int, c: Int = 0, h: Int = 0, w: Int = 0, sizes: Array[Int]): Int = {

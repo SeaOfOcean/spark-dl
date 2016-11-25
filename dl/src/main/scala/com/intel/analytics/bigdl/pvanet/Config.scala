@@ -150,7 +150,7 @@ object Config {
     var BBOX_REG = true
 
     // Propose boxes
-    var HAS_RPN = false
+    var HAS_RPN = true
 
     // Test using these proposals
     var PROPOSAL_METHOD = "gt"
