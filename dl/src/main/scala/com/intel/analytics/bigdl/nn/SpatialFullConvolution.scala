@@ -79,7 +79,7 @@ class SpatialFullConvolution[A <: Activities : ClassTag, T: ClassTag](
   val weight: Tensor[T] = Tensor[T](nInputPlane, nOutputPlane, kH, kW)
   val bias: Tensor[T] = if (noBias) null else Tensor[T](nOutputPlane)
 
-  val gradWeight: Tensor[T] = Tensor[T]()
+  val gradWeight: Tensor[T] = Tensor[T](nInputPlane, nOutputPlane, kH, kW)
   val gradBias: Tensor[T] = if (noBias) null else Tensor[T](nOutputPlane)
   @transient private var columns: Tensor[T] = null
   @transient private var ones: Tensor[T] = null
@@ -131,7 +131,6 @@ class SpatialFullConvolution[A <: Activities : ClassTag, T: ClassTag](
           i += 1
         }
     }
-    setup()
     zeroGradParameters()
   }
 
@@ -252,7 +251,7 @@ class SpatialFullConvolution[A <: Activities : ClassTag, T: ClassTag](
 
       // Do GEMM (note: this is a bit confusing because gemm assumes column-major matrices)
       DenseTensorBLAS.gemm[T](
-        "N", "T",
+        'N', 'T',
         n, m, k,
         ev.fromType[Int](1),
         input_n.storage().array(), input_n.storageOffset() - 1, n,
@@ -294,7 +293,7 @@ class SpatialFullConvolution[A <: Activities : ClassTag, T: ClassTag](
       // Do GEMM (note: this is a bit confusing because gemm assumes column-major matrices)
       if(null != bias) {
         DenseTensorBLAS.gemm[T](
-          "T", "N",
+          'T', 'N',
           n, m, k,
           ev.fromType[Int](1),
           ones.storage().array(), ones.storageOffset() - 1, k,
@@ -391,7 +390,7 @@ class SpatialFullConvolution[A <: Activities : ClassTag, T: ClassTag](
 
       // Do GEMM (note: this is a bit confusing because gemm assumes column-major matrices)
       DenseTensorBLAS.gemm[T](
-        "N", "N",
+        'N', 'N',
         n, m, k,
         ev.fromType[Int](1),
         columns.storage().array(), columns.storageOffset() - 1, n,
@@ -503,7 +502,7 @@ class SpatialFullConvolution[A <: Activities : ClassTag, T: ClassTag](
 
       // Do GEMM (note: this is a bit confusing because gemm assumes column-major matrices)
       DenseTensorBLAS.gemm[T](
-        "T", "N",
+        'T', 'N',
         n, m, k,
         ev.fromType[Double](scale),
         columns.storage().array(), columns.storageOffset() - 1, k,
@@ -521,7 +520,7 @@ class SpatialFullConvolution[A <: Activities : ClassTag, T: ClassTag](
       // Do GEMV (note: this is a bit confusing because gemv assumes column-major matrices)
       if (null != gradBias) {
         ev.gemv(
-          "T",
+          'T',
           k, m,
           ev.fromType[Double](scale),
           gradOutput_n.storage().array(), gradOutput_n.storageOffset() - 1, k,
@@ -551,14 +550,6 @@ class SpatialFullConvolution[A <: Activities : ClassTag, T: ClassTag](
     if(!noBias) {
       gradBias.zero()
     }
-  }
-
-  override def setup(): this.type = {
-    gradWeight.resize(nInputPlane, nOutputPlane, kH, kW)
-    if(!noBias) {
-      gradBias.resize(nOutputPlane)
-    }
-    this
   }
 
   override def parameters(): (Array[Tensor[T]], Array[Tensor[T]]) = {
@@ -614,15 +605,6 @@ class SpatialFullConvolution[A <: Activities : ClassTag, T: ClassTag](
     hash = hash * seed + gradBias.hashCode()
 
     hash
-  }
-
-  override def clearState() : this.type = {
-    super.clearState()
-    gradWeight.set()
-    if(!noBias) {
-      gradBias.set()
-    }
-    this
   }
 
   override def toString(): String = {
