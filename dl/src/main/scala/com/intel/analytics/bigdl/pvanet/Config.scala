@@ -23,7 +23,7 @@ import com.intel.analytics.bigdl.pvanet.datasets.Imdb
 
 object Config {
 
-  val DEBUG: Boolean = true
+  val DEBUG: Boolean = false
 
   var _feat_stride = 16
 

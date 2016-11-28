@@ -39,7 +39,7 @@ class PascolVocDataSource(year: String = "2007", imageSet: String,
   val data: Array[ImageWithRoi] = Roidb.prepareRoidb(imdb).roidb()
 
   // permutation of the data index
-  var perm: Array[Int] = Array()
+  var perm: Array[Int] = data.indices.toArray
 
   private var offset = 0
 
@@ -48,7 +48,7 @@ class PascolVocDataSource(year: String = "2007", imageSet: String,
     offset = 0
   }
 
-  def finished(): Boolean = (offset >= data.length)
+  def finished(): Boolean = offset >= data.length
 
   override def hasNext: Boolean = {
     if (looped) {
@@ -67,8 +67,8 @@ class PascolVocDataSource(year: String = "2007", imageSet: String,
       val horz_inds = horz.zipWithIndex.filter(x => x._1).map(x => x._2)
       val vert_inds = vert.zipWithIndex.filter(x => x._1).map(x => x._2)
       val indsArr = (Random.shuffle(horz_inds.toSeq) ++ Random.shuffle(vert_inds.toSeq)).toArray
-      val row_perm = Random.shuffle(Seq.range(0, indsArr.size / 2))
-      var newInds = new Array[Int](indsArr.length)
+      val row_perm = Random.shuffle(Seq.range(0, indsArr.length / 2))
+      val newInds = new Array[Int](indsArr.length)
       row_perm.zipWithIndex.foreach(r => {
         newInds(r._1 * 2) = indsArr(r._2 * 2)
         newInds(r._1 * 2 + 1) = indsArr(r._2 * 2 + 1)
@@ -86,7 +86,7 @@ class PascolVocDataSource(year: String = "2007", imageSet: String,
 
 
   override def next(): ImageWithRoi = {
-    val r = (if (looped) (offset % data.length) else offset)
+    val r = if (looped) offset % data.length else offset
     offset += 1
     data(perm(r))
   }
@@ -109,7 +109,6 @@ object ImageSizeUniformer extends Transformer[ImageWithRoi, ImageWithRoi] {
     // because the image batch is 1
     val maxWidth = Config.TRAIN.MAX_SIZE
     val maxHeight = Config.TRAIN.MAX_SIZE
-    val numImages = prev.length
     prev.map(data => {
       data.scaledImage = new RGBImageOD(maxWidth, maxHeight).copyContent(data.scaledImage)
       data
@@ -117,16 +116,13 @@ object ImageSizeUniformer extends Transformer[ImageWithRoi, ImageWithRoi] {
   }
 }
 
-object ImageScalerAndMeanSubstractor {
-  def apply(dataSource: PascolVocDataSource): ImageScalerAndMeanSubstractor =
-    new ImageScalerAndMeanSubstractor(dataSource)
-}
-
-class ImageScalerAndMeanSubstractor(dataSource: PascolVocDataSource)
+class ImageScalerAndMeanSubstractor(dataSource: PascolVocDataSource, isShuffle: Boolean = true)
   extends Transformer[ImageWithRoi, ImageWithRoi] {
   def byte2Float(x: Byte): Float = x & 0xff
 
-  dataSource.shuffle()
+  if (dataSource != null && isShuffle) {
+    dataSource.shuffle()
+  }
 
   def apply(data: ImageWithRoi): ImageWithRoi = {
     val scaleTo = Config.TRAIN.SCALES(Random.nextInt(Config.TRAIN.SCALES.length))
@@ -152,31 +148,33 @@ class ImageScalerAndMeanSubstractor(dataSource: PascolVocDataSource)
       new BufferedImage((im_scale_y * img.getWidth).toInt, (im_scale_x * img.getHeight()).toInt,
         BufferedImage.TYPE_3BYTE_BGR)
     imageBuff.getGraphics.drawImage(scaledImage, 0, 0, new Color(0, 0, 0), null)
-    val pixels: Array[Float] = (imageBuff.getRaster.getDataBuffer
-      .asInstanceOf[DataBufferByte]).getData.map(x => byte2Float(x))
+    val pixels: Array[Float] = imageBuff.getRaster.getDataBuffer
+      .asInstanceOf[DataBufferByte].getData.map(x => byte2Float(x))
     require(pixels.length % 3 == 0)
     // mean subtract
     val meanPixels = pixels.zipWithIndex.map(x =>
-      (pixels(x._2) - Config.PIXEL_MEANS(0)(0)(x._2 % 3)).toFloat
+      (pixels(x._2) - Config.PIXEL_MEANS.head.head(x._2 % 3)).toFloat
     )
 
     data.scaledImage = new RGBImageOD(meanPixels, imageBuff.getWidth, imageBuff.getHeight)
     val imScales = Array(im_scale_x, im_scale_y, im_scale_x, im_scale_y)
     data.imInfo = Some(Array(imageBuff.getHeight(), imageBuff.getWidth, im_scale_x))
 
-    val gt_inds = data.gt_classes.storage().array().zipWithIndex
-      .filter(x => x._1 != 0).map(x => x._2)
-    var gt_boxes = new DenseMatrix[Float](gt_inds.length, 5)
-    gt_inds.zipWithIndex.foreach(ind => {
-      val tmp = data.boxes(ind._1, 0 until 4)
-      val scaled = data.boxes(ind._1, 0 until 4).t :* DenseVector(imScales)
-      gt_boxes(ind._2, 0) = scaled(0)
-      gt_boxes(ind._2, 1) = scaled(1)
-      gt_boxes(ind._2, 2) = scaled(2)
-      gt_boxes(ind._2, 3) = scaled(3)
-      gt_boxes(ind._2, 4) = data.gt_classes.valueAt(ind._1 + 1)
-    })
-    data.gtBoxes = Some(gt_boxes)
+    if (data.gt_classes != null) {
+      val gt_inds = data.gt_classes.storage().array().zipWithIndex
+        .filter(x => x._1 != 0).map(x => x._2)
+      val gt_boxes = new DenseMatrix[Float](gt_inds.length, 5)
+      gt_inds.zipWithIndex.foreach(ind => {
+        val scaled = data.boxes(ind._1, 0 until 4).t :* DenseVector(imScales)
+        gt_boxes(ind._2, 0) = scaled(0)
+        gt_boxes(ind._2, 1) = scaled(1)
+        gt_boxes(ind._2, 2) = scaled(2)
+        gt_boxes(ind._2, 3) = scaled(3)
+        gt_boxes(ind._2, 4) = data.gt_classes.valueAt(ind._1 + 1)
+      })
+      data.gtBoxes = Some(gt_boxes)
+    }
+
     data
   }
 
@@ -190,21 +188,18 @@ class AnchorToTensor(batchSize: Int = 1, height: Int, width: Int)
   extends Transformer[ImageWithRoi, (Tensor[Float], Tensor[Float])] {
   private val labelTensor: Tensor[Float] = Tensor[Float]()
   private val roiLabelTensor: Tensor[Float] = Tensor[Float]()
-  private var labelData: Array[Float] = null
-  private var roiLabelData: Array[Float] = null
 
+  // todo: buffer for roiLabelData and labelData
   def apply(anchorTarget: AnchorTarget): (Tensor[Float], Tensor[Float]) = {
-    var i = 0
     var k = 0
-    if (labelData == null) {
-      roiLabelData = new Array[Float](batchSize * 3 * 4 * anchorTarget.labels.length)
-      labelData = new Array[Float](batchSize * anchorTarget.labels.length)
-    }
+
+    val roiLabelData: Array[Float] = new Array[Float](batchSize * 3 * 4 * anchorTarget.labels.length)
+    val labelData: Array[Float] = new Array[Float](batchSize * anchorTarget.labels.length)
     val stride = anchorTarget.bboxTargets.rows * anchorTarget.bboxTargets.cols
     for (r <- 0 until anchorTarget.bboxTargets.rows) {
-      // todo: start from 1
-      labelData(r) = if (anchorTarget.labels(r) != -1) (anchorTarget.labels(r) + 1)
+      labelData(r) = if (anchorTarget.labels(r) != -1) anchorTarget.labels(r) + 1
       else anchorTarget.labels(r)
+
       for (c <- 0 until anchorTarget.bboxTargets.cols) {
         roiLabelData(k) = anchorTarget.bboxTargets.valueAt(r, c)
         roiLabelData(k + stride) = anchorTarget.bboxInsideWeights.valueAt(r, c)
@@ -240,34 +235,21 @@ class AnchorToTensor(batchSize: Int = 1, height: Int, width: Int)
   }
 }
 
+object ImageToTensor {
+  val imgToTensor = new ImageToTensor(1)
+
+  def apply(img: ImageWithRoi): Tensor[Float] = imgToTensor.apply(img)
+}
+
 class ImageToTensor(batchSize: Int = 1) extends Transformer[ImageWithRoi, Tensor[Float]] {
   require(batchSize == 1)
 
   private val featureTensor: Tensor[Float] = Tensor[Float]()
-  private var featureData: Array[Float] = null
-
-  private def copyImage(img: RGBImageOD, storage: Array[Float], offset: Int): Unit = {
-    val content = img.content
-    val frameLength = img.width() * img.height()
-    require(content.length == frameLength * 3)
-    var j = 0
-    while (j < frameLength) {
-      storage(offset + j) = content(j * 3)
-      storage(offset + j + frameLength) = content(j * 3 + 1)
-      storage(offset + j + frameLength * 2) = content(j * 3 + 2)
-      j += 1
-    }
-  }
 
   def apply(imgWithRoi: ImageWithRoi): Tensor[Float] = {
     assert(batchSize == 1)
     val img = imgWithRoi.scaledImage
-    if (featureData == null) {
-      featureData = new Array[Float](batchSize * 3 * img.height * img.width)
-    }
-    imgWithRoi.scaledImage.content.copyToArray(featureData)
-
-    featureTensor.set(Storage[Float](featureData),
+    featureTensor.set(Storage[Float](imgWithRoi.scaledImage.content),
       storageOffset = 1, sizes = Array(batchSize, img.height(), img.width(), 3))
     featureTensor.transpose(2, 3).transpose(2, 4).contiguous()
   }

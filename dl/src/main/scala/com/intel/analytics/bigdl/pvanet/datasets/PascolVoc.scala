@@ -23,11 +23,9 @@ import com.intel.analytics.bigdl.pvanet.Roidb.ImageWithRoi
 import com.intel.analytics.bigdl.pvanet._
 import com.intel.analytics.bigdl.pvanet.caffe.VggCaffeModel
 import com.intel.analytics.bigdl.pvanet.layers._
-import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
-import com.intel.analytics.bigdl.utils.Table
+import com.intel.analytics.bigdl.tensor.Tensor
+import com.intel.analytics.bigdl.utils.{Table, Timer}
 import scopt.OptionParser
-
-import scala.io.Source
 
 object PascolVoc {
   val scales = VggCaffeModel.scales
@@ -62,7 +60,7 @@ object PascolVoc {
     if (clsBoxes == null || clsScores.length == 0) return new DenseMatrix[Float](0, 0)
     val cols = clsBoxes(0).nElement()
     val out = new DenseMatrix[Float](clsBoxes.length, cols + 1)
-    for (i <- 0 until clsBoxes.length) {
+    clsBoxes.indices.foreach { i =>
       Range(0, cols).foreach(j => out(i, j) = clsBoxes(i).valueAt(j + 1))
       out(i, cols) = clsScores(i)
     }
@@ -74,184 +72,167 @@ object PascolVoc {
       Config.demoPath + s"/${clsname}_" + d.imagePath.substring(d.imagePath.lastIndexOf("/") + 1))
   }
 
-  def loadFeatures(s: String): Tensor[Float] = {
-    val middleRoot = "/home/xianyan/code/intel/pvanet/spark-dl/middle/"
-    val size = s.substring(s.lastIndexOf("-") + 1, s.lastIndexOf(".")).split("_").map(x => x.toInt)
-    Tensor(Storage(Source.fromFile(middleRoot + s).getLines()
-      .map(x => x.toFloat).toArray)).reshape(size)
+  def imDetect(d: ImageWithRoi): (DenseMatrix[Float], DenseMatrix[Float]) = {
+    imDetect(d, VggCaffeModel.vgg16,
+      VggCaffeModel.rpn,
+      VggCaffeModel.fastRcnn
+    )
   }
 
-  def main(args: Array[String]) {
-    val param = parser.parse(args, new PascolVocLocalParam()).get
-    // parser.parse(args, new PascolVocLocalParam()).map(param => {
-    val year = "2007"
+  def imDetect(d: ImageWithRoi,
+    featureModel: Module[Tensor[Float], Tensor[Float], Float],
+    rpnModel: Module[Tensor[Float], Table, Float],
+    fastRcnn: Module[Table, Table, Float]): (DenseMatrix[Float], DenseMatrix[Float]) = {
+    val imgTensor = ImageToTensor(d)
 
-    val validationDataSource = new PascolVocDataSource(year, "testcode", param.folder, false)
-    val trainDataSource = new PascolVocDataSource(year, imageSet = "train", param.folder, false)
+    val timer = new Timer
+    if (Config.DEBUG) {
+      println("===================================== start generating features")
+      println(s"------- input size: ${imgTensor.size().mkString(",")}")
+      timer.tic()
+    }
 
-    val imageScaler = ImageScalerAndMeanSubstractor(validationDataSource)
-    val imageToTensor = new ImageToTensor(batchSize = 1)
+    val featureOut = featureModel.forward(imgTensor)
+    if (Config.DEBUG) {
+      timer.toc()
+      println(s"------- output size: ${featureOut.size().mkString(",")}")
+      println(s"------- time: ${timer.diff / 1e9}s")
+      println("===================================== start rpn ")
+      timer.tic()
+    }
 
-    val data = validationDataSource -> imageScaler
+    val clsRegOut = rpnModel.forward(featureOut)
 
-    //      val model = param.net match {
-    //        case "vgg" => VggCaffeModel.Vgg_16_RPN
-    //        case _ => throw new IllegalArgumentException
-    //      }
+    val rpnBboxPred = clsRegOut(2).asInstanceOf[Tensor[Float]]
+    val rpnClsScore = clsRegOut(1).asInstanceOf[Tensor[Float]]
 
-    // todo: need refactor
-    val imdb = validationDataSource.imdb
+    val clsProc = new Sequential[Tensor[Float], Tensor[Float], Float]()
+    clsProc.add(new Reshape2[Float](Array(2, -1), Some(false)))
+    clsProc.add(new SoftMax[Float]())
+    clsProc.add(new Reshape2[Float](Array(1, 2 * A, -1, rpnBboxPred.size(4)), Some(false)))
+    val rpnClsScoreReshape = clsProc.forward(rpnClsScore)
+
+    if (Config.DEBUG) {
+      timer.toc()
+      println(s"------- output size: cls (${rpnClsScoreReshape.size().mkString(",")}), " +
+        s"bbox (${rpnBboxPred.size().mkString(",")})")
+      println(s"------- time:  ${timer.diff / 1e9}s")
+
+      println("=====================================  proposal")
+      timer.tic()
+    }
+    val proposalInput = new Table
+    proposalInput.insert(rpnClsScoreReshape)
+    proposalInput.insert(rpnBboxPred)
+    proposalInput.insert(d.imInfo.get)
+
+    val propoal = new Proposal[Float](phase = 1)
+    val proposalOut = propoal.forward(proposalInput)
+
+    val rois = proposalOut(1).asInstanceOf[Tensor[Float]]
+
+    if (Config.DEBUG) {
+      timer.toc()
+      println(s"------- output size: rois (${rois.size().mkString(",")})")
+      println(s"------- time:  ${timer.diff / 1e9}s")
+
+      println("=====================================  fast rcnn")
+      timer.tic()
+    }
+    val propDecInput = new Table()
+    propDecInput.insert(featureOut)
+    propDecInput.insert(rois)
+
+    val result = fastRcnn.forward(propDecInput)
+
+    if (Config.DEBUG) {
+      timer.toc()
+      println(s"------- time: ${timer.diff / 1e9}s")
+    }
+
+    val scores = result(1).asInstanceOf[Tensor[Float]]
+    val boxDeltas = result(2).asInstanceOf[Tensor[Float]]
+
+    // post process
+    // unscale back to raw image space
+    if (Config.DEBUG) {
+      println("=====================================  post process")
+      timer.tic()
+    }
+    val boxes = rois.narrow(2, 2, 4).div(d.imInfo.get(2))
+    // Apply bounding-box regression deltas
+    var predBoxes = Bbox.bboxTransformInv(boxes.toBreezeMatrix(), boxDeltas.toBreezeMatrix())
+    predBoxes = Bbox.clipBoxes(predBoxes, d.height(), d.width())
+
+    if (Config.DEBUG) {
+      timer.toc()
+      println(s"------- time: ${timer.diff / 1e9}s")
+    }
+    (scores.toBreezeMatrix(), predBoxes)
+  }
+
+
+  def testNet(dataSource: PascolVocDataSource, maxPerImage: Int = 100,
+    thresh: Double = 0.05, vis: Boolean = false): Unit = {
+    val imdb = dataSource.imdb
     val allBoxes: Array[Array[DenseMatrix[Float]]] = {
-      var out = new Array[Array[DenseMatrix[Float]]](imdb.numClasses)
+      val out = new Array[Array[DenseMatrix[Float]]](imdb.numClasses)
       Range(0, imdb.numClasses).foreach(x => {
-        var arr = new Array[DenseMatrix[Float]](imdb.numImages)
-        out(x) = arr
+        out(x) = new Array[DenseMatrix[Float]](imdb.numImages)
       })
       out
     }
-    var start = 0L
-    var end = 0L
-    def imDetect(d: ImageWithRoi): (DenseMatrix[Float], DenseMatrix[Float]) = {
-      val imgTensor = imageToTensor(d)
-//      val imgTensor = loadFeatures("/home/xianyan/code/intel/pvanet/spark-dl/middle/data_1_3_600_901.txt")
-//      println("===================================== start generating features")
-//      println(s"------- input size: ${imgTensor.size().mkString(",")}")
-//      start = System.nanoTime()
-//      val featureModel = VggCaffeModel.vgg16
-//      val featureOut = featureModel.forward(imgTensor)
-//      println(s"------- output size: ${featureOut.size().mkString(",")}")
-//      println(s"------- time: ${(System.nanoTime() - start) / 1e9}s")
-//      println()
+    val imageScaler = new ImageScalerAndMeanSubstractor(dataSource, isShuffle = false)
 
-      val featureOut = loadFeatures("conv5_3-1_512_38_57.txt")
-
-
-      println("===================================== start rpn ")
-      start = System.nanoTime()
-      val rpnModel = VggCaffeModel.rpn
-      val clsRegOut = rpnModel.forward(featureOut)
-
-      val rpnBboxPred = clsRegOut(2).asInstanceOf[Tensor[Float]]
-      val rpnClsScore = clsRegOut(1).asInstanceOf[Tensor[Float]]
-      val clsProc = new Sequential[Tensor[Float], Tensor[Float], Float]()
-      clsProc.add(new Reshape2[Float](Array(2, -1), Some(false)))
-      clsProc.add(new SoftMax[Float]())
-      clsProc.add(new Reshape2[Float](Array(1, 2 * A, -1, rpnBboxPred.size(4)), Some(false)))
-      val rpnClsScoreReshape = clsProc.forward(rpnClsScore)
-      println(s"------- output size: cls (${rpnClsScoreReshape.size().mkString(",")}), " +
-        s"bbox (${rpnBboxPred.size().mkString(",")})")
-      println(s"------- time:  ${(System.nanoTime() - start) / 1e9}s")
-
-      println("=====================================  proposal")
-      start = System.nanoTime()
-      val proposalInput = new Table
-      proposalInput.insert(rpnClsScoreReshape)
-      proposalInput.insert(rpnBboxPred)
-      proposalInput.insert(d.imInfo.get)
-
-      val propoal = new Proposal[Float](phase = 1)
-      val proposalOut = propoal.forward(proposalInput)
-
-      // todo: temp
-//      val rois = proposalOut(1).asInstanceOf[Tensor[Float]]
-val rois = loadFeatures("rois-300_5.txt")
-
-      println(s"------- output size: rois (${rois.size().mkString(",")})")
-      println(s"------- time:  ${(System.nanoTime() - start) / 1e9}s")
-
-      println("=====================================  fast rcnn")
-      start = System.nanoTime()
-      val propDecInput = new Table()
-//        propDecInput.insert(featureOut.resize(featureOut.size(2),
-// featureOut.nElement() / featureOut.size(2)))
-//        propDecInput.insert(rois.resize(rois.size(2), rois.nElement() / rois.size(2)))
-      propDecInput.insert(featureOut)
-      propDecInput.insert(rois)
-
-//      println(s"featureOut: ${featureOut.size().mkString(", ")}")
-//      println(s"rois: ${proposalOut(1).asInstanceOf[Tensor[Float]].size().mkString(",")}")
-
-
-      val propDecModel = VggCaffeModel.fastRcnn
-
-      //todo: temp
-      val result = propDecModel.forward(propDecInput)
-      println(s"------- time: ${(System.nanoTime() - start) / 1e9}s")
-
-      //      // todo: temp
-      val scores = result(1).asInstanceOf[Tensor[Float]]
-      val boxDeltas = result(2).asInstanceOf[Tensor[Float]]
-
-//      val (scores: Tensor[Float], boxDeltas: Tensor[Float]) =
-//        (loadFeatures("cls_prob-300_21.txt"),
-//          loadFeatures("bbox_pred-300_84.txt"))
-
-
-      // post process
-      // unscale back to raw image space
-      println("=====================================  post process")
-      val boxes = rois.narrow(2, 2, 4).div(d.imInfo.get(2))
-      // Apply bounding-box regression deltas
-      var predBoxes = Bbox.bboxTransformInv(boxes.toBreezeMatrix(), boxDeltas.toBreezeMatrix())
-      predBoxes = Bbox.clipBoxes(predBoxes, d.height(), d.width())
-      println(s"------- scores: (${scores.size().mkString(",")})")
-      println(s"------- predBoxes: (${predBoxes.rows}, ${predBoxes.cols})")
-      (scores.toBreezeMatrix(), predBoxes)
-    }
+    // timer
+    val imDetectTimer = new Timer
+    val miscTimer = new Timer
 
     for (i <- 0 until imdb.numImages) {
-      //      val d = data.next()
-      val img = validationDataSource.next(i)
-      val d = imageScaler.apply(img)
+      val d = imageScaler.apply(dataSource.next())
       println(s"process ${d.imagePath} ...............")
 
+      imDetectTimer.tic()
       val (scores: DenseMatrix[Float], boxes: DenseMatrix[Float]) = imDetect(d)
+      imDetectTimer.toc()
 
-
-      // todo: parameter of testNet
-      val thresh = 0.05
-      val vis = true
+      miscTimer.tic()
       // skip j = 0, because it's the background class
       for (j <- 1 until imdb.numClasses) {
         def getClsDet: DenseMatrix[Float] = {
           val inds = Range(0, scores.rows).filter(ind => scores(ind, j) > thresh).toArray
           if (inds.length == 0) return new DenseMatrix[Float](0, 5)
-          println(scores(::, j))
-          println(s"class ${j}, inds: ${inds.mkString(",")}")
           val clsScores = MatrixUtil.selectMatrix2(scores, inds, Array(j))
           val clsBoxes = MatrixUtil.selectMatrix2(boxes,
             inds, Range(j * 4, (j + 1) * 4).toArray)
 
           var clsDets = DenseMatrix.horzcat(clsBoxes, clsScores)
-          println("cls det before nms", clsDets)
           val keep = Nms.nms(clsDets, Config.TEST.NMS.toFloat)
 
           val detsNMSed = MatrixUtil.selectMatrix(clsDets, keep, 0)
 
           if (Config.TEST.BBOX_VOTE) {
             clsDets = Bbox.bboxVote(detsNMSed, clsDets)
-          }
-          else {
+          } else {
             clsDets = detsNMSed
           }
-
-          println("cls det after nms", clsDets)
           clsDets
         }
         val clsDets = getClsDet
+
         if (vis) {
           visDetection(d, imdb.classes(j), clsDets)
         }
-        // this i need to be modified to image index
         allBoxes(j)(i) = clsDets
       }
-      // todo:
-      val maxPerImage = 100
+      
       // Limit to max_per_image detections *over all classes*
       if (maxPerImage > 0) {
         // todo
       }
-
+      miscTimer.toc()
+      println(s"im detect: ${i}/${imdb.numImages} " +
+        s"${imDetectTimer.averageTime / 1e9}s ${miscTimer.averageTime / 1e9}s")
     }
 
     println("Evaluating detections")
@@ -259,29 +240,6 @@ val rois = loadFeatures("rois-300_5.txt")
     val outputDir = Config.getOutputDir(imdb, "VGG16")
     imdb.evaluateDetections(allBoxes, outputDir)
   }
-
-
-//  def fullModelTest(imageToTensor: ImageToTensor,
-//    model: Module[Tensor[Float], Table, Float], d: ImageWithRoi): Unit = {
-//    // get rpn_cls_score and rpn_bbox_pred
-//    val res = model.forward(imageToTensor(d))
-//    val rpnClsScore = res(1).asInstanceOf[Tensor[Float]]
-//    val clsProc = new Sequential[Tensor[Float], Tensor[Float], Float]()
-//    clsProc.add(new Reshape2[Float](Array(0, 2, -1, 0)))
-//    clsProc.add(new SoftMax[Float]())
-//    clsProc.add(new Reshape2[Float](Array(0, 2 * A, -1, 0)))
-//    val rpn_bbox_pred = res(2).asInstanceOf[Tensor[Float]]
-//
-//    val proposalInput = new Table
-//    proposalInput.insert(rpnClsScore)
-//    proposalInput.insert(rpn_bbox_pred)
-//    proposalInput.insert(Tensor(Storage(d.imInfo.get)))
-//
-//    val roiPoolInput = new ConcatTable[Table, Float]()
-//    roiPoolInput
-//
-//  }
-
 
   def rpnTest(imageToTensor: ImageToTensor,
     model: Module[Tensor[Float], Table, Float], d: ImageWithRoi): Unit = {
@@ -297,7 +255,7 @@ val rois = loadFeatures("rois-300_5.txt")
   def getRpnTarget(d: ImageWithRoi, res: Table): (Int, Int, Int, Table) = {
     val clsOut = res(1).asInstanceOf[Tensor[Float]]
     val sizes = clsOut.size()
-    val regOut = res(2).asInstanceOf[Tensor[Float]]
+    //    val regOut = res(2).asInstanceOf[Tensor[Float]]
     val height = sizes(sizes.length - 2)
     val width = sizes(sizes.length - 1)
     val nAnchors = scales.length * ratios.length
@@ -319,6 +277,12 @@ val rois = loadFeatures("rois-300_5.txt")
     pc.add(slc, 1.0f)
     val output = pc.forward(res, target)
     output
+  }
+
+  def main(args: Array[String]) {
+    val param = parser.parse(args, PascolVocLocalParam()).get
+    val testDataSource = new PascolVocDataSource("2007", "testcode1", param.folder, false)
+    testNet(testDataSource)
   }
 
 }

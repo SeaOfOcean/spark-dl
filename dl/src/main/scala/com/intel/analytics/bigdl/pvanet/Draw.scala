@@ -33,8 +33,7 @@ object Draw {
     def loadImage = {
       img = ImageIO.read(new File(imgPath))
       g2d = img.createGraphics
-      g2d.setColor(Color.GREEN)
-      val font = new Font("Helvetica", Font.PLAIN, 20);
+      val font = new Font("Helvetica", Font.PLAIN, 14);
       g2d.setFont(font)
       g2d.setStroke(new BasicStroke(3))
     }
@@ -58,7 +57,18 @@ object Draw {
   }
 
   def draw(img: Graphics2D, x1: Int, y1: Int, width: Int, height: Int, title: String): Unit = {
+    img.setColor(Color.RED)
     img.drawRect(x1, y1, width, height)
-    img.drawString(title, x1 + 5, y1 + height - 5);
+    val bgColor = new Color(0, 0, 1, 127)
+
+    val fm = img.getFontMetrics()
+    val rect = fm.getStringBounds(title, img)
+
+    img.setColor(bgColor)
+    img.fillRect(x1, y1 - 2 - fm.getAscent(),
+      rect.getWidth().toInt,
+      rect.getHeight().toInt)
+    img.setColor(Color.WHITE)
+    img.drawString(title, x1, y1 - 2);
   }
 }

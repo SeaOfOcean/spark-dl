@@ -135,7 +135,6 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
       overlaps.setValue(ix, cls, 1)
       seg_areas.setValue(ix, (x2 - x1 + 1) * (y2 - y1 + 1))
     }
-    // todo: overlaps = scipy.sparse.csr_matrix(overlaps)
     return ImageWithRoi(boxes, gt_classes, overlaps, false, seg_areas)
   }
 

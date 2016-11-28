@@ -32,7 +32,6 @@ object Anchor {
   def generateAnchors(baseSize: Float = 16,
     ratios: Array[Float],
     scales: Array[Float]): DenseMatrix[Float] = {
-    // todo: not sure about -1
     val baseAnchor = Tensor(Storage(Array(1 - 1, 1 - 1, baseSize - 1, baseSize - 1)))
     val ratioAnchors = ratioEnum(baseAnchor, Tensor(Storage(ratios)))
     var anchors = new DenseMatrix[Float](scales.length * ratioAnchors.size(1), 4)
@@ -63,7 +62,6 @@ object Anchor {
    */
   def mkanchors(ws: Tensor[Float], hs: Tensor[Float],
     xCtr: Float, yCtr: Float): Tensor[Float] = {
-    // todo: do we need -1?
     val a1 = (ws.-(1)).mul(-0.5f).add(xCtr)
     val a2 = (hs.-(1)).mul(-0.5f).add(yCtr)
     val a3 = (ws.-(1)).mul(0.5f).add(xCtr)

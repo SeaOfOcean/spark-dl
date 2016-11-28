@@ -159,7 +159,6 @@ class ProposalTarget[@specialized(Float, Double) T: ClassTag](numClasses: Int)
     // (i.e., rpn.proposal_layer.ProposalLayer), or any other source
     val all_roisTen = input(1).asInstanceOf[Tensor[Float]]
     // GT boxes (x1, y1, x2, y2, label)
-    // TODO(rbg): it's annoying that sometimes I have extra info before
     // and other times after box coordinates -- normalize to one format
     val gt_boxes = input(2).asInstanceOf[Tensor[Float]].toBreezeMatrix()
 

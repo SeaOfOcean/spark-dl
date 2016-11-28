@@ -29,11 +29,11 @@ object Roidb {
 
   val logger = Logger.getLogger(this.getClass.getName)
 
-  case class ImageWithRoi(val boxes: DenseMatrix[Float],
-    val gt_classes: Tensor[Float],
-    val gt_overlaps: Tensor[Float],
-    val flipped: Boolean,
-    var seg_areas: Tensor[Float]) {
+  case class ImageWithRoi(val boxes: DenseMatrix[Float] = null,
+    val gt_classes: Tensor[Float] = null,
+    val gt_overlaps: Tensor[Float] = null,
+    val flipped: Boolean = false,
+    var seg_areas: Tensor[Float] = null) {
     def width(): Int = scaledImage.width()
 
     def height(): Int = scaledImage.height()
