@@ -24,23 +24,24 @@ import com.intel.analytics.bigdl.utils.Table
 import org.scalatest.{FlatSpec, Matchers}
 
 class RoiPoolingSpec extends FlatSpec with Matchers {
-//  "update output1" should "work properly" in {
-//    val rois = TestUtil.loadDataFromFile(
-//      "/home/xianyan/code/intel/pvanet/spark-dl/middle/rois-300_5.txt", Array(300, 5))
-//    val data = TestUtil.loadDataFromFile(
-//      "/home/xianyan/code/intel/pvanet/spark-dl/middle/conv5_3-1_512_38_57.txt", Array(1, 512, 38, 57))
-//    val table = new Table
-//    table.insert(data)
-//    table.insert(rois)
-//    val roiPooling = new RoiPooling[Float](7, 7, 0.0625f)
-//    val output = roiPooling.forward(table)
-//    val expected = TestUtil.loadDataFromFile(
-//      "/home/xianyan/code/intel/pvanet/spark-dl/middle/pool5-300_512_7_7.txt",
-//      Array(300, 512, 7, 7))
-//    (output.storage.array() zip expected.storage.array()).foreach(x =>
-//      assert(abs(x._1 - x._2) < 1e-6))
-//  }
-// todo: temp
+  "update output1" should "work properly" in {
+    val rois = TestUtil.loadDataFromFile(
+      "/home/xianyan/code/intel/pvanet/spark-dl/middle/rois-300_5.txt", Array(300, 5))
+    val data = TestUtil.loadDataFromFile(
+      "/home/xianyan/code/intel/pvanet/spark-dl/middle/conv5_3-1_512_38_57.txt", Array(1, 512, 38, 57))
+    val table = new Table
+    table.insert(data)
+    table.insert(rois)
+    val roiPooling = new RoiPooling[Float](7, 7, 0.0625f)
+    val output = roiPooling.forward(table)
+    val expected = TestUtil.loadDataFromFile(
+      "/home/xianyan/code/intel/pvanet/spark-dl/middle/pool5-300_512_7_7.txt",
+      Array(300, 512, 7, 7))
+    (output.storage.array() zip expected.storage.array() zip Stream.from(0)).foreach { x =>
+      assert(abs(x._1._1 - x._1._2) < 1e-6)
+    }
+  }
+  
   val data = Array(-3.8623801600318241611, -5.5763739585689267031, 10.298773638368681205,
     9.0803885026851531848, 1.3665552448780498018, -0.44133702789011497458, -9.4017101101805629071,
     1.0564141421332300386, 13.553048566835151689, -13.990139481179310721, 0.38796681814726624582,

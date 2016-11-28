@@ -20,9 +20,8 @@ package com.intel.analytics.bigdl.pvanet.layers
 import breeze.linalg.{max, min}
 import breeze.numerics.{ceil, floor, round}
 import com.intel.analytics.bigdl.nn.Module
-import com.intel.analytics.bigdl.pvanet.datasets.PascolVoc
-import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
+import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import com.intel.analytics.bigdl.utils.Table
 
 import scala.io.Source
@@ -39,6 +38,7 @@ class RoiPooling[@specialized(Float, Double) T: ClassTag]
 
   override def updateOutput(input: Table): Tensor[T] = {
     assert(input.length() == 2, "there must have two tensors in the table")
+
     val data = input(1).asInstanceOf[Tensor[T]]
     val rois = input(2).asInstanceOf[Tensor[T]]
     assert(rois.size().length > 1 && rois.size()(1) == 5, "roi input shape should be (R, 5)")
@@ -84,8 +84,8 @@ class RoiPooling[@specialized(Float, Double) T: ClassTag]
 
       val roiHeight = max(roi_end_h - roi_start_h + 1, 1)
       val roiWidth = max(roi_end_w - roi_start_w + 1, 1)
-      val binSizeH = ev.divide(ev.fromType[Double](roiHeight), ev.fromType[Int](pooled_h))
-      val binSizeW = ev.divide(ev.fromType[Double](roiWidth), ev.fromType[Int](pooled_w))
+      val binSizeH = roiHeight.toFloat / pooled_h.toFloat 
+      val binSizeW = roiWidth.toFloat / pooled_w.toFloat 
       var batchDataIndex = offset(ev.toType[Int](roiBatchInd), sizes = data.size())
 
       for (c <- 0 until channels) {
@@ -94,10 +94,10 @@ class RoiPooling[@specialized(Float, Double) T: ClassTag]
             // Compute pooling region for this output unit:
             //  start (included) = floor(ph * roi_height / pooled_height_)
             //  end (excluded) = ceil((ph + 1) * roi_height / pooled_height_)
-            var hstart = floor(ph * ev.toType[Double](binSizeH)).toInt
-            var wstart = floor(pw * ev.toType[Double](binSizeW)).toInt
-            var hend = ceil((ph + 1) * ev.toType[Double](binSizeH)).toInt
-            var wend = ceil((pw + 1) * ev.toType[Double](binSizeW)).toInt
+            var hstart = floor(ph * binSizeH).toInt
+            var wstart = floor(pw * binSizeW).toInt
+            var hend = ceil((ph + 1) * binSizeH).toInt
+            var wend = ceil((pw + 1) * binSizeW).toInt
 
             hstart = min(max(hstart + roi_start_h, 0), height)
             hend = min(max(hend + roi_start_h, 0), height)
@@ -119,11 +119,9 @@ class RoiPooling[@specialized(Float, Double) T: ClassTag]
                   outputData(topDataIndex + pool_index))) {
                   outputData(topDataIndex + pool_index) = bottom_data(batchDataIndex + index)
                   argmax_data(argmaxIndex + pool_index) = ev.fromType(index)
-//                  println("pool here",bottom_data(batchDataIndex + index), ev.fromType(index))
                 }
               }
             }
-            outputData(topDataIndex + pool_index)
           }
         }
         // Increment all data pointers by one channel
@@ -134,14 +132,6 @@ class RoiPooling[@specialized(Float, Double) T: ClassTag]
       bottomRoisIndex += offset(1, sizes = rois.size())
     }
     output
-//    loadFeatures("pool5-300_512_7_7.txt")
-  }
-
-  def loadFeatures(s: String): Tensor[T] = {
-    val middleRoot = "/home/xianyan/code/intel/pvanet/spark-dl/middle/"
-    val size = s.substring(s.lastIndexOf("-") + 1, s.lastIndexOf(".")).split("_").map(x => x.toInt)
-    Tensor(Storage(Source.fromFile(middleRoot + s).getLines()
-      .map(x => ev.fromType(x.toFloat)).toArray)).reshape(size)
   }
 
   def offset(n: Int, c: Int = 0, h: Int = 0, w: Int = 0, sizes: Array[Int]): Int = {
