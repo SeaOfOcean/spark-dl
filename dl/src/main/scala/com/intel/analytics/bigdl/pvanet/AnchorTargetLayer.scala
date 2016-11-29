@@ -67,8 +67,6 @@ class AnchorTargetLayer(val scales: Array[Float] = Array[Float](3, 6, 9, 16, 32)
   /**
    * Compute bounding-box regression targets for an image.
    *
-   * @param exRois
-   * @param gtRois
    * @return
    */
   def computeTargets(exRois: DenseMatrix[Float], gtRois: DenseMatrix[Float]): DenseMatrix[Float] = {
@@ -81,7 +79,7 @@ class AnchorTargetLayer(val scales: Array[Float] = Array[Float](3, 6, 9, 16, 32)
 
   def getInsideAnchors(indsInside: ArrayBuffer[Int],
     allAnchors: DenseMatrix[Float]): DenseMatrix[Float] = {
-    var insideAnchors = new DenseMatrix[Float](indsInside.length, 4)
+    val insideAnchors = new DenseMatrix[Float](indsInside.length, 4)
     indsInside.zipWithIndex.foreach(i => {
       insideAnchors(i._2, 0) = allAnchors(i._1, 0)
       insideAnchors(i._2, 1) = allAnchors(i._1, 1)
@@ -123,7 +121,7 @@ class AnchorTargetLayer(val scales: Array[Float] = Array[Float](3, 6, 9, 16, 32)
 
     val argmaxOverlaps = MatrixUtil.argmax2(overlaps, 1)
 
-    var maxOverlaps = argmaxOverlaps.zipWithIndex.map(x => overlaps(x._2, x._1))
+    val maxOverlaps = argmaxOverlaps.zipWithIndex.map(x => overlaps(x._2, x._1))
     var gtArgmaxOverlaps = MatrixUtil.argmax2(overlaps, 0)
 
     val gtMaxOverlaps = gtArgmaxOverlaps.zipWithIndex.map(x => {
@@ -137,7 +135,7 @@ class AnchorTargetLayer(val scales: Array[Float] = Array[Float](3, 6, 9, 16, 32)
             return true
           }
         }
-        return false
+        false
       }
       isFilter
     })
@@ -262,7 +260,7 @@ class AnchorTargetLayer(val scales: Array[Float] = Array[Float](3, 6, 9, 16, 32)
 
   def getAllAnchors(shifts: DenseMatrix[Float],
     anchors: DenseMatrix[Float] = anchors): DenseMatrix[Float] = {
-    var allAnchors = new DenseMatrix[Float](shifts.rows * anchors.rows, 4)
+    val allAnchors = new DenseMatrix[Float](shifts.rows * anchors.rows, 4)
     for (s <- 0 until shifts.rows) {
       allAnchors(s * anchors.rows until (s + 1) * anchors.rows, 0 until 4) :=
         (anchors.t(::, *) + shifts.t(::, s)).t
@@ -273,12 +271,6 @@ class AnchorTargetLayer(val scales: Array[Float] = Array[Float](3, 6, 9, 16, 32)
 
   /**
    * Unmap a subset of item (data) back to the original set of items (of size count)
-   *
-   * @param data
-   * @param count
-   * @param inds
-   * @param fillValue
-   * @return
    */
   def unmap(data: DenseMatrix[Float],
     count: Int,

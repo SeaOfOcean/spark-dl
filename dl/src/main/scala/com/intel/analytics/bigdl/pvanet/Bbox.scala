@@ -17,7 +17,7 @@
 
 package com.intel.analytics.bigdl.pvanet
 
-import breeze.linalg.{*, DenseMatrix, max, min}
+import breeze.linalg.{*, DenseMatrix, min}
 import breeze.numerics._
 
 object Bbox {
@@ -37,7 +37,7 @@ object Bbox {
     require(queryBoxes.cols >= 4)
     val N = boxes.rows
     val K = queryBoxes.rows
-    var overlaps = new DenseMatrix[Float](N, K)
+    val overlaps = new DenseMatrix[Float](N, K)
 
     for (k <- 0 until K) {
       val boxArea: Float = (queryBoxes(k, 2) - queryBoxes(k, 0) + 1) *
@@ -63,10 +63,6 @@ object Bbox {
   /**
    * copy value to corresponding cols of mat, the start col ind is cid, with step
    *
-   * @param mat
-   * @param cid
-   * @param step
-   * @param value
    */
   private def setCols(mat: DenseMatrix[Float], cid: Int, step: Int, value: DenseMatrix[Float]) = {
     var ind = 0
@@ -142,16 +138,15 @@ object Bbox {
   /**
    * Clip boxes to image boundaries.
    *
-   * @param boxes
    * @return
    */
   def clipBoxes(boxes: DenseMatrix[Float], height: Float, width: Float): DenseMatrix[Float] = {
     for (r <- 0 until boxes.rows) {
       for (c <- 0 until boxes.cols by 4) {
-        boxes(r, c) = Math.max( Math.min(boxes(r, c), width - 1f), 0)
-        boxes(r, c+1) =  Math.max( Math.min(boxes(r, c+1), height - 1f), 0)
-        boxes(r, c+2) =  Math.max( Math.min(boxes(r, c+2), width - 1f), 0)
-        boxes(r, c+3) =  Math.max( Math.min(boxes(r, c+3), height - 1f), 0)
+        boxes(r, c) = Math.max(Math.min(boxes(r, c), width - 1f), 0)
+        boxes(r, c + 1) = Math.max(Math.min(boxes(r, c + 1), height - 1f), 0)
+        boxes(r, c + 2) = Math.max(min(boxes(r, c + 2), width - 1f), 0)
+        boxes(r, c + 3) = Math.max(min(boxes(r, c + 3), height - 1f), 0)
       }
     }
     boxes

@@ -26,7 +26,7 @@ import com.intel.analytics.bigdl.utils.{File, Table}
 object VggCaffeModel {
   val scales = Array[Float](8, 16, 32)
   val ratios = Array(0.5f, 1.0f, 2.0f)
-  var caffeReader: CaffeReader[Float] = null
+  var caffeReader: CaffeReader[Float] = _
   val defName = "/home/xianyan/objectRelated/faster_rcnn_models/VGG16/" +
     "faster_rcnn_alt_opt/rpn_test.pt"
   val modelName = "/home/xianyan/objectRelated/faster_rcnn_models/" +

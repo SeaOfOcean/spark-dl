@@ -67,7 +67,7 @@ object PascolVoc {
     out
   }
 
-  def visDetection(d: ImageWithRoi, clsname: String, clsDets: DenseMatrix[Float]): Unit = {
+  def visDetection(d: ImageWithRoi, clsname: String, clsDets: DenseMatrix[Float], thresh: Float = 0.3f): Unit = {
     Draw.vis(d.imagePath, clsname, clsDets,
       Config.demoPath + s"/${clsname}_" + d.imagePath.substring(d.imagePath.lastIndexOf("/") + 1))
   }
@@ -243,7 +243,7 @@ object PascolVoc {
         }
       }
       miscTimer.toc()
-      println(s"im detect: ${i}/${imdb.numImages} " +
+      println(s"im detect: $i/${imdb.numImages} " +
         s"${imDetectTimer.averageTime / 1e9}s ${miscTimer.averageTime / 1e9}s")
     }
 

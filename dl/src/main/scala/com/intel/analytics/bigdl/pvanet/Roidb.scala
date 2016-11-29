@@ -29,15 +29,15 @@ object Roidb {
 
   val logger = Logger.getLogger(this.getClass.getName)
 
-  case class ImageWithRoi(val boxes: DenseMatrix[Float] = null,
-    val gt_classes: Tensor[Float] = null,
-    val gt_overlaps: Tensor[Float] = null,
-    val flipped: Boolean = false,
+  case class ImageWithRoi(boxes: DenseMatrix[Float] = null,
+    gt_classes: Tensor[Float] = null,
+    gt_overlaps: Tensor[Float] = null,
+    flipped: Boolean = false,
     var seg_areas: Tensor[Float] = null) {
 
     var gtBoxes = None: Option[DenseMatrix[Float]]
 
-    var scaledImage: RGBImageOD = null
+    var scaledImage: RGBImageOD = _
 
     var oriWidth = 0
     var oriHeight = 0
@@ -64,23 +64,21 @@ object Roidb {
   def getImageSizes(imdb: Imdb): Array[Array[Int]] = {
     val cache_file = Config.cachePath + "/" + imdb.name + "_image_sizes.pkl"
     if (Config.existFile(cache_file)) {
-//      logger.info("%s image sizes loaded from %s".format(imdb.name, cache_file))
       return File.load[Array[Array[Int]]](cache_file)
     }
-    var sizes = Array.ofDim[Int](imdb.numImages, 2)
+    val sizes = Array.ofDim[Int](imdb.numImages, 2)
     for (i <- 0 until imdb.numImages) {
       val bimg = ImageIO.read(new java.io.File(imdb.imagePathAt(i)))
       sizes(i)(0) = bimg.getWidth()
       sizes(i)(1) = bimg.getHeight()
     }
     File.save(sizes, cache_file)
-//    logger.info("save image sizes to cache file %s".format(cache_file))
     sizes
   }
 
   def getImageSize(path: String): Array[Int] = {
     val bimg = ImageIO.read(new java.io.File(path))
-    return Array[Int](bimg.getWidth(), bimg.getHeight())
+    Array[Int](bimg.getWidth(), bimg.getHeight())
   }
 
   /**
@@ -90,19 +88,15 @@ object Roidb {
    * each ground-truth box. The class with maximum overlap is also
    * recorded.
    *
-   * @param imdb
-   * @return
-   *
    */
   def prepareRoidb(imdb: Imdb): Imdb = {
     val sizes = getImageSizes(imdb)
-    val roidb = imdb.roidb
+    val roidb = imdb.roidb()
     for (i <- 0 until imdb.numImages) {
       roidb(i).imagePath = imdb.imagePathAt(i)
       roidb(i).oriWidth = sizes(i)(0)
       roidb(i).oriHeight = sizes(i)(1)
-      // need gt_overlaps as a dense array for argmax
-      val gt_overlaps = roidb(i).gt_overlaps // max overlap with gt over classes(columns)
+      // max overlap with gt over classes(columns)
       val maxRes = roidb(i).gt_overlaps.max(2) // gt class that had the max overlap
       maxRes match {
         case (max_overlaps, max_classes) =>

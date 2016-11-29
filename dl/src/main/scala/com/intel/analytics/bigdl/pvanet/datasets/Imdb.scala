@@ -36,12 +36,12 @@ abstract class Imdb {
    */
   def roidb(): Array[ImageWithRoi] = {
     if (_roidb.length > 0) return _roidb
-    _roidb = getGroundTruth()
-    return _roidb
+    _roidb = getGroundTruth
+    _roidb
 
   }
 
-  def getGroundTruth(): Array[ImageWithRoi]
+  def getGroundTruth: Array[ImageWithRoi]
 
 
   def numClasses: Int = classes.length

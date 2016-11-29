@@ -51,12 +51,11 @@ object Demo {
   val imageScaler = new ImageScalerAndMeanSubstractor(null)
 
   def main(args: Array[String]): Unit = {
-    val param = parser.parse(args, new PascolVocLocalParam()).get
-    val year = "2007"
+    val param = parser.parse(args, PascolVocLocalParam()).get
     val imgNames = Array("6.jpg")
 
     imgNames.foreach(imaName => {
-      val img = new ImageWithRoi()
+      val img = ImageWithRoi()
       img.imagePath = param.folder + "/" + imaName
       println(s"process ${img.imagePath} ...")
       val scaledImage = imageScaler.apply(img)
@@ -70,23 +69,27 @@ object Demo {
       val CONF_THRESH = 0.8f
       val NMS_THRESH = 0.3f
       for (j <- 1 until classes.length) {
-        val inds = Range(0, scores.rows).toArray
-        if (inds.length == 0) return new DenseMatrix[Float](0, 5)
-        val clsScores = MatrixUtil.selectMatrix2(scores, inds, Array(j))
-        val clsBoxes = MatrixUtil.selectMatrix2(boxes,
-          inds, Range(j * 4, (j + 1) * 4).toArray)
+        def getClsDet: DenseMatrix[Float] = {
+          val inds = Range(0, scores.rows).toArray
+          if (inds.length == 0) return new DenseMatrix[Float](0, 5)
+          val clsScores = MatrixUtil.selectMatrix2(scores, inds, Array(j))
+          val clsBoxes = MatrixUtil.selectMatrix2(boxes,
+            inds, Range(j * 4, (j + 1) * 4).toArray)
 
-        var clsDets = DenseMatrix.horzcat(clsBoxes, clsScores)
-        val keep = Nms.nms(clsDets, NMS_THRESH)
+          var clsDets = DenseMatrix.horzcat(clsBoxes, clsScores)
+          val keep = Nms.nms(clsDets, NMS_THRESH)
 
-        val detsNMSed = MatrixUtil.selectMatrix(clsDets, keep, 0)
+          val detsNMSed = MatrixUtil.selectMatrix(clsDets, keep, 0)
 
-        if (Config.TEST.BBOX_VOTE) {
-          clsDets = Bbox.bboxVote(detsNMSed, clsDets)
-        } else {
-          clsDets = detsNMSed
+          if (Config.TEST.BBOX_VOTE) {
+            clsDets = Bbox.bboxVote(detsNMSed, clsDets)
+          } else {
+            clsDets = detsNMSed
+          }
+          clsDets
         }
-        PascolVoc.visDetection(scaledImage, classes(j), clsDets)
+        val clsDets = getClsDet
+        PascolVoc.visDetection(scaledImage, classes(j), clsDets, thresh = CONF_THRESH)
       }
     })
   }

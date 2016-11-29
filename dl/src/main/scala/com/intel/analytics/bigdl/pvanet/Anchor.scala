@@ -26,16 +26,13 @@ object Anchor {
    * Generate anchor (reference) windows by enumerating aspect ratios X
    * scales wrt a reference (0, 0, 15, 15) window.
    *
-   * @param baseSize
-   * @return
    */
   def generateAnchors(baseSize: Float = 16,
     ratios: Array[Float],
     scales: Array[Float]): DenseMatrix[Float] = {
     val baseAnchor = Tensor(Storage(Array(1 - 1, 1 - 1, baseSize - 1, baseSize - 1)))
     val ratioAnchors = ratioEnum(baseAnchor, Tensor(Storage(ratios)))
-    var anchors = new DenseMatrix[Float](scales.length * ratioAnchors.size(1), 4)
-    //    var anchors = Tensor[Float]()
+    val anchors = new DenseMatrix[Float](scales.length * ratioAnchors.size(1), 4)
     var idx = 0
     for (i <- 0 until ratioAnchors.size(1)) {
       val scaleAnchors = scaleEnum(ratioAnchors(i + 1), Tensor(Storage(scales)))
@@ -54,11 +51,6 @@ object Anchor {
    * Given a vector of widths (ws) and heights (hs) around a center
    * (x_ctr, y_ctr), output a set of anchors (windows).
    *
-   * @param ws
-   * @param hs
-   * @param xCtr
-   * @param yCtr
-   * @return
    */
   def mkanchors(ws: Tensor[Float], hs: Tensor[Float],
     xCtr: Float, yCtr: Float): Tensor[Float] = {
@@ -66,7 +58,7 @@ object Anchor {
     val a2 = (hs.-(1)).mul(-0.5f).add(yCtr)
     val a3 = (ws.-(1)).mul(0.5f).add(xCtr)
     val a4 = (hs.-(1)).mul(0.5f).add(yCtr)
-    var anchors = Tensor[Float](a1.nElement(), 4)
+    val anchors = Tensor[Float](a1.nElement(), 4)
     for (i <- 1 to a1.nElement()) {
       anchors.setValue(i, 1, a1.valueAt(i))
       anchors.setValue(i, 2, a2.valueAt(i))
@@ -78,24 +70,18 @@ object Anchor {
 
   /**
    * Return width, height, x center, and y center for an anchor (window).
-   *
-   * @param anchor
-   * @return
    */
   def whctrs(anchor: Tensor[Float]): Array[Float] = {
     val w: Float = anchor.valueAt(3) - anchor.valueAt(1) + 1
     val h: Float = anchor.valueAt(4) - anchor.valueAt(2) + 1
-    val xCtr: Float = (anchor.valueAt(1) + 0.5f * (w - 1))
-    val yCtr: Float = (anchor.valueAt(2) + 0.5f * (h - 1))
+    val xCtr: Float = anchor.valueAt(1) + 0.5f * (w - 1)
+    val yCtr: Float = anchor.valueAt(2) + 0.5f * (h - 1)
     Array[Float](w, h, xCtr, yCtr)
   }
 
   /**
    * Enumerate a set of anchors for each aspect ratio wrt an anchor.
    *
-   * @param anchor
-   * @param ratios
-   * @return
    */
   def ratioEnum(anchor: Tensor[Float], ratios: Tensor[Float]): Tensor[Float] = {
     // w, h, x_ctr, y_ctr
@@ -113,9 +99,6 @@ object Anchor {
   /**
    * Enumerate a set of anchors for each scale wrt an anchor.
    *
-   * @param anchor
-   * @param scales
-   * @return
    */
   def scaleEnum(anchor: Tensor[Float], scales: Tensor[Float]): Tensor[Float] = {
     val out = whctrs(anchor)

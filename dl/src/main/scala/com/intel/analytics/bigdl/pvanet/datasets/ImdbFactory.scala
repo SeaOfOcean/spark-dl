@@ -21,8 +21,6 @@ object ImdbFactory {
   /**
    * Get an imdb (image database) by name
    *
-   * @param name
-   * @return
    */
   def getImdb(name: String): Imdb = {
     val items = name.split("_")
