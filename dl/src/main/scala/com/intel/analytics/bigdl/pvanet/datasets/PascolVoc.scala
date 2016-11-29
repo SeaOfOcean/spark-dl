@@ -162,7 +162,7 @@ object PascolVoc {
     val boxes = rois.narrow(2, 2, 4).div(d.imInfo.get(2))
     // Apply bounding-box regression deltas
     var predBoxes = Bbox.bboxTransformInv(boxes.toBreezeMatrix(), boxDeltas.toBreezeMatrix())
-    predBoxes = Bbox.clipBoxes(predBoxes, d.height(), d.width())
+    predBoxes = Bbox.clipBoxes(predBoxes, d.oriHeight, d.oriWidth)
 
     if (Config.DEBUG) {
       timer.toc()
@@ -225,10 +225,22 @@ object PascolVoc {
         }
         allBoxes(j)(i) = clsDets
       }
-      
+
       // Limit to max_per_image detections *over all classes*
+      // todo: has not been tested
       if (maxPerImage > 0) {
-        // todo
+        var imageScores = Array[Float]()
+        for (j <- Range(1, imdb.numClasses)) {
+          imageScores = imageScores ++ allBoxes(j)(i)(::, -1).toArray
+        }
+        if (imageScores.length > maxPerImage) {
+          val imageThresh = imageScores.sortWith(_ < _)(imageScores.length - maxPerImage)
+          for (j <- Range(1, imdb.numClasses)) {
+            val box = allBoxes(j)(i)
+            val keep = (0 until box.rows).filter(x => box(x, box.cols - 1) >= imageThresh).toArray
+            allBoxes(j)(i) = MatrixUtil.selectMatrix(box, keep, 0)
+          }
+        }
       }
       miscTimer.toc()
       println(s"im detect: ${i}/${imdb.numImages} " +

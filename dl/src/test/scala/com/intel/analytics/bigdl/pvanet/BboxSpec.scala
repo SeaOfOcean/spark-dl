@@ -102,11 +102,21 @@ class BboxSpec extends FlatSpec {
     val res = Bbox.clipBoxes(convert(boxes, Float), 10, 20)
     assert(res.rows == expectedResults.rows && res.cols == expectedResults.cols)
     for (i <- 0 until res.rows) {
-      for (j <- 0 until res.rows) {
+      for (j <- 0 until res.cols) {
         assert(abs(res(i, j) - expectedResults(i, j)) < 1e-6)
       }
     }
 
+    val boxes2 = TestUtil.loadDataFromFile("/home/xianyan/code/intel/pvanet/transform_inv-300_84.txt", Array(300, 84))
+    val expected = TestUtil.loadDataFromFile("/home/xianyan/code/intel/pvanet/clip-300_84.txt", Array(300, 84)).toBreezeMatrix()
+    val res2 = Bbox.clipBoxes(boxes2.toBreezeMatrix(), 1296, 2304)
+    println(res2.rows, res2.cols, expected.rows, expected.cols)
+    assert(res2.rows == expected.rows && res2.cols == expected.cols)
+    for (i <- 0 until res2.rows) {
+      for (j <- 0 until res2.cols) {
+        assert(abs(res2(i, j) - expected(i, j)) < 1e-6)
+      }
+    }
   }
 
 }

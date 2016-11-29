@@ -119,7 +119,7 @@ object Bbox {
     val dy = MatrixUtil.selectCols(deltas, 1, 4)
     var dw = MatrixUtil.selectCols(deltas, 2, 4)
     var dh = MatrixUtil.selectCols(deltas, 3, 4)
-    
+
     dx(::, *) :*= widths.toDenseVector
     dx(::, *) :+= ctrX.toDenseVector
     dy(::, *) :*= heights.toDenseVector
@@ -146,18 +146,14 @@ object Bbox {
    * @return
    */
   def clipBoxes(boxes: DenseMatrix[Float], height: Float, width: Float): DenseMatrix[Float] = {
-    // x1 >= 0
-    setCols(boxes, 0, 4,
-      MatrixUtil.selectCols(boxes, 0, 4).map(x => min(x, width - 1f)).map(x => max(x, 0f)))
-    // y1 >= 0
-    setCols(boxes, 1, 4,
-      MatrixUtil.selectCols(boxes, 1, 4).map(x => min(x, height - 1f)).map(x => max(x, 0f)))
-    // x2 < im_shape[1]
-    setCols(boxes, 2, 4,
-      MatrixUtil.selectCols(boxes, 2, 4).map(x => min(x, width - 1f)).map(x => max(x, 0f)))
-    // y2 < im_shape[0]
-    setCols(boxes, 3, 4,
-      MatrixUtil.selectCols(boxes, 3, 4).map(x => min(x, height - 1f)).map(x => max(x, 0f)))
+    for (r <- 0 until boxes.rows) {
+      for (c <- 0 until boxes.cols by 4) {
+        boxes(r, c) = Math.max( Math.min(boxes(r, c), width - 1f), 0)
+        boxes(r, c+1) =  Math.max( Math.min(boxes(r, c+1), height - 1f), 0)
+        boxes(r, c+2) =  Math.max( Math.min(boxes(r, c+2), width - 1f), 0)
+        boxes(r, c+3) =  Math.max( Math.min(boxes(r, c+3), height - 1f), 0)
+      }
+    }
     boxes
   }
 }

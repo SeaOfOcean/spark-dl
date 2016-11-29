@@ -20,8 +20,12 @@ package com.intel.analytics.bigdl.pvanet
 import java.io.File
 
 import com.intel.analytics.bigdl.pvanet.datasets.Imdb
+import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
+
+import scala.io.Source
 
 object Config {
+
 
   val DEBUG: Boolean = false
 
@@ -249,5 +253,13 @@ object Config {
     val path = DATA_DIR + "/demo"
     if (!existFile(path)) new File(path).mkdirs()
     path
+  }
+
+
+  def loadFeatures(s: String): Tensor[Float] = {
+    val middleRoot = "/home/xianyan/code/intel/pvanet/"
+    val size = s.substring(s.lastIndexOf("-") + 1, s.lastIndexOf(".")).split("_").map(x => x.toInt)
+    Tensor(Storage(Source.fromFile(middleRoot + s).getLines()
+      .map(x => x.toFloat).toArray)).reshape(size)
   }
 }

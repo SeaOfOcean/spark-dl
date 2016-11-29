@@ -127,8 +127,10 @@ class ImageScalerAndMeanSubstractor(dataSource: PascolVocDataSource, isShuffle: 
   def apply(data: ImageWithRoi): ImageWithRoi = {
     val scaleTo = Config.TRAIN.SCALES(Random.nextInt(Config.TRAIN.SCALES.length))
     val img = ImageIO.read(new java.io.File(data.imagePath))
-    val imSizeMin = Math.min(img.getWidth, img.getHeight())
-    val imSizeMax = Math.max(img.getWidth, img.getHeight())
+    data.oriWidth = img.getWidth
+    data.oriHeight = img.getHeight
+    val imSizeMin = Math.min(img.getWidth, img.getHeight)
+    val imSizeMax = Math.max(img.getWidth, img.getHeight)
     var im_scale = scaleTo.toFloat / imSizeMin.toFloat
     // Prevent the biggest axis from being more than MAX_SIZE
     if (Math.round(im_scale * imSizeMax) > Config.TRAIN.MAX_SIZE) {

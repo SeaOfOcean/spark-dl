@@ -26,10 +26,10 @@ import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 
-case class AnchorTarget(val labels: DenseVector[Int],
-  val bboxTargets: DenseMatrix[Float],
-  val bboxInsideWeights: DenseMatrix[Float],
-  val bboxOutsideWeights: DenseMatrix[Float]) {
+case class AnchorTarget(labels: DenseVector[Int],
+  bboxTargets: DenseMatrix[Float],
+  bboxInsideWeights: DenseMatrix[Float],
+  bboxOutsideWeights: DenseMatrix[Float]) {
 
 }
 
@@ -54,14 +54,14 @@ class AnchorTargetLayer(val scales: Array[Float] = Array[Float](3, 6, 9, 16, 32)
   def generateShifts(width: Int, height: Int, featStride: Float): DenseMatrix[Float] = {
     val shiftX = DenseVector.range(0, width).map(x => x * featStride)
     val shiftY = DenseVector.range(0, height).map(x => x * featStride)
-    var shifts = MatrixUtil.meshgrid(shiftX, shiftY) match {
+    MatrixUtil.meshgrid(shiftX, shiftY) match {
       case (x1Mesh, x2Mesh) =>
         return DenseMatrix.vertcat(x1Mesh.t.toDenseVector.toDenseMatrix,
           x2Mesh.t.toDenseVector.toDenseMatrix,
           x1Mesh.t.toDenseVector.toDenseMatrix,
           x2Mesh.t.toDenseVector.toDenseMatrix).t
     }
-    return new DenseMatrix(0, 0)
+    new DenseMatrix(0, 0)
   }
 
   /**
@@ -106,9 +106,9 @@ class AnchorTargetLayer(val scales: Array[Float] = Array[Float](3, 6, 9, 16, 32)
     // 1. Generate proposals from bbox deltas and shifted anchors
     val shifts = generateShifts(width, height, featStride)
     val totalAnchors = shifts.rows * numAnchors
-    var allAnchors: DenseMatrix[Float] = getAllAnchors(shifts, anchors)
-    var indsInside: ArrayBuffer[Int] = getIndsInside(data.width(),
-      data.height(), allAnchors, allowedBorder)
+    val allAnchors: DenseMatrix[Float] = getAllAnchors(shifts, anchors)
+    val indsInside: ArrayBuffer[Int] = getIndsInside(data.scaledImage.width(),
+      data.scaledImage.height(), allAnchors, allowedBorder)
 
 
     // keep only inside anchors
@@ -131,7 +131,7 @@ class AnchorTargetLayer(val scales: Array[Float] = Array[Float](3, 6, 9, 16, 32)
     })
 
     gtArgmaxOverlaps = Array.range(0, overlaps.rows).filter(r => {
-      def isFilter(): Boolean = {
+      def isFilter: Boolean = {
         for (i <- 0 until overlaps.cols) {
           if (overlaps(r, i) == gtMaxOverlaps(i)) {
             return true
@@ -242,7 +242,7 @@ class AnchorTargetLayer(val scales: Array[Float] = Array[Float](3, 6, 9, 16, 32)
         bboxOutSideWeights.rows + ", " + bboxOutSideWeights.cols)
     }
 
-    new AnchorTarget(labels, bboxTargets, bboxInsideWeights, bboxOutSideWeights)
+    AnchorTarget(labels, bboxTargets, bboxInsideWeights, bboxOutSideWeights)
 
   }
 
@@ -263,9 +263,8 @@ class AnchorTargetLayer(val scales: Array[Float] = Array[Float](3, 6, 9, 16, 32)
   def getAllAnchors(shifts: DenseMatrix[Float],
     anchors: DenseMatrix[Float] = anchors): DenseMatrix[Float] = {
     var allAnchors = new DenseMatrix[Float](shifts.rows * anchors.rows, 4)
-    var k = 0
     for (s <- 0 until shifts.rows) {
-      allAnchors(s * anchors.rows to (s + 1) * anchors.rows - 1, 0 to 3) :=
+      allAnchors(s * anchors.rows until (s + 1) * anchors.rows, 0 until 4) :=
         (anchors.t(::, *) + shifts.t(::, s)).t
     }
     allAnchors
@@ -285,7 +284,7 @@ class AnchorTargetLayer(val scales: Array[Float] = Array[Float](3, 6, 9, 16, 32)
     count: Int,
     inds: ArrayBuffer[Int],
     fillValue: Int): DenseMatrix[Float] = {
-    var ret = DenseMatrix.fill[Float](count, data.cols) {
+    val ret = DenseMatrix.fill[Float](count, data.cols) {
       fillValue
     }
     inds.zipWithIndex.foreach(ind => {

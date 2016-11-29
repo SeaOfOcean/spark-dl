@@ -34,9 +34,6 @@ object Roidb {
     val gt_overlaps: Tensor[Float] = null,
     val flipped: Boolean = false,
     var seg_areas: Tensor[Float] = null) {
-    def width(): Int = scaledImage.width()
-
-    def height(): Int = scaledImage.height()
 
     var gtBoxes = None: Option[DenseMatrix[Float]]
 
@@ -120,7 +117,7 @@ object Roidb {
         if (maxOverlap > 0) assert(cls != 0)
       }
     }
-      imdb
+    imdb
   }
 
 }
