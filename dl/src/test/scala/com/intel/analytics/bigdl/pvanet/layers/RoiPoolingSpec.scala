@@ -28,7 +28,8 @@ class RoiPoolingSpec extends FlatSpec with Matchers {
     val rois = TestUtil.loadDataFromFile(
       "/home/xianyan/code/intel/pvanet/spark-dl/middle/rois-300_5.txt", Array(300, 5))
     val data = TestUtil.loadDataFromFile(
-      "/home/xianyan/code/intel/pvanet/spark-dl/middle/conv5_3-1_512_38_57.txt", Array(1, 512, 38, 57))
+      "/home/xianyan/code/intel/pvanet/spark-dl/middle/conv5_3-1_512_38_57.txt",
+      Array(1, 512, 38, 57))
     val table = new Table
     table.insert(data)
     table.insert(rois)
@@ -41,7 +42,6 @@ class RoiPoolingSpec extends FlatSpec with Matchers {
       assert(abs(x._1._1 - x._1._2) < 1e-6)
     }
   }
-  
   val data = Array(-3.8623801600318241611, -5.5763739585689267031, 10.298773638368681205,
     9.0803885026851531848, 1.3665552448780498018, -0.44133702789011497458, -9.4017101101805629071,
     1.0564141421332300386, 13.553048566835151689, -13.990139481179310721, 0.38796681814726624582,

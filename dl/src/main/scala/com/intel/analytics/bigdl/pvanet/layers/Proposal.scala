@@ -19,8 +19,7 @@ package com.intel.analytics.bigdl.pvanet.layers
 
 import breeze.linalg.{DenseMatrix, DenseVector, argsort}
 import com.intel.analytics.bigdl.nn.Module
-import com.intel.analytics.bigdl.pvanet._
-import com.intel.analytics.bigdl.pvanet.util.{Bbox, Config, MatrixUtil, Nms}
+import com.intel.analytics.bigdl.pvanet.utils.{Bbox, Config, MatrixUtil, Nms}
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import com.intel.analytics.bigdl.utils.Table
@@ -159,7 +158,6 @@ class Proposal[@specialized(Float, Double) T: ClassTag](val phase: Int)
     if (post_nms_topN > 0) {
       keep = keep.slice(0, post_nms_topN)
     }
-    
     proposals = MatrixUtil.selectMatrix(proposals, keep, 0)
     scores = MatrixUtil.selectMatrix(scores, keep, 0)
 

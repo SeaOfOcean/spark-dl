@@ -18,7 +18,7 @@
 package com.intel.analytics.bigdl.pvanet
 
 import breeze.linalg.{DenseMatrix, convert}
-import com.intel.analytics.bigdl.pvanet.util.Nms
+import com.intel.analytics.bigdl.pvanet.utils.Nms
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import org.scalatest.FlatSpec
 

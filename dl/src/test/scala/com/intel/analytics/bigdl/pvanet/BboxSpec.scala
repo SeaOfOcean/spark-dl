@@ -19,7 +19,7 @@ package com.intel.analytics.bigdl.pvanet
 
 import breeze.linalg.{DenseMatrix, convert}
 import breeze.numerics.abs
-import com.intel.analytics.bigdl.pvanet.util.Bbox
+import com.intel.analytics.bigdl.pvanet.utils.Bbox
 import org.scalatest.FlatSpec
 
 class BboxSpec extends FlatSpec {
@@ -108,8 +108,10 @@ class BboxSpec extends FlatSpec {
       }
     }
 
-    val boxes2 = TestUtil.loadDataFromFile("/home/xianyan/code/intel/pvanet/transform_inv-300_84.txt", Array(300, 84))
-    val expected = TestUtil.loadDataFromFile("/home/xianyan/code/intel/pvanet/clip-300_84.txt", Array(300, 84)).toBreezeMatrix()
+    val boxes2 = TestUtil.loadDataFromFile(
+      "/home/xianyan/code/intel/pvanet/transform_inv-300_84.txt", Array(300, 84))
+    val expected = TestUtil.loadDataFromFile(
+      "/home/xianyan/code/intel/pvanet/clip-300_84.txt", Array(300, 84)).toBreezeMatrix()
     val res2 = Bbox.clipBoxes(boxes2.toBreezeMatrix(), 1296, 2304)
     println(res2.rows, res2.cols, expected.rows, expected.cols)
     assert(res2.rows == expected.rows && res2.cols == expected.cols)

@@ -20,8 +20,7 @@ package com.intel.analytics.bigdl.pvanet.layers
 import breeze.linalg.{DenseMatrix, DenseVector, min, sum}
 import breeze.numerics.round
 import com.intel.analytics.bigdl.nn.Module
-import com.intel.analytics.bigdl.pvanet.util.{Bbox, Config, MatrixUtil}
-import com.intel.analytics.bigdl.pvanet.{Config, MatrixUtil}
+import com.intel.analytics.bigdl.pvanet.utils.{Bbox, Config, MatrixUtil}
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import com.intel.analytics.bigdl.utils.Table
@@ -43,9 +42,6 @@ class ProposalTarget[@specialized(Float, Double) T: ClassTag](numClasses: Int)
   /**
    * Compute bounding-box regression targets for an image.
    *
-   * @param ex_rois
-   * @param gt_rois
-   * @param labels
    */
   def computeTargets(ex_rois: DenseMatrix[Float],
     gt_rois: DenseMatrix[Float],

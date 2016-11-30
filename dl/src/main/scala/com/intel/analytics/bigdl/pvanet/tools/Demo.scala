@@ -21,8 +21,7 @@ import breeze.linalg.DenseMatrix
 import com.intel.analytics.bigdl.pvanet.datasets.Roidb.ImageWithRoi
 import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, PascolVoc}
 import com.intel.analytics.bigdl.pvanet.model._
-import com.intel.analytics.bigdl.pvanet.util.{Bbox, Config, MatrixUtil, Nms}
-import com.intel.analytics.bigdl.pvanet.{Config, MatrixUtil}
+import com.intel.analytics.bigdl.pvanet.utils.{Bbox, Config, MatrixUtil, Nms}
 import com.intel.analytics.bigdl.utils.Timer
 import scopt.OptionParser
 

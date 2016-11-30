@@ -20,11 +20,10 @@ package com.intel.analytics.bigdl.pvanet.layers
 import breeze.linalg.{max, min}
 import breeze.numerics.{ceil, floor, round}
 import com.intel.analytics.bigdl.nn.Module
+import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
-import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import com.intel.analytics.bigdl.utils.Table
 
-import scala.io.Source
 import scala.reflect.ClassTag
 
 class RoiPooling[@specialized(Float, Double) T: ClassTag]
@@ -84,8 +83,8 @@ class RoiPooling[@specialized(Float, Double) T: ClassTag]
 
       val roiHeight = max(roi_end_h - roi_start_h + 1, 1)
       val roiWidth = max(roi_end_w - roi_start_w + 1, 1)
-      val binSizeH = roiHeight.toFloat / pooled_h.toFloat 
-      val binSizeW = roiWidth.toFloat / pooled_w.toFloat 
+      val binSizeH = roiHeight.toFloat / pooled_h.toFloat
+      val binSizeW = roiWidth.toFloat / pooled_w.toFloat
       var batchDataIndex = offset(ev.toType[Int](roiBatchInd), sizes = data.size())
 
       for (c <- 0 until channels) {

@@ -26,26 +26,28 @@ import com.intel.analytics.bigdl.utils.Table
 
 import scala.reflect.ClassTag
 
-class FasterPvanet[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeReader[T] = null)(implicit ev: TensorNumeric[T])
+class FasterPvanet[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeReader[T] = null)
+  (implicit ev: TensorNumeric[T])
   extends FasterRCNN[T](caffeReader) {
 
   var pvanet: Sequential[Tensor[T], Tensor[T], T] = _
 
-  def concatNeg(name: String): Concat[T] = {
+  private def concatNeg(name: String): Concat[T] = {
     val concat = new Concat[T](2)
     concat.add(new Identity[T]())
     concat.add(new Power[T](1, -1, 0).setName(name))
     concat
   }
 
-  def addScale(module: Sequential[Tensor[T], Tensor[T], T], sizes: Array[Int], name: String): Unit = {
+  private def addScale(module: Sequential[Tensor[T], Tensor[T], T],
+    sizes: Array[Int], name: String): Unit = {
     val sc = scale(sizes, name)
     module.add(sc._1)
     module.add(sc._2)
     module.add(new ReLU[T]())
   }
 
-  def addConvComponent(compId: Int, index: Int, p: Array[(Int, Int, Int, Int, Int)]) = {
+  private def addConvComponent(compId: Int, index: Int, p: Array[(Int, Int, Int, Int, Int)]) = {
     val label = s"${compId}_$index"
     val convTable = new ConcatTable[Tensor[T], T]
     val conv_left = new Sequential[Tensor[T], Tensor[T], T]()
@@ -82,7 +84,8 @@ class FasterPvanet[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRe
     pvanet.add(new CAddTable[T]())
   }
 
-  def addInception(module: Sequential[Tensor[T], Tensor[T], T], label: String, index: Int, p: Array[(Int, Int, Int, Int, Int)]): Unit = {
+  private def addInception(module: Sequential[Tensor[T], Tensor[T], T], label: String, index: Int,
+    p: Array[(Int, Int, Int, Int, Int)]): Unit = {
     val left = new Sequential[Tensor[T], Tensor[T], T]()
     val incep = new Concat[T](4)
 
@@ -141,7 +144,7 @@ class FasterPvanet[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRe
   }
 
 
-  def getModel: Module[Tensor[T], Tensor[T], T] = {
+  private def getModel: Module[Tensor[T], Tensor[T], T] = {
     if (pvanet != null) return pvanet
     pvanet = new Sequential[Tensor[T], Tensor[T], T]()
     pvanet.add(conv((3, 16, 7, 2, 3), "conv1_1/conv"))
@@ -205,7 +208,7 @@ class FasterPvanet[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRe
     pvanet
   }
 
-  override def featureNet = getModel
+  override def featureNet: Module[Tensor[T], Tensor[T], T] = getModel
 
   def rpn: Module[Tensor[T], Table, T] = {
     val rpnModel = new Sequential[Tensor[T], Table, T]()

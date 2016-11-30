@@ -22,7 +22,7 @@ import javax.imageio.ImageIO
 
 import breeze.linalg.DenseMatrix
 import com.intel.analytics.bigdl.pvanet.layers.AnchorTarget
-import com.intel.analytics.bigdl.pvanet.util.Config
+import com.intel.analytics.bigdl.pvanet.utils.Config
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.File
 

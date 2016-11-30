@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-package com.intel.analytics.bigdl.pvanet.util
+package com.intel.analytics.bigdl.pvanet.utils
 
 import breeze.linalg.{DenseMatrix, DenseVector, argsort, max, min}
-import MatrixUtil
 
 object Nms {
   def nms(dets: DenseMatrix[Float], thresh: Float): Array[Int] = {

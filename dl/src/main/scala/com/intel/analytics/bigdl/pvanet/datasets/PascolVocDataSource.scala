@@ -25,8 +25,7 @@ import breeze.linalg.{DenseMatrix, DenseVector}
 import com.intel.analytics.bigdl.dataset.{LocalDataSource, Transformer}
 import Roidb.ImageWithRoi
 import com.intel.analytics.bigdl.pvanet.layers.AnchorTarget
-import com.intel.analytics.bigdl.pvanet.Roidb
-import com.intel.analytics.bigdl.pvanet.util.Config
+import com.intel.analytics.bigdl.pvanet.utils.Config
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 
 import scala.util.Random
@@ -197,7 +196,8 @@ class AnchorToTensor(batchSize: Int = 1, height: Int, width: Int)
   def apply(anchorTarget: AnchorTarget): (Tensor[Float], Tensor[Float]) = {
     var k = 0
 
-    val roiLabelData: Array[Float] = new Array[Float](batchSize * 3 * 4 * anchorTarget.labels.length)
+    val roiLabelData: Array[Float] =
+      new Array[Float](batchSize * 3 * 4 * anchorTarget.labels.length)
     val labelData: Array[Float] = new Array[Float](batchSize * anchorTarget.labels.length)
     val stride = anchorTarget.bboxTargets.rows * anchorTarget.bboxTargets.cols
     for (r <- 0 until anchorTarget.bboxTargets.rows) {

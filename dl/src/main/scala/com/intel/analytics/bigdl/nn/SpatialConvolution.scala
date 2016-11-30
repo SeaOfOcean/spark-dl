@@ -19,7 +19,7 @@ package com.intel.analytics.bigdl.nn
 
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.tensor._
-import com.intel.analytics.bigdl.utils.{Engine, RandomGenerator}
+import com.intel.analytics.bigdl.utils.Engine
 import com.intel.analytics.bigdl.utils.RandomGenerator._
 
 import scala.concurrent.duration.Duration
@@ -286,7 +286,7 @@ class SpatialConvolution[@specialized(Float, Double) T: ClassTag](
         gradWeightMMInBatch = Tensor[T]().resize(Array(batchSize, nGroup, nOutputPlane / nGroup,
           nInputPlane * kernelH * kernelW / nGroup))
       }
-      if(gradientBiasMT.nElement() == 0) {
+      if (gradientBiasMT.nElement() == 0) {
         gradientBiasMT.resize(Array(batchSize, nOutputPlane))
       }
       if (ones.dim() != 1 || ones.size(1) != gradOutput.size(3) * gradOutput.size(4)) {
@@ -392,7 +392,7 @@ class SpatialConvolution[@specialized(Float, Double) T: ClassTag](
     hash
   }
 
-  override def clearState() : this.type = {
+  override def clearState(): this.type = {
     super.clearState()
     fInput.set()
     fGradInput.set()

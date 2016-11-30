@@ -23,7 +23,7 @@ import caffe.Caffe
 import caffe.Caffe.{LayerParameter, NetParameter}
 import com.google.protobuf.{CodedInputStream, TextFormat}
 import com.intel.analytics.bigdl.nn._
-import com.intel.analytics.bigdl.pvanet.util.Config
+import com.intel.analytics.bigdl.pvanet.utils.Config
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import com.intel.analytics.bigdl.utils.{File => DlFile}
@@ -50,7 +50,8 @@ object CaffeReader {
   }
 }
 
-class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: String)(implicit ev: TensorNumeric[T]) {
+class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: String)
+  (implicit ev: TensorNumeric[T]) {
   private def cachePath(name: String): String = {
     val folder = Config.cachePath + s"/$netName"
     if (!Config.existFile(folder)) {
@@ -59,7 +60,7 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: Stri
     folder + "/" + name.replaceAll("/", "_")
   }
 
-  var netparam: Caffe.NetParameter = null
+  var netparam: Caffe.NetParameter = _
 
   var name2layer = Map[String, LayerParameter]()
 
@@ -84,7 +85,7 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: Stri
       cadd.bias.copy(bias)
     }
     DlFile.save((cmul, cadd), cachePath(layer.getName), true)
-    println(s"${name}: size(${weight.size().mkString(",")})")
+    println(s"$name: size(${weight.size().mkString(",")})")
     (cmul, cadd)
   }
 
@@ -98,7 +99,7 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: Stri
     }
     val layer = name2layer(name)
     val param = layer.getConvolutionParam
-    val groups = param.getGroup() match {
+    val groups = param.getGroup match {
       case 0 => 1
       case _ => param.getGroup
     }
@@ -137,12 +138,13 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: Stri
       }
     }
     val hasBias = param.getBiasTerm
-    val module = new SpatialFullConvolution[Tensor[T], T](nInputPlane, nOutputPlane, kW, kH, dW, dH, padW, padH, noBias = !hasBias)
+    val module = new SpatialFullConvolution[Tensor[T], T](nInputPlane, nOutputPlane, kW,
+      kH, dW, dH, padW, padH, noBias = !hasBias)
     val (weight, bias) = loadModule(name2layer(name), name, hasBias)
     module.weight.copy(weight)
     if (hasBias) module.bias.copy(bias)
     DlFile.save(module, cachePath(layer.getName), true)
-    println(s"${name}: ($nInputPlane, $nOutputPlane, $kW, $kH, $dW, $dH, $padW, $padH)")
+    println(s"$name: ($nInputPlane, $nOutputPlane, $kW, $kH, $dW, $dH, $padW, $padH)")
     module
   }
 
@@ -176,7 +178,7 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: Stri
     }
     val layer = name2layer(name)
     val param = layer.getConvolutionParam
-    val groups = param.getGroup() match {
+    val groups = param.getGroup match {
       case 0 => 1
       case _ => param.getGroup
     }
@@ -224,7 +226,7 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: Stri
     module.weight.copy(weight)
     module.bias.copy(bias)
     DlFile.save(module, cachePath(layer.getName), true)
-    println(s"${name}: ($nInputPlane, $nOutputPlane, $kW, $kH, $dW, $dH, $padW, $padH)")
+    println(s"$name: ($nInputPlane, $nOutputPlane, $kW, $kH, $dW, $dH, $padW, $padH)")
     module
   }
 
@@ -240,7 +242,8 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: Stri
   }
 
 
-  private def loadModule(layer: LayerParameter, name: String, hasBias: Boolean = true): (Tensor[T], Tensor[T]) = {
+  private def loadModule(layer: LayerParameter, name: String, hasBias: Boolean = true)
+  : (Tensor[T], Tensor[T]) = {
     var weight: Tensor[T] = null
     var bias: Tensor[T] = null
     val wB = layer.getBlobs(0)
@@ -276,7 +279,8 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: Stri
         printf("%s: %d %d (%d, %d)\n", name, 1, 1, nInputPlane, nOutputPlane)
         weight.resize(Array(layer.getConvolutionParam.getGroup, 1, 1, nInputPlane, nOutputPlane))
       case "Scale" =>
-      case _ => weight.resize(Array(layer.getConvolutionParam.getGroup, nOutputPlane, nInputPlane, kW, kH))
+      case _ => weight.resize(Array(layer.getConvolutionParam.getGroup, nOutputPlane,
+        nInputPlane, kW, kH))
     }
 
     if (hasBias) {

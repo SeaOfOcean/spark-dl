@@ -20,12 +20,11 @@ package com.intel.analytics.bigdl.pvanet.datasets
 import breeze.linalg.DenseMatrix
 import com.intel.analytics.bigdl.nn._
 import Roidb.ImageWithRoi
-import com.intel.analytics.bigdl.pvanet._
 import com.intel.analytics.bigdl.pvanet.caffe.CaffeReader
 import com.intel.analytics.bigdl.pvanet.layers._
 import com.intel.analytics.bigdl.pvanet.model.{FasterRCNN, FasterVgg, VggCaffeModel}
 import com.intel.analytics.bigdl.pvanet.tools.Draw
-import com.intel.analytics.bigdl.pvanet.util.{Bbox, Config, MatrixUtil, Nms}
+import com.intel.analytics.bigdl.pvanet.utils.{Bbox, Config, MatrixUtil, Nms}
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.{Table, Timer}
 import scopt.OptionParser
@@ -70,12 +69,14 @@ object PascolVoc {
     out
   }
 
-  def visDetection(d: ImageWithRoi, clsname: String, clsDets: DenseMatrix[Float], thresh: Float = 0.3f): Unit = {
+  def visDetection(d: ImageWithRoi, clsname: String, clsDets: DenseMatrix[Float],
+    thresh: Float = 0.3f): Unit = {
     Draw.vis(d.imagePath, clsname, clsDets,
       Config.demoPath + s"/${clsname}_" + d.imagePath.substring(d.imagePath.lastIndexOf("/") + 1))
   }
 
-  def imDetect(net: FasterRCNN[Float], d: ImageWithRoi): (DenseMatrix[Float], DenseMatrix[Float]) = {
+  def imDetect(net: FasterRCNN[Float], d: ImageWithRoi)
+  : (DenseMatrix[Float], DenseMatrix[Float]) = {
     imDetect(d, net.featureNetWithCache, net.rpnWithCache, net.fastRcnnWithCache
     )
   }

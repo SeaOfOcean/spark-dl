@@ -18,7 +18,7 @@
 package com.intel.analytics.bigdl.pvanet
 
 import breeze.linalg.{DenseMatrix, convert}
-import com.intel.analytics.bigdl.pvanet.util.MatrixUtil
+import com.intel.analytics.bigdl.pvanet.utils.MatrixUtil
 import org.scalatest.{FlatSpec, Matchers}
 
 

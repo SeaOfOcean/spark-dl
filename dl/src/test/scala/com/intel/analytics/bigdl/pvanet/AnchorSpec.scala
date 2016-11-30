@@ -18,7 +18,7 @@
 package com.intel.analytics.bigdl.pvanet
 
 import breeze.linalg.DenseMatrix
-import com.intel.analytics.bigdl.pvanet.util.Anchor
+import com.intel.analytics.bigdl.pvanet.utils.Anchor
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import org.scalatest.{FlatSpec, Matchers}
 

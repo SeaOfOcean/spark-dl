@@ -22,8 +22,7 @@ import java.util
 
 import breeze.linalg.{DenseMatrix, DenseVector, argmax, argsort, convert, max}
 import com.intel.analytics.bigdl.pvanet.datasets.PascalVoc
-import com.intel.analytics.bigdl.pvanet.util
-import com.intel.analytics.bigdl.pvanet.util.Config
+import com.intel.analytics.bigdl.pvanet.utils.Config
 import com.intel.analytics.bigdl.utils.{File => DlFile}
 
 import scala.io.Source
@@ -193,7 +192,8 @@ object VocEval {
         val inters = DenseVector(iw) :* DenseVector(ih)
 
         // union
-        val xx = convert((BBGT(::, 2) - BBGT(::, 0) + 1) :* (BBGT(::, 3) :- BBGT(::, 1) :+ 1), Float)
+        val xx = convert((BBGT(::, 2) - BBGT(::, 0) + 1) :* (BBGT(::, 3) :- BBGT(::, 1) :+ 1),
+          Float)
         val tmp = (bb(2) - bb(0) + 1f) * (bb(3) - bb(1) + 1f)
         val uni = xx :- inters :+ tmp
 

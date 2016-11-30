@@ -21,8 +21,7 @@ import java.util.logging.Logger
 
 import breeze.linalg.{*, DenseMatrix, DenseVector, convert, max}
 import com.intel.analytics.bigdl.pvanet.datasets.Roidb.ImageWithRoi
-import com.intel.analytics.bigdl.pvanet.util.{Anchor, Bbox, Config, MatrixUtil}
-import com.intel.analytics.bigdl.pvanet.{Config, MatrixUtil}
+import com.intel.analytics.bigdl.pvanet.utils.{Anchor, Bbox, Config, MatrixUtil}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random

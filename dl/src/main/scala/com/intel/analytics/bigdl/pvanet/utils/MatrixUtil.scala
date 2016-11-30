@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.intel.analytics.bigdl.pvanet.util
+package com.intel.analytics.bigdl.pvanet.utils
 
 import breeze.linalg.{DenseMatrix, DenseVector, argmax, max}
 
