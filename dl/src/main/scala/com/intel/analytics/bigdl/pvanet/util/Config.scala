@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.intel.analytics.bigdl.pvanet
+package com.intel.analytics.bigdl.pvanet.util
 
 import java.io.File
 

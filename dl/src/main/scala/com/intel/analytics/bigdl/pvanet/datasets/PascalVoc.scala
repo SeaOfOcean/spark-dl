@@ -21,8 +21,9 @@ import java.io.{File, PrintWriter}
 import java.util.UUID
 
 import breeze.linalg.DenseMatrix
-import com.intel.analytics.bigdl.pvanet.Roidb.ImageWithRoi
-import com.intel.analytics.bigdl.pvanet.{Config, VocEval}
+import com.intel.analytics.bigdl.pvanet.tools.VocEval
+import Roidb.ImageWithRoi
+import com.intel.analytics.bigdl.pvanet.util.Config
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.{File => DlFile}
 

@@ -20,6 +20,7 @@ package com.intel.analytics.bigdl.pvanet.layers
 import breeze.linalg.{DenseMatrix, DenseVector, argsort}
 import com.intel.analytics.bigdl.nn.Module
 import com.intel.analytics.bigdl.pvanet._
+import com.intel.analytics.bigdl.pvanet.util.{Bbox, Config, MatrixUtil, Nms}
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import com.intel.analytics.bigdl.utils.Table

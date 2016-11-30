@@ -19,6 +19,7 @@ package com.intel.analytics.bigdl.pvanet
 
 import breeze.linalg.{DenseMatrix, convert}
 import breeze.numerics.abs
+import com.intel.analytics.bigdl.pvanet.util.Bbox
 import org.scalatest.FlatSpec
 
 class BboxSpec extends FlatSpec {

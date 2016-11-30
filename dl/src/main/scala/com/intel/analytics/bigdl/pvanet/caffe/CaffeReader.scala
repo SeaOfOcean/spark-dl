@@ -23,7 +23,7 @@ import caffe.Caffe
 import caffe.Caffe.{LayerParameter, NetParameter}
 import com.google.protobuf.{CodedInputStream, TextFormat}
 import com.intel.analytics.bigdl.nn._
-import com.intel.analytics.bigdl.pvanet.Config
+import com.intel.analytics.bigdl.pvanet.util.Config
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import com.intel.analytics.bigdl.utils.{File => DlFile}
@@ -35,6 +35,7 @@ object ModuleType extends Enumeration {
   val TensorModule, Criterion = Value
 }
 
+
 object CaffeReader {
 
   def main(args: Array[String]): Unit = {
@@ -42,25 +43,73 @@ object CaffeReader {
       "faster_rcnn_alt_opt/rpn_test.pt"
     val modelName = "/home/xianyan/objectRelated/faster_rcnn_models/" +
       "VGG16_faster_rcnn_final.caffemodel"
-    val caffeReader = new CaffeReader[Float](defName, modelName)
+    val caffeReader = new CaffeReader[Float](defName, modelName, "vgg16")
     val conv = caffeReader.mapConvolution("conv1_1")
-    if(conv == null) println("conv is null")
+    if (conv == null) println("conv is null")
     else println(conv.getName())
   }
 }
 
-class CaffeReader[T: ClassTag](defName: String, modelName: String)(implicit ev: TensorNumeric[T]) {
-  private def cachePath(name: String) = Config.cachePath + "/vgg16/" + name.replaceAll("/", "_")
+class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: String)(implicit ev: TensorNumeric[T]) {
+  private def cachePath(name: String): String = {
+    val folder = Config.cachePath + s"/$netName"
+    if (!Config.existFile(folder)) {
+      new File(folder).mkdirs()
+    }
+    folder + "/" + name.replaceAll("/", "_")
+  }
+
   var netparam: Caffe.NetParameter = null
-  var numOutput = 0
 
   var name2layer = Map[String, LayerParameter]()
-  
-//  loadCaffe(defName, modelName)
 
-  def mapPooling(layer: LayerParameter): TensorModule[T] = {
-    val param = layer.getPoolingParam
-    val ptype = if (param.getPool == caffe.Caffe.PoolingParameter.PoolMethod.MAX) "Max" else "Avg"
+
+  def mapScale(name: String): (CMul[T], CAdd[T]) = {
+    if (Config.existFile(cachePath(name))) {
+      return DlFile.load[(CMul[T], CAdd[T])](cachePath(name))
+    }
+    if (name2layer.isEmpty) {
+      loadCaffe(defName, modelName)
+    }
+    val layer = name2layer(name)
+    val param = layer.getScaleParam
+    val hasBias = param.getBiasTerm
+    var cmul: CMul[T] = null
+    var cadd: CAdd[T] = null
+    val (weight, bias) = loadModule(name2layer(name), name, hasBias)
+    cmul = new CMul[T](weight.size())
+    cmul.weight.copy(weight)
+    if (hasBias) {
+      cadd = new CAdd[T](bias.size())
+      cadd.bias.copy(bias)
+    }
+    DlFile.save((cmul, cadd), cachePath(layer.getName), true)
+    println(s"${name}: size(${weight.size().mkString(",")})")
+    (cmul, cadd)
+  }
+
+
+  def mapDeconvolution(name: String): SpatialFullConvolution[Tensor[T], T] = {
+    if (Config.existFile(cachePath(name))) {
+      return DlFile.load[SpatialFullConvolution[Tensor[T], T]](cachePath(name))
+    }
+    if (name2layer.isEmpty) {
+      loadCaffe(defName, modelName)
+    }
+    val layer = name2layer(name)
+    val param = layer.getConvolutionParam
+    val groups = param.getGroup() match {
+      case 0 => 1
+      case _ => param.getGroup
+    }
+    if (layer.getBlobsCount == 0) {
+      //        println("convolution blob is empty")
+      return null
+    }
+    val wB = layer.getBlobs(0)
+    val nInputPlane = ((if (wB.hasShape) wB.getShape.getDim(1) else wB.getChannels) * groups).toInt
+    val nOutputPlane = (if (wB.hasShape) wB.getShape.getDim(0) else wB.getNum).toInt
+
     var kW = param.getKernelW
     var kH = param.getKernelH
     var dW = param.getStrideW
@@ -69,26 +118,32 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)(implicit ev: 
     var padH = param.getPadH
 
     if (kW == 0 || kH == 0) {
-      // todo: not sure, with a size list
-      kW = param.getKernelSize
+      kW = param.getKernelSize(0)
       kH = kW
     }
     if (dW == 0 || dH == 0) {
-      // todo: not sure
-      dW = param.getStride()
+      if (param.getStrideCount == 0) {
+        dW = 1
+      } else {
+        dW = param.getStride(0)
+      }
       dH = dW
+
     }
     if (padW == 0 || padH == 0) {
-      // todo: not sure, with a size list
-      padW = param.getPad()
-      padH = padW
+      if (param.getPadCount != 0) {
+        padW = param.getPad(0)
+        padH = padW
+      }
     }
-
-    ptype match {
-      case "Max" => new SpatialMaxPooling[T](kW, kH, dW, dH, padW, padH)
-      case "Avg" => new SpatialAveragePooling[T](kW, kH, dW, dH, padW, padH)
-      case _ => throw new NotImplementedError(ptype + " pooling is not supported")
-    }
+    val hasBias = param.getBiasTerm
+    val module = new SpatialFullConvolution[Tensor[T], T](nInputPlane, nOutputPlane, kW, kH, dW, dH, padW, padH, noBias = !hasBias)
+    val (weight, bias) = loadModule(name2layer(name), name, hasBias)
+    module.weight.copy(weight)
+    if (hasBias) module.bias.copy(bias)
+    DlFile.save(module, cachePath(layer.getName), true)
+    println(s"${name}: ($nInputPlane, $nOutputPlane, $kW, $kH, $dW, $dH, $padW, $padH)")
+    module
   }
 
   def mapInnerProduct(name: String): Linear[T] = {
@@ -133,8 +188,6 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)(implicit ev: 
     val nInputPlane = ((if (wB.hasShape) wB.getShape.getDim(1) else wB.getChannels) * groups).toInt
     val nOutputPlane = (if (wB.hasShape) wB.getShape.getDim(0) else wB.getNum).toInt
 
-    numOutput = nOutputPlane
-
     var kW = param.getKernelW
     var kH = param.getKernelH
     var dW = param.getStrideW
@@ -143,12 +196,10 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)(implicit ev: 
     var padH = param.getPadH
 
     if (kW == 0 || kH == 0) {
-      // todo: not sure, with a size list
       kW = param.getKernelSize(0)
       kH = kW
     }
     if (dW == 0 || dH == 0) {
-      // todo: not sure
       if (param.getStrideCount == 0) {
         dW = 1
       } else {
@@ -158,13 +209,10 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)(implicit ev: 
 
     }
     if (padW == 0 || padH == 0) {
-      // todo: not sure, with a size list
-      if (param.getPadCount == 0) {
-        padW = 1
-      } else {
+      if (param.getPadCount != 0) {
         padW = param.getPad(0)
+        padH = padW
       }
-      padH = padW
     }
 
     if (groups != 1) {
@@ -176,16 +224,13 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)(implicit ev: 
     module.weight.copy(weight)
     module.bias.copy(bias)
     DlFile.save(module, cachePath(layer.getName), true)
+    println(s"${name}: ($nInputPlane, $nOutputPlane, $kW, $kH, $dW, $dH, $padW, $padH)")
     module
   }
 
-  
 
   private def loadCaffe(prototxtName: String, modelName: String): Map[String, LayerParameter] = {
     netparam = loadBinary(prototxtName, modelName)
-
-    numOutput = netparam.getInputShapeCount() * 4
-
     assert(netparam.getLayerCount > 0, "only support proto V2")
     for (i <- 0 until netparam.getLayerCount) {
       val layer = netparam.getLayer(i)
@@ -195,12 +240,12 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)(implicit ev: 
   }
 
 
-  private def loadModule(layer: LayerParameter, name: String): (Tensor[T], Tensor[T]) = {
+  private def loadModule(layer: LayerParameter, name: String, hasBias: Boolean = true): (Tensor[T], Tensor[T]) = {
     var weight: Tensor[T] = null
     var bias: Tensor[T] = null
     val wB = layer.getBlobs(0)
     var nInputPlane, nOutputPlane, kW, kH = 0
-    if (wB.hasShape) {
+    if (wB.hasShape && wB.getShape.getDimCount >= 2) {
       nInputPlane = wB.getShape.getDim(1).toInt
       nOutputPlane = wB.getShape.getDim(0).toInt
       if (layer.getType != "InnerProduct") {
@@ -226,20 +271,23 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)(implicit ev: 
       weightData(i) = ev.fromType[Float](weightList.get(i))
     }
     weight = Tensor(Storage(weightData))
-    if (layer.getType == "InnerProduct") {
-      printf("%s: %d %d %d %d\n", name, 1, 1, nInputPlane, nOutputPlane)
-      weight.resize(Array(layer.getConvolutionParam.getGroup, 1, 1, nInputPlane, nOutputPlane))
+    layer.getType match {
+      case "InnerProduct" =>
+        printf("%s: %d %d (%d, %d)\n", name, 1, 1, nInputPlane, nOutputPlane)
+        weight.resize(Array(layer.getConvolutionParam.getGroup, 1, 1, nInputPlane, nOutputPlane))
+      case "Scale" =>
+      case _ => weight.resize(Array(layer.getConvolutionParam.getGroup, nOutputPlane, nInputPlane, kW, kH))
     }
-    else {
-      printf("%s: %d %d %d %d\n", name, nOutputPlane, nInputPlane, kW, kH);
-      weight.resize(Array(layer.getConvolutionParam.getGroup, nOutputPlane, nInputPlane, kW, kH))
+
+    if (hasBias) {
+      val biasList = layer.getBlobs(1).getDataList
+      val biasData: Array[T] = new Array[T](biasList.size())
+      for (i <- 0 until biasList.size()) {
+        biasData(i) = ev.fromType[Float](biasList.get(i))
+      }
+      bias = Tensor(Storage(biasData))
     }
-    val biasList = layer.getBlobs(1).getDataList
-    val biasData: Array[T] = new Array[T](biasList.size())
-    for (i <- 0 until biasList.size()) {
-      biasData(i) = ev.fromType[Float](biasList.get(i))
-    }
-    bias = Tensor(Storage(biasData))
+
     (weight, bias)
   }
 
@@ -259,3 +307,4 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)(implicit ev: 
     builder.build()
   }
 }
+

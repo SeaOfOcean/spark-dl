@@ -15,13 +15,14 @@
  * limitations under the License.
  */
 
-package com.intel.analytics.bigdl.pvanet
+package com.intel.analytics.bigdl.pvanet.datasets
 
 import java.util.logging.Logger
 import javax.imageio.ImageIO
 
 import breeze.linalg.DenseMatrix
-import com.intel.analytics.bigdl.pvanet.datasets.{Imdb, RGBImageOD}
+import com.intel.analytics.bigdl.pvanet.layers.AnchorTarget
+import com.intel.analytics.bigdl.pvanet.util.Config
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.File
 

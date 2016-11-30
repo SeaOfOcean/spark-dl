@@ -19,10 +19,13 @@ package com.intel.analytics.bigdl.pvanet.datasets
 
 import breeze.linalg.DenseMatrix
 import com.intel.analytics.bigdl.nn._
-import com.intel.analytics.bigdl.pvanet.Roidb.ImageWithRoi
+import Roidb.ImageWithRoi
 import com.intel.analytics.bigdl.pvanet._
-import com.intel.analytics.bigdl.pvanet.caffe.VggCaffeModel
+import com.intel.analytics.bigdl.pvanet.caffe.CaffeReader
 import com.intel.analytics.bigdl.pvanet.layers._
+import com.intel.analytics.bigdl.pvanet.model.{FasterRCNN, FasterVgg, VggCaffeModel}
+import com.intel.analytics.bigdl.pvanet.tools.Draw
+import com.intel.analytics.bigdl.pvanet.util.{Bbox, Config, MatrixUtil, Nms}
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.{Table, Timer}
 import scopt.OptionParser
@@ -72,10 +75,8 @@ object PascolVoc {
       Config.demoPath + s"/${clsname}_" + d.imagePath.substring(d.imagePath.lastIndexOf("/") + 1))
   }
 
-  def imDetect(d: ImageWithRoi): (DenseMatrix[Float], DenseMatrix[Float]) = {
-    imDetect(d, VggCaffeModel.vgg16,
-      VggCaffeModel.rpn,
-      VggCaffeModel.fastRcnn
+  def imDetect(net: FasterRCNN[Float], d: ImageWithRoi): (DenseMatrix[Float], DenseMatrix[Float]) = {
+    imDetect(d, net.featureNetWithCache, net.rpnWithCache, net.fastRcnnWithCache
     )
   }
 
@@ -172,7 +173,7 @@ object PascolVoc {
   }
 
 
-  def testNet(dataSource: PascolVocDataSource, maxPerImage: Int = 100,
+  def testNet(net: FasterRCNN[Float], dataSource: PascolVocDataSource, maxPerImage: Int = 100,
     thresh: Double = 0.05, vis: Boolean = false): Unit = {
     val imdb = dataSource.imdb
     val allBoxes: Array[Array[DenseMatrix[Float]]] = {
@@ -193,7 +194,7 @@ object PascolVoc {
       println(s"process ${d.imagePath} ...............")
 
       imDetectTimer.tic()
-      val (scores: DenseMatrix[Float], boxes: DenseMatrix[Float]) = imDetect(d)
+      val (scores: DenseMatrix[Float], boxes: DenseMatrix[Float]) = imDetect(net, d)
       imDetectTimer.toc()
 
       miscTimer.tic()
@@ -293,8 +294,14 @@ object PascolVoc {
 
   def main(args: Array[String]) {
     val param = parser.parse(args, PascolVocLocalParam()).get
-    val testDataSource = new PascolVocDataSource("2007", "testcode1", param.folder, false)
-    testNet(testDataSource)
+    val testDataSource = new PascolVocDataSource("2007", "testcode", param.folder, false)
+    val defName = "/home/xianyan/objectRelated/faster_rcnn_models/VGG16/" +
+      "faster_rcnn_alt_opt/rpn_test.pt"
+    val modelName = "/home/xianyan/objectRelated/faster_rcnn_models/" +
+      "VGG16_faster_rcnn_final.caffemodel"
+    val caffeReader: CaffeReader[Float] = new CaffeReader[Float](defName, modelName, "vgg16")
+    val model = new FasterVgg[Float](caffeReader)
+    testNet(model, testDataSource)
   }
 
 }

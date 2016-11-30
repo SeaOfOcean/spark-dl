@@ -23,8 +23,10 @@ import javax.imageio.ImageIO
 
 import breeze.linalg.{DenseMatrix, DenseVector}
 import com.intel.analytics.bigdl.dataset.{LocalDataSource, Transformer}
-import com.intel.analytics.bigdl.pvanet.Roidb.ImageWithRoi
-import com.intel.analytics.bigdl.pvanet.{AnchorTarget, Config, Roidb}
+import Roidb.ImageWithRoi
+import com.intel.analytics.bigdl.pvanet.layers.AnchorTarget
+import com.intel.analytics.bigdl.pvanet.Roidb
+import com.intel.analytics.bigdl.pvanet.util.Config
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 
 import scala.util.Random

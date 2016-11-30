@@ -20,7 +20,8 @@ package com.intel.analytics.bigdl.pvanet.layers
 import breeze.linalg.{DenseMatrix, DenseVector, min, sum}
 import breeze.numerics.round
 import com.intel.analytics.bigdl.nn.Module
-import com.intel.analytics.bigdl.pvanet.{Bbox, Config, MatrixUtil}
+import com.intel.analytics.bigdl.pvanet.util.{Bbox, Config, MatrixUtil}
+import com.intel.analytics.bigdl.pvanet.{Config, MatrixUtil}
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import com.intel.analytics.bigdl.utils.Table

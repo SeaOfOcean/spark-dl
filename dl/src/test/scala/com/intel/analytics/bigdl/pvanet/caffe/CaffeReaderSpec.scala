@@ -27,7 +27,7 @@ class CaffeReaderSpec extends FlatSpec with Matchers {
   val modelName =
     "/home/xianyan/objectRelated/faster_rcnn_models/VGG16_faster_rcnn_final.caffemodel"
   "load convolution" should "work properly " in {
-    val caffeReader = new CaffeReader[Float](defName, modelName)
+    val caffeReader = new CaffeReader[Float](defName, modelName, "vgg16")
     val conv = caffeReader.mapConvolution("conv1_1")
     val conv1_1 = new SpatialConvolution[Float](3, 64, 3, 3, 1, 1, 1, 1)
     assert(conv.kernelH == conv1_1.kernelH)

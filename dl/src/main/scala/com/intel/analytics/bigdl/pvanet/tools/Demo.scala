@@ -18,9 +18,11 @@
 package com.intel.analytics.bigdl.pvanet.tools
 
 import breeze.linalg.DenseMatrix
-import com.intel.analytics.bigdl.pvanet.Roidb.ImageWithRoi
+import com.intel.analytics.bigdl.pvanet.datasets.Roidb.ImageWithRoi
 import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, PascolVoc}
-import com.intel.analytics.bigdl.pvanet.{Bbox, Config, MatrixUtil, Nms}
+import com.intel.analytics.bigdl.pvanet.model._
+import com.intel.analytics.bigdl.pvanet.util.{Bbox, Config, MatrixUtil, Nms}
+import com.intel.analytics.bigdl.pvanet.{Config, MatrixUtil}
 import com.intel.analytics.bigdl.utils.Timer
 import scopt.OptionParser
 
@@ -35,10 +37,10 @@ object Demo {
     "sheep", "sofa", "train", "tvmonitor"
   )
 
-  case class PascolVocLocalParam(folder: String = "data",
+  case class PascolVocLocalParam(folder: String = "/home/xianyan/objectRelated/Pedestrain_1",
     net: String = "vgg")
 
-  private val parser = new OptionParser[PascolVocLocalParam]("Big-DL Object Detection Local Example") {
+  private val parser = new OptionParser[PascolVocLocalParam]("Object Detection Local Example") {
     head("Spark-DL PascolVoc Local Example")
     opt[String]('f', "demo image folder")
       .text("where you put the demo image data")
@@ -52,7 +54,13 @@ object Demo {
 
   def main(args: Array[String]): Unit = {
     val param = parser.parse(args, PascolVocLocalParam()).get
-    val imgNames = Array("6.jpg")
+    val imgNames = Array("1.jpg", "20.jpg", "30.jpg", "40.jpg",
+      "50.jpg", "60.jpg", "70.jpg", "80.jpg", "90.jpg", "100.jpg")
+    var net: FasterRCNN[Float] = null
+    param.net match {
+      case "vgg" => net = VggCaffeModel.getModelWithCaffeWeight
+      case "pvanet" => net = FasterPvanet.getModelWithCaffeWeight
+    }
 
     imgNames.foreach(imaName => {
       val img = ImageWithRoi()
@@ -61,7 +69,8 @@ object Demo {
       val scaledImage = imageScaler.apply(img)
       val timer = new Timer
       timer.tic()
-      val (scores: DenseMatrix[Float], boxes: DenseMatrix[Float]) = PascolVoc.imDetect(scaledImage)
+      val (scores: DenseMatrix[Float], boxes: DenseMatrix[Float]) =
+        PascolVoc.imDetect(net, scaledImage)
       timer.toc()
       println(s"Detection took ${"%.3f".format(timer.totalTime / 1e9)}s " +
         s"for ${boxes.rows} object proposals")

@@ -20,6 +20,8 @@ package com.intel.analytics.bigdl.pvanet
 import breeze.linalg.{DenseMatrix, convert, sum}
 import breeze.numerics.abs
 import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, ImdbFactory, PascolVocDataSource}
+import com.intel.analytics.bigdl.pvanet.layers.AnchorTargetLayer
+import com.intel.analytics.bigdl.pvanet.util.Config
 import org.scalatest.{FlatSpec, Matchers}
 
 class AnchorTargetLayerSpec extends FlatSpec with Matchers {

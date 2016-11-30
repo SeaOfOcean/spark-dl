@@ -18,7 +18,7 @@
 package com.intel.analytics.bigdl.pvanet.datasets
 
 import breeze.linalg.{DenseMatrix, DenseVector, convert}
-import com.intel.analytics.bigdl.pvanet.AnchorTarget
+import com.intel.analytics.bigdl.pvanet.layers.AnchorTarget
 import org.scalatest.{FlatSpec, Matchers}
 
 class AnchorToTensorSpec extends FlatSpec with Matchers {

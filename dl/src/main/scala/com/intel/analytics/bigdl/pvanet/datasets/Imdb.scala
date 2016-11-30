@@ -18,7 +18,7 @@
 package com.intel.analytics.bigdl.pvanet.datasets
 
 import breeze.linalg.DenseMatrix
-import com.intel.analytics.bigdl.pvanet.Roidb.ImageWithRoi
+import Roidb.ImageWithRoi
 
 abstract class Imdb {
   var name = ""

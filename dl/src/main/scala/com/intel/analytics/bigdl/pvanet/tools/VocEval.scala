@@ -15,13 +15,15 @@
  * limitations under the License.
  */
 
-package com.intel.analytics.bigdl.pvanet
+package com.intel.analytics.bigdl.pvanet.tools
 
 import java.io.File
 import java.util
 
 import breeze.linalg.{DenseMatrix, DenseVector, argmax, argsort, convert, max}
 import com.intel.analytics.bigdl.pvanet.datasets.PascalVoc
+import com.intel.analytics.bigdl.pvanet.util
+import com.intel.analytics.bigdl.pvanet.util.Config
 import com.intel.analytics.bigdl.utils.{File => DlFile}
 
 import scala.io.Source
