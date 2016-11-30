@@ -19,11 +19,10 @@ package com.intel.analytics.bigdl.pvanet.tools
 
 import breeze.linalg.DenseMatrix
 import com.intel.analytics.bigdl.nn.{Module, Sequential, SoftMax}
-import com.intel.analytics.bigdl.pvanet.caffe.CaffeReader
 import com.intel.analytics.bigdl.pvanet.datasets.Roidb.ImageWithRoi
 import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, ImageToTensor, PascolVocDataSource}
 import com.intel.analytics.bigdl.pvanet.layers.{Proposal, Reshape2}
-import com.intel.analytics.bigdl.pvanet.model.{FasterRCNN, FasterVgg}
+import com.intel.analytics.bigdl.pvanet.model.{FasterPvanet, FasterRCNN, FasterVgg}
 import com.intel.analytics.bigdl.pvanet.utils._
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.{Table, Timer}
@@ -32,7 +31,7 @@ import scopt.OptionParser
 object Test {
 
   case class PascolVocLocalParam(folder: String = "/home/xianyan/objectRelated/VOCdevkit",
-    net: String = "vgg")
+    net: String = "vgg16", nThread: Int = 4)
 
   private val parser = new OptionParser[PascolVocLocalParam]("Spark-DL PascolVoc Local Example") {
     head("Spark-DL PascolVoc Local Example")
@@ -40,8 +39,10 @@ object Test {
       .text("where you put the PascolVoc data")
       .action((x, c) => c.copy(folder = x))
     opt[String]('n', "net")
-      .text("net type : vgg | pvanet")
+      .text("net type : vgg16 | pvanet")
       .action((x, c) => c.copy(net = x.toLowerCase))
+    opt[String]('t', "mkl thread number")
+      .action((x, c) => c.copy(nThread = x.toInt))
   }
 
   def testNet(net: FasterRCNN[Float], dataSource: PascolVocDataSource, maxPerImage: Int = 100,
@@ -126,31 +127,14 @@ object Test {
   }
 
   def imDetect(d: ImageWithRoi,
-    featureModel: Module[Tensor[Float], Tensor[Float], Float],
-    rpnModel: Module[Tensor[Float], Table, Float],
+    rpnWithFeatureModel: Module[Tensor[Float], Table, Float],
     fastRcnn: Module[Table, Table, Float], A: Int): (DenseMatrix[Float], DenseMatrix[Float]) = {
     val imgTensor = ImageToTensor(d)
+    val rpnWithFeature = rpnWithFeatureModel.forward(imgTensor)
 
-    val timer = new Timer
-    if (Config.DEBUG) {
-      println("===================================== start generating features")
-      println(s"------- input size: ${imgTensor.size().mkString(",")}")
-      timer.tic()
-    }
-
-    val featureOut = featureModel.forward(imgTensor)
-    if (Config.DEBUG) {
-      timer.toc()
-      println(s"------- output size: ${featureOut.size().mkString(",")}")
-      println(s"------- time: ${timer.diff / 1e9}s")
-      println("===================================== start rpn ")
-      timer.tic()
-    }
-
-    val clsRegOut = rpnModel.forward(featureOut)
-
-    val rpnBboxPred = clsRegOut(2).asInstanceOf[Tensor[Float]]
-    val rpnClsScore = clsRegOut(1).asInstanceOf[Tensor[Float]]
+    val rpnBboxPred = rpnWithFeature(1).asInstanceOf[Table](2).asInstanceOf[Tensor[Float]]
+    val rpnClsScore = rpnWithFeature(1).asInstanceOf[Table](1).asInstanceOf[Tensor[Float]]
+    val featureOut = rpnWithFeature(2).asInstanceOf[Tensor[Float]]
 
     val clsProc = new Sequential[Tensor[Float], Tensor[Float], Float]()
     clsProc.add(new Reshape2[Float](Array(2, -1), Some(false)))
@@ -158,15 +142,6 @@ object Test {
     clsProc.add(new Reshape2[Float](Array(1, 2 * A, -1, rpnBboxPred.size(4)), Some(false)))
     val rpnClsScoreReshape = clsProc.forward(rpnClsScore)
 
-    if (Config.DEBUG) {
-      timer.toc()
-      println(s"------- output size: cls (${rpnClsScoreReshape.size().mkString(",")}), " +
-        s"bbox (${rpnBboxPred.size().mkString(",")})")
-      println(s"------- time:  ${timer.diff / 1e9}s")
-
-      println("=====================================  proposal")
-      timer.tic()
-    }
     val proposalInput = new Table
     proposalInput.insert(rpnClsScoreReshape)
     proposalInput.insert(rpnBboxPred)
@@ -177,43 +152,22 @@ object Test {
 
     val rois = proposalOut(1).asInstanceOf[Tensor[Float]]
 
-    if (Config.DEBUG) {
-      timer.toc()
-      println(s"------- output size: rois (${rois.size().mkString(",")})")
-      println(s"------- time:  ${timer.diff / 1e9}s")
-
-      println("=====================================  fast rcnn")
-      timer.tic()
-    }
     val propDecInput = new Table()
     propDecInput.insert(featureOut)
     propDecInput.insert(rois)
 
     val result = fastRcnn.forward(propDecInput)
 
-    if (Config.DEBUG) {
-      timer.toc()
-      println(s"------- time: ${timer.diff / 1e9}s")
-    }
-
     val scores = result(1).asInstanceOf[Tensor[Float]]
     val boxDeltas = result(2).asInstanceOf[Tensor[Float]]
 
     // post process
     // unscale back to raw image space
-    if (Config.DEBUG) {
-      println("=====================================  post process")
-      timer.tic()
-    }
     val boxes = rois.narrow(2, 2, 4).div(d.imInfo.get(2))
     // Apply bounding-box regression deltas
     var predBoxes = Bbox.bboxTransformInv(boxes.toBreezeMatrix(), boxDeltas.toBreezeMatrix())
     predBoxes = Bbox.clipBoxes(predBoxes, d.oriHeight, d.oriWidth)
 
-    if (Config.DEBUG) {
-      timer.toc()
-      println(s"------- time: ${timer.diff / 1e9}s")
-    }
     (scores.toBreezeMatrix(), predBoxes)
   }
 
@@ -225,21 +179,24 @@ object Test {
 
   def imDetect(net: FasterRCNN[Float], d: ImageWithRoi)
   : (DenseMatrix[Float], DenseMatrix[Float]) = {
-    Test.imDetect(d, net.featureNetWithCache, net.rpnWithCache, net.fastRcnnWithCache,
+    imDetect(d, net.featureAndRpnNetWithCache, net.fastRcnnWithCache,
       net.param.A)
   }
 
 
   def main(args: Array[String]) {
+    import com.intel.analytics.bigdl.mkl.MKL
     val param = parser.parse(args, PascolVocLocalParam()).get
+    MKL.setNumThreads(param.nThread)
+    var model: FasterRCNN[Float] = null
     val testDataSource = new PascolVocDataSource("2007", "testcode", param.folder, false)
-    val defName = "/home/xianyan/objectRelated/faster_rcnn_models/VGG16/" +
-      "faster_rcnn_alt_opt/rpn_test.pt"
-    val modelName = "/home/xianyan/objectRelated/faster_rcnn_models/" +
-      "VGG16_faster_rcnn_final.caffemodel"
-    val caffeReader: CaffeReader[Float] = new CaffeReader[Float](defName, modelName, "vgg16")
-    val model = new FasterVgg[Float](caffeReader)
-    Test.testNet(model, testDataSource)
+    param.net match {
+      case "vgg16" =>
+        model = FasterVgg.model
+      case "pvanet" =>
+        model = FasterPvanet.model
+    }
+    testNet(model, testDataSource)
   }
 
 }

@@ -162,7 +162,7 @@ public class MKL {
             FileChannel dest = new FileOutputStream(file).getChannel();
             dest.transferFrom(src, 0, Long.MAX_VALUE);
             return file;
-        } catch (Throwable e) {
+        } catch (Exception e) {
             throw new Error("Can't extract so file");
         }
     }

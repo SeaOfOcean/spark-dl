@@ -80,11 +80,14 @@ class FasterVgg[T: ClassTag](caffeReader: CaffeReader[T] = null)(implicit ev: Te
     rpnModel
   }
 
-  def vgg16rpn: Module[Tensor[T], Table, T] = {
-    val vggRpnModel = new Sequential[Tensor[T], Table, T]()
-    vggRpnModel.add(vgg16)
+  def featureAndRpnNet: Module[Tensor[T], Table, T] = {
+    val compose = new Sequential[Tensor[T], Table, T]()
+    val vggRpnModel = new ConcatTable[Tensor[T], T]()
     vggRpnModel.add(rpn)
-    vggRpnModel
+    vggRpnModel.add(new Identity[T]())
+    compose.add(vgg16)
+    compose.add(vggRpnModel)
+    compose
   }
 
   def fastRcnn: Module[Table, Table, T] = {
@@ -112,33 +115,28 @@ class FasterVgg[T: ClassTag](caffeReader: CaffeReader[T] = null)(implicit ev: Te
     model
   }
 
-  override def featureNet: Module[Tensor[T], Tensor[T], T] = vgg16
-
   override val modelName: String = "vgg16"
   override val param: Param = new VggParam
 }
 
-object VggCaffeModel {
-  val scales = Array[Float](8, 16, 32)
-  val ratios = Array(0.5f, 1.0f, 2.0f)
-  val defName = "/home/xianyan/objectRelated/faster_rcnn_models/VGG16/" +
+object FasterVgg {
+  private val defName = "/home/xianyan/objectRelated/faster_rcnn_models/VGG16/" +
     "faster_rcnn_alt_opt/rpn_test.pt"
-  val modelName = "/home/xianyan/objectRelated/faster_rcnn_models/" +
+  private val modelName = "/home/xianyan/objectRelated/faster_rcnn_models/" +
     "VGG16_faster_rcnn_final.caffemodel"
 
-  var caffeReader: CaffeReader[Float] = new CaffeReader[Float](defName, modelName, "vgg16")
+  private var caffeReader: CaffeReader[Float] = new CaffeReader[Float](defName, modelName, "vgg16")
 
-  var modelWithCaffeWeight: FasterRCNN[Float] = null
+  private var modelWithCaffeWeight: FasterRCNN[Float] = null
 
-  def getModelWithCaffeWeight: FasterRCNN[Float] = {
+  def model: FasterRCNN[Float] = {
     if (modelWithCaffeWeight == null) modelWithCaffeWeight = new FasterVgg[Float](caffeReader)
     modelWithCaffeWeight
   }
 
   def main(args: Array[String]): Unit = {
-    val vgg = getModelWithCaffeWeight
-    vgg.featureNetWithCache
-    vgg.rpnWithCache
+    val vgg = model
+    vgg.featureAndRpnNetWithCache
     vgg.fastRcnnWithCache
   }
 }

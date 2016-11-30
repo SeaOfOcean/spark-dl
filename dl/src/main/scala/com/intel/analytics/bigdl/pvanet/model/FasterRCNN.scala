@@ -28,9 +28,10 @@ import scala.reflect.ClassTag
 
 abstract class FasterRCNN[T: ClassTag](caffeReader: CaffeReader[T] = null)
   (implicit ev: TensorNumeric[T]) {
+
   val modelName: String
   val param: Param
-  
+
   /**
    *
    * @param p    parameter: (nIn: Int, nOut: Int, ker: Int, stride: Int, pad: Int)
@@ -94,29 +95,16 @@ abstract class FasterRCNN[T: ClassTag](caffeReader: CaffeReader[T] = null)
     }
   }
 
-  def featureNet: Module[Tensor[T], Tensor[T], T]
-
-  def rpn: Module[Tensor[T], Table, T]
+  def featureAndRpnNet: Module[Tensor[T], Table, T]
 
   def fastRcnn: Module[Table, Table, T]
 
-  def featureNetWithCache: Module[Tensor[T], Tensor[T], T] = {
-    val cache = Config.modelPath + "/" + s"${modelName}_features.obj"
-    if (Config.existFile(cache)) {
-      File.load[Module[Tensor[T], Tensor[T], T]](cache)
-    } else {
-      val net = featureNet
-      File.save(net, cache, true)
-      net
-    }
-  }
-
-  def rpnWithCache: Module[Tensor[T], Table, T] = {
-    val cache = Config.modelPath + "/" + s"${modelName}_rpn.obj"
+  def featureAndRpnNetWithCache: Module[Tensor[T], Table, T] = {
+    val cache = Config.modelPath + "/" + s"${modelName}_featureAndRpnNet.obj"
     if (Config.existFile(cache)) {
       File.load[Module[Tensor[T], Table, T]](cache)
     } else {
-      val net = rpn
+      val net = featureAndRpnNet
       File.save(net, cache, true)
       net
     }

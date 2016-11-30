@@ -19,7 +19,7 @@ package com.intel.analytics.bigdl.pvanet.tools
 
 import breeze.linalg.DenseMatrix
 import com.intel.analytics.bigdl.pvanet.datasets.Roidb.ImageWithRoi
-import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, PascolVoc}
+import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor}
 import com.intel.analytics.bigdl.pvanet.model._
 import com.intel.analytics.bigdl.pvanet.utils.{Bbox, Config, MatrixUtil, Nms}
 import com.intel.analytics.bigdl.utils.Timer
@@ -57,8 +57,8 @@ object Demo {
       "50.jpg", "60.jpg", "70.jpg", "80.jpg", "90.jpg", "100.jpg")
     var net: FasterRCNN[Float] = null
     param.net match {
-      case "vgg" => net = VggCaffeModel.getModelWithCaffeWeight
-      case "pvanet" => net = FasterPvanet.getModelWithCaffeWeight
+      case "vgg" => net = FasterVgg.model
+      case "pvanet" => net = FasterPvanet.model
     }
 
     imgNames.foreach(imaName => {

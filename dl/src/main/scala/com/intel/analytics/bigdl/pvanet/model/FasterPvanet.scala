@@ -43,6 +43,7 @@ class FasterPvanet[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRe
   private def addScale(module: Sequential[Tensor[T], Tensor[T], T],
     sizes: Array[Int], name: String): Unit = {
     val sc = scale(sizes, name)
+//    module.add(new Reshape2[T](Array(-1, 0), batchMode = Some(false)))
     module.add(sc._1)
     module.add(sc._2)
     module.add(new ReLU[T]())
@@ -138,20 +139,17 @@ class FasterPvanet[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRe
     } else {
       table.add(new Identity[T]())
     }
-
-    val elewiseAdd = new CAddTable[T]()
     module.add(table)
-    module.add(elewiseAdd)
+    module.add(new CAddTable[T]())
   }
 
 
-  private def getModel: Module[Tensor[T], Tensor[T], T] = {
+  private def getPvanet: Module[Tensor[T], Tensor[T], T] = {
     if (pvanet != null) return pvanet
     pvanet = new Sequential[Tensor[T], Tensor[T], T]()
     pvanet.add(conv((3, 16, 7, 2, 3), "conv1_1/conv"))
 
     pvanet.add(concatNeg("conv1_1/neg"))
-    // todo: sizes
     addScale(pvanet, Array(32), "conv1_1/scale")
     pvanet.add(new SpatialMaxPooling[T](3, 3, 2, 2, 0, 0).setName("pool1"))
 
@@ -204,14 +202,31 @@ class FasterPvanet[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRe
     val concatIncept = new Concat[T](2)
     concatIncept.add(new SpatialMaxPooling[T](3, 3, 2, 2, 0, 0))
     concatIncept.add(inceptions4_5)
-
     pvanet.add(concatIncept)
+
     pvanet
   }
 
-  override def featureNet: Module[Tensor[T], Tensor[T], T] = getModel
+  override def featureAndRpnNet: Module[Tensor[T], Table, T] = {
+    val compose = new Sequential[Tensor[T], Table, T]()
+    compose.add(getPvanet)
 
-  def rpn: Module[Tensor[T], Table, T] = {
+    val convTable = new ConcatTable[Tensor[T], T]
+    convTable.add(new Sequential[Tensor[T], Tensor[T], T]()
+      .add(conv((768, 128, 1, 1, 0), "convf_rpn"))
+      .add(new ReLU[T]()))
+    convTable.add(new Sequential[Tensor[T], Tensor[T], T]()
+      .add(conv((768, 384, 1, 1, 0), "convf_2"))
+      .add(new ReLU[T]()))
+    compose.add(convTable)
+    val rpnAndFeature = new ConcatTable[Table, T]()
+    rpnAndFeature.add(new Sequential[Table, Table, T]().add(new SelectTable[T](1)).add(rpn))
+    rpnAndFeature.add(new Concat[T](2))
+    compose.add(rpnAndFeature)
+    compose
+  }
+
+  private def rpn: Module[Tensor[T], Table, T] = {
     val rpnModel = new Sequential[Tensor[T], Table, T]()
     rpnModel.add(conv((128, 384, 3, 1, 1), "rpn_conv1"))
     rpnModel.add(new ReLU[T]())
@@ -254,15 +269,14 @@ object FasterPvanet {
   val caffeReader: CaffeReader[Float] = new CaffeReader(defName, modelName, "pvanet")
   var modelWithCaffeWeight: FasterRCNN[Float] = null
 
-  def getModelWithCaffeWeight: FasterRCNN[Float] = {
+  def model: FasterRCNN[Float] = {
     if (modelWithCaffeWeight == null) modelWithCaffeWeight = new FasterPvanet[Float](caffeReader)
     modelWithCaffeWeight
   }
 
   def main(args: Array[String]): Unit = {
-    val pvanet = getModelWithCaffeWeight
-    pvanet.featureNetWithCache
-    pvanet.rpnWithCache
+    val pvanet = FasterPvanet.model
+    pvanet.featureAndRpnNetWithCache
     pvanet.fastRcnnWithCache
   }
 }

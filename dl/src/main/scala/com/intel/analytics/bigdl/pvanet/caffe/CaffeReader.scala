@@ -86,6 +86,8 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: Stri
     }
     DlFile.save((cmul, cadd), cachePath(layer.getName), true)
     println(s"$name: size(${weight.size().mkString(",")})")
+    cmul.setName(name)
+    cadd.setName(name)
     (cmul, cadd)
   }
 
@@ -144,6 +146,7 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: Stri
     module.weight.copy(weight)
     if (hasBias) module.bias.copy(bias)
     DlFile.save(module, cachePath(layer.getName), true)
+    module.setName(name)
     println(s"$name: ($nInputPlane, $nOutputPlane, $kW, $kH, $dW, $dH, $padW, $padH)")
     module
   }
@@ -165,6 +168,7 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: Stri
     val (weight, bias) = loadModule(name2layer(name), name)
     module.weight.copy(weight)
     module.bias.copy(bias)
+    module.setName(name)
     DlFile.save(module, cachePath(layer.getName), true)
     module
   }
@@ -225,6 +229,7 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: Stri
     val (weight, bias) = loadModule(name2layer(name), name)
     module.weight.copy(weight)
     module.bias.copy(bias)
+    module.setName(name)
     DlFile.save(module, cachePath(layer.getName), true)
     println(s"$name: ($nInputPlane, $nOutputPlane, $kW, $kH, $dW, $dH, $padW, $padH)")
     module
