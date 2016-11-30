@@ -19,7 +19,7 @@ package com.intel.analytics.bigdl.pvanet.model
 
 import com.intel.analytics.bigdl.nn._
 import com.intel.analytics.bigdl.pvanet.caffe.CaffeReader
-import com.intel.analytics.bigdl.pvanet.utils.Config
+import com.intel.analytics.bigdl.pvanet.utils.{Config, Param}
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.utils.{File, Table}
@@ -29,7 +29,8 @@ import scala.reflect.ClassTag
 abstract class FasterRCNN[T: ClassTag](caffeReader: CaffeReader[T] = null)
   (implicit ev: TensorNumeric[T]) {
   val modelName: String
-
+  val param: Param
+  
   /**
    *
    * @param p    parameter: (nIn: Int, nOut: Int, ker: Int, stride: Int, pad: Int)

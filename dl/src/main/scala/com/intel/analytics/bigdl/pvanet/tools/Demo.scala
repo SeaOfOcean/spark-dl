@@ -69,7 +69,7 @@ object Demo {
       val timer = new Timer
       timer.tic()
       val (scores: DenseMatrix[Float], boxes: DenseMatrix[Float]) =
-        PascolVoc.imDetect(net, scaledImage)
+        Test.imDetect(net, scaledImage)
       timer.toc()
       println(s"Detection took ${"%.3f".format(timer.totalTime / 1e9)}s " +
         s"for ${boxes.rows} object proposals")
@@ -97,7 +97,7 @@ object Demo {
           clsDets
         }
         val clsDets = getClsDet
-        PascolVoc.visDetection(scaledImage, classes(j), clsDets, thresh = CONF_THRESH)
+        Test.visDetection(scaledImage, classes(j), clsDets, thresh = CONF_THRESH)
       }
     })
   }

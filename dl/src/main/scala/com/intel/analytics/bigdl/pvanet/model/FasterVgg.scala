@@ -20,6 +20,7 @@ package com.intel.analytics.bigdl.pvanet.model
 import com.intel.analytics.bigdl.nn._
 import com.intel.analytics.bigdl.pvanet.caffe.CaffeReader
 import com.intel.analytics.bigdl.pvanet.layers.{Reshape2, RoiPooling}
+import com.intel.analytics.bigdl.pvanet.utils.{Param, VggParam}
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.utils.Table
@@ -114,6 +115,7 @@ class FasterVgg[T: ClassTag](caffeReader: CaffeReader[T] = null)(implicit ev: Te
   override def featureNet: Module[Tensor[T], Tensor[T], T] = vgg16
 
   override val modelName: String = "vgg16"
+  override val param: Param = new VggParam
 }
 
 object VggCaffeModel {

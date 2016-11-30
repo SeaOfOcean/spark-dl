@@ -20,6 +20,7 @@ package com.intel.analytics.bigdl.pvanet.model
 import com.intel.analytics.bigdl.nn.{Sequential, _}
 import com.intel.analytics.bigdl.pvanet.caffe.CaffeReader
 import com.intel.analytics.bigdl.pvanet.layers.{Reshape2, RoiPooling}
+import com.intel.analytics.bigdl.pvanet.utils.{Param, PvanetParam}
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.utils.Table
@@ -244,6 +245,7 @@ class FasterPvanet[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRe
   }
 
   override val modelName: String = "pvanet"
+  override val param: Param = new PvanetParam
 }
 
 object FasterPvanet {
