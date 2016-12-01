@@ -21,7 +21,7 @@ import breeze.linalg.DenseMatrix
 import com.intel.analytics.bigdl.pvanet.datasets.Roidb.ImageWithRoi
 import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor}
 import com.intel.analytics.bigdl.pvanet.model._
-import com.intel.analytics.bigdl.pvanet.utils.{Bbox, Config, MatrixUtil, Nms}
+import com.intel.analytics.bigdl.pvanet.utils.{Bbox, FileUtil, MatrixUtil, Nms}
 import com.intel.analytics.bigdl.utils.Timer
 import scopt.OptionParser
 
@@ -49,7 +49,7 @@ object Demo {
       .action((x, c) => c.copy(net = x.toLowerCase))
   }
 
-  val imageScaler = new ImageScalerAndMeanSubstractor(null)
+  
 
   def main(args: Array[String]): Unit = {
     val param = parser.parse(args, PascolVocLocalParam()).get
@@ -57,10 +57,12 @@ object Demo {
       "50.jpg", "60.jpg", "70.jpg", "80.jpg", "90.jpg", "100.jpg")
     var net: FasterRCNN[Float] = null
     param.net match {
-      case "vgg" => net = FasterVgg.model
-      case "pvanet" => net = FasterPvanet.model
+      case "vgg" => net = FasterVgg.model()
+      case "pvanet" => net = FasterPvanet.model()
     }
-
+    
+    val imageScaler = new ImageScalerAndMeanSubstractor(null, param = net.param)
+    
     imgNames.foreach(imaName => {
       val img = ImageWithRoi()
       img.imagePath = param.folder + "/" + imaName
@@ -89,7 +91,7 @@ object Demo {
 
           val detsNMSed = MatrixUtil.selectMatrix(clsDets, keep, 0)
 
-          if (Config.TEST.BBOX_VOTE) {
+          if (net.param.BBOX_VOTE) {
             clsDets = Bbox.bboxVote(detsNMSed, clsDets)
           } else {
             clsDets = detsNMSed

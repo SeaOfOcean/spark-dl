@@ -15,10 +15,13 @@
  * limitations under the License.
  */
 
-package com.intel.analytics.bigdl.pvanet.utils
+package com.intel.analytics.bigdl.pvanet.model
 
-class VggParam extends Param {
-  override val scales = Array[Float](8, 16, 32)
-  override val ratios = Array[Float](0.5f, 1.0f, 2.0f)
-  override val A = 9
+class VggParam(isTrain: Boolean = false) extends FasterRcnnParam(isTrain) {
+  override val anchorScales = Array[Float](8, 16, 32)
+  override val anchorRatios = Array[Float](0.5f, 1.0f, 2.0f)
+  override val anchorNum = 9
+
+  override val RPN_PRE_NMS_TOP_N = if (isTrain) 12000 else 6000
+  override val RPN_POST_NMS_TOP_N = if(isTrain) 2000 else 300
 }

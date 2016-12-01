@@ -23,7 +23,7 @@ import java.util.UUID
 import breeze.linalg.DenseMatrix
 import com.intel.analytics.bigdl.pvanet.tools.VocEval
 import Roidb.ImageWithRoi
-import com.intel.analytics.bigdl.pvanet.utils.Config
+import com.intel.analytics.bigdl.pvanet.utils.FileUtil
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.{File => DlFile}
 
@@ -33,9 +33,9 @@ import scala.xml.XML
 
 
 class PascalVoc(val year: String = "2007", val imageSet: String,
-  var devkitPath: String = Config.DATA_DIR + "/VOCdevkit") extends Imdb {
+  var devkitPath: String = FileUtil.DATA_DIR + "/VOCdevkit") extends Imdb {
   def this(year: String, imageSet: String) {
-    this(year, imageSet, Config.DATA_DIR + "/VOCdevkit")
+    this(year, imageSet, FileUtil.DATA_DIR + "/VOCdevkit")
   }
 
   name = "voc_" + year + "_" + imageSet
@@ -62,9 +62,9 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
     "matlab_eval" -> false,
     "rpn_file" -> None,
     "min_size" -> 2)
-  assert(Config.existFile(devkitPath),
+  assert(FileUtil.existFile(devkitPath),
     "VOCdevkit path does not exist: " + devkitPath)
-  assert(Config.existFile(dataPath),
+  assert(FileUtil.existFile(dataPath),
     "Path does not exist: {}" + dataPath)
 
 
@@ -90,13 +90,13 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
   def loadImageSetIndex(): List[String] = {
     println(dataPath)
     val imageSetFile = dataPath + "/ImageSets/Main/" + imageSet + ".txt"
-    assert(Config.existFile(imageSetFile), "Path does not exist " + imageSetFile)
+    assert(FileUtil.existFile(imageSetFile), "Path does not exist " + imageSetFile)
     Source.fromFile(imageSetFile).getLines().map(line => line.trim).toList
   }
 
 
   // Return the default path where PASCAL VOC is expected to be installed.
-  private def getDefaultPath = Config.DATA_DIR + "/VOCdevkit"
+  private def getDefaultPath = FileUtil.DATA_DIR + "/VOCdevkit"
 
   /**
    * Load image and bounding boxes info from XML file in the PASCAL VOC
@@ -146,8 +146,8 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
    * @return the database of ground-truth regions of interest.
    */
   def getGroundTruth(): Array[ImageWithRoi] = {
-    val cache_file = Config.cachePath + "/" + name + "_gt_roidb.pkl"
-    if (Config.existFile(cache_file)) {
+    val cache_file = FileUtil.cachePath + "/" + name + "_gt_roidb.pkl"
+    if (FileUtil.existFile(cache_file)) {
       println("%s gt roidb loaded from %s".format(name, cache_file))
       try {
         return DlFile.load[Array[ImageWithRoi]](cache_file)
@@ -211,7 +211,7 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
     // The PASCAL VOC metric changed in 2010
     val use_07_metric = if (year.toInt < 2010) true else false
     println("VOC07 metric ? " + (if (use_07_metric) "yes" else "No"))
-    if (!Config.existFile(outputDir)) {
+    if (!FileUtil.existFile(outputDir)) {
       new File(outputDir).mkdirs()
     }
     classes.zipWithIndex.foreach {

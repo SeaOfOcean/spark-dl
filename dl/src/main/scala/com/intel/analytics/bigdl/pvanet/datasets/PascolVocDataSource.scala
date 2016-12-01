@@ -23,16 +23,17 @@ import javax.imageio.ImageIO
 
 import breeze.linalg.{DenseMatrix, DenseVector}
 import com.intel.analytics.bigdl.dataset.{LocalDataSource, Transformer}
-import Roidb.ImageWithRoi
+import com.intel.analytics.bigdl.pvanet.datasets.Roidb.ImageWithRoi
 import com.intel.analytics.bigdl.pvanet.layers.AnchorTarget
-import com.intel.analytics.bigdl.pvanet.utils.Config
+import com.intel.analytics.bigdl.pvanet.model.FasterRcnnParam
+import com.intel.analytics.bigdl.pvanet.utils.FileUtil
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 
 import scala.util.Random
 
 
 class PascolVocDataSource(year: String = "2007", imageSet: String,
-  devkitPath: String = Config.DATA_DIR + "/VOCdevkit", looped: Boolean = true)
+  devkitPath: String = FileUtil.DATA_DIR + "/VOCdevkit", looped: Boolean = true, param: FasterRcnnParam)
   extends LocalDataSource[ImageWithRoi] {
 
   val imdb: Imdb = new PascalVoc(year, imageSet, devkitPath)
@@ -76,7 +77,7 @@ class PascolVocDataSource(year: String = "2007", imageSet: String,
       })
       newInds
     }
-    if (Config.TRAIN.ASPECT_GROUPING) {
+    if (param.ASPECT_GROUPING) {
       val widths = data.map(r => r.oriWidth)
       val heights = data.map(r => r.oriHeight)
       perm = shuffleWithAspectGrouping(widths, heights)
@@ -98,26 +99,8 @@ class PascolVocDataSource(year: String = "2007", imageSet: String,
 
 }
 
-/**
- *
- */
-object ImageSizeUniformer extends Transformer[ImageWithRoi, ImageWithRoi] {
-  override def transform(prev: Iterator[ImageWithRoi]): Iterator[ImageWithRoi] = {
-    // this is standard python version
-    //    val maxWidth = prev.maxBy(_.width()).width()
-    //    val maxHeight = prev.maxBy(_.height()).height()
-    // this is not standard python version. But actually this may not be used
-    // because the image batch is 1
-    val maxWidth = Config.TRAIN.MAX_SIZE
-    val maxHeight = Config.TRAIN.MAX_SIZE
-    prev.map(data => {
-      data.scaledImage = new RGBImageOD(maxWidth, maxHeight).copyContent(data.scaledImage)
-      data
-    })
-  }
-}
-
-class ImageScalerAndMeanSubstractor(dataSource: PascolVocDataSource, isShuffle: Boolean = true)
+class ImageScalerAndMeanSubstractor(dataSource: PascolVocDataSource, isShuffle: Boolean = true,
+  param: FasterRcnnParam)
   extends Transformer[ImageWithRoi, ImageWithRoi] {
   def byte2Float(x: Byte): Float = x & 0xff
 
@@ -126,7 +109,7 @@ class ImageScalerAndMeanSubstractor(dataSource: PascolVocDataSource, isShuffle: 
   }
 
   def apply(data: ImageWithRoi): ImageWithRoi = {
-    val scaleTo = Config.TRAIN.SCALES(Random.nextInt(Config.TRAIN.SCALES.length))
+    val scaleTo = param.SCALES(Random.nextInt(param.SCALES.length))
     val img = ImageIO.read(new java.io.File(data.imagePath))
     data.oriWidth = img.getWidth
     data.oriHeight = img.getHeight
@@ -134,14 +117,14 @@ class ImageScalerAndMeanSubstractor(dataSource: PascolVocDataSource, isShuffle: 
     val imSizeMax = Math.max(img.getWidth, img.getHeight)
     var im_scale = scaleTo.toFloat / imSizeMin.toFloat
     // Prevent the biggest axis from being more than MAX_SIZE
-    if (Math.round(im_scale * imSizeMax) > Config.TRAIN.MAX_SIZE) {
-      im_scale = Config.TRAIN.MAX_SIZE.toFloat / imSizeMax.toFloat
+    if (Math.round(im_scale * imSizeMax) > param.MAX_SIZE) {
+      im_scale = param.MAX_SIZE.toFloat / imSizeMax.toFloat
     }
 
-    val im_scale_x = (Math.floor(img.getHeight * im_scale / Config.TRAIN.SCALE_MULTIPLE_OF) *
-      Config.TRAIN.SCALE_MULTIPLE_OF / img.getHeight).toFloat
-    val im_scale_y = (Math.floor(img.getWidth * im_scale / Config.TRAIN.SCALE_MULTIPLE_OF) *
-      Config.TRAIN.SCALE_MULTIPLE_OF / img.getWidth).toFloat
+    val im_scale_x = (Math.floor(img.getHeight * im_scale / param.SCALE_MULTIPLE_OF) *
+      param.SCALE_MULTIPLE_OF / img.getHeight).toFloat
+    val im_scale_y = (Math.floor(img.getWidth * im_scale / param.SCALE_MULTIPLE_OF) *
+      param.SCALE_MULTIPLE_OF / img.getWidth).toFloat
 
     val scaledImage: java.awt.Image =
       img.getScaledInstance((im_scale_y * img.getWidth).toInt,
@@ -156,7 +139,7 @@ class ImageScalerAndMeanSubstractor(dataSource: PascolVocDataSource, isShuffle: 
     require(pixels.length % 3 == 0)
     // mean subtract
     val meanPixels = pixels.zipWithIndex.map(x =>
-      (pixels(x._2) - Config.PIXEL_MEANS.head.head(x._2 % 3)).toFloat
+      (pixels(x._2) - param.PIXEL_MEANS.head.head(x._2 % 3)).toFloat
     )
 
     data.scaledImage = new RGBImageOD(meanPixels, imageBuff.getWidth, imageBuff.getHeight)
@@ -215,11 +198,6 @@ class AnchorToTensor(batchSize: Int = 1, height: Int, width: Int)
       storageOffset = 1, sizes = Array(labelData.length))
     roiLabelTensor.set(Storage[Float](roiLabelData),
       storageOffset = 1, sizes = Array(roiLabelData.length))
-    if (Config.DEBUG) {
-      println("<-------------to tensor result------------->")
-      println("label tensor size: (" + labelTensor.size().mkString(", ") + ")")
-      println("roiLabel tensor size: (" + roiLabelTensor.size().mkString(", ") + ")")
-    }
     (labelTensor, roiLabelTensor)
   }
 

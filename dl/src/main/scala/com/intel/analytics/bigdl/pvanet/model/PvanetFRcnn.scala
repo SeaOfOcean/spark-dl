@@ -20,14 +20,14 @@ package com.intel.analytics.bigdl.pvanet.model
 import com.intel.analytics.bigdl.nn.{Sequential, _}
 import com.intel.analytics.bigdl.pvanet.caffe.CaffeReader
 import com.intel.analytics.bigdl.pvanet.layers.{Reshape2, RoiPooling}
-import com.intel.analytics.bigdl.pvanet.utils.{Param, PvanetParam}
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.utils.Table
 
 import scala.reflect.ClassTag
 
-class FasterPvanet[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeReader[T] = null)
+class FasterPvanet[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeReader[T] = null,
+  isTrain: Boolean = false)
   (implicit ev: TensorNumeric[T])
   extends FasterRCNN[T](caffeReader) {
 
@@ -89,42 +89,35 @@ class FasterPvanet[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRe
   private def addInception(module: Sequential[Tensor[T], Tensor[T], T], label: String, index: Int,
     p: Array[(Int, Int, Int, Int, Int)]): Unit = {
     val left = new Sequential[Tensor[T], Tensor[T], T]()
-    val incep = new Concat[T](4)
+    val incep = new Concat[T](2)
 
     var i = 0
     val com1 = new Sequential[Tensor[T], Tensor[T], T]()
-    com1.add(conv(p(i), s"conv$label/incep/0/conv"))
+    com1.add(conv(p(i), s"conv$label/incep/0/conv")).add(new ReLU[T]())
     i += 1
-    com1.add(new ReLU[T]())
     incep.add(com1)
 
     val com2 = new Sequential[Tensor[T], Tensor[T], T]()
-    com2.add(conv(p(i), s"conv$label/incep/1_reduce/conv"))
+    com2.add(conv(p(i), s"conv$label/incep/1_reduce/conv")).add(new ReLU[T]())
     i += 1
-    com2.add(new ReLU[T]())
-    com2.add(conv(p(i), s"conv$label/incep/1_0/conv"))
+    com2.add(conv(p(i), s"conv$label/incep/1_0/conv")).add(new ReLU[T]())
     i += 1
-    com2.add(new ReLU[T]())
     incep.add(com2)
 
     val com3 = new Sequential[Tensor[T], Tensor[T], T]()
-    com3.add(conv(p(i), s"conv$label/incep/2_reduce/conv"))
+    com3.add(conv(p(i), s"conv$label/incep/2_reduce/conv")).add(new ReLU[T]())
     i += 1
-    com3.add(new ReLU[T]())
-    com3.add(conv(p(i), s"conv$label/incep/2_0/conv"))
+    com3.add(conv(p(i), s"conv$label/incep/2_0/conv")).add(new ReLU[T]())
     i += 1
-    com3.add(new ReLU[T]())
-    com3.add(conv(p(i), s"conv$label/incep/2_1/conv"))
+    com3.add(conv(p(i), s"conv$label/incep/2_1/conv")).add(new ReLU[T]())
     i += 1
-    com3.add(new ReLU[T]())
     incep.add(com3)
 
     if (index == 1) {
       val com4 = new Sequential[Tensor[T], Tensor[T], T]()
-      com4.add(new SpatialMaxPooling[T](3, 3, 2, 2, 0, 0).setName(s"conv$label/incep/pool"))
-      com4.add(conv(p(i), s"conv$label/incep/poolproj/conv"))
+      com4.add(new SpatialMaxPooling[T](3, 3, 2, 2, 0, 0).ceil().setName(s"conv$label/incep/pool"))
+      com4.add(conv(p(i), s"conv$label/incep/poolproj/conv")).add(new ReLU[T]())
       i += 1
-      com4.add(new ReLU[T]())
       incep.add(com4)
     }
 
@@ -151,7 +144,7 @@ class FasterPvanet[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRe
 
     pvanet.add(concatNeg("conv1_1/neg"))
     addScale(pvanet, Array(32), "conv1_1/scale")
-    pvanet.add(new SpatialMaxPooling[T](3, 3, 2, 2, 0, 0).setName("pool1"))
+    pvanet.add(new SpatialMaxPooling[T](3, 3, 2, 2, 0, 0).ceil().setName("pool1"))
 
 
     addConvComponent(2, 1, Array((32, 24, 1, 1, 0), (24, 24, 3, 1, 1),
@@ -200,7 +193,7 @@ class FasterPvanet[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRe
     inceptions4_5.add(concat5)
 
     val concatIncept = new Concat[T](2)
-    concatIncept.add(new SpatialMaxPooling[T](3, 3, 2, 2, 0, 0))
+    concatIncept.add(new SpatialMaxPooling[T](3, 3, 2, 2, 0, 0).ceil())
     concatIncept.add(inceptions4_5)
     pvanet.add(concatIncept)
 
@@ -260,23 +253,23 @@ class FasterPvanet[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRe
   }
 
   override val modelName: String = "pvanet"
-  override val param: Param = new PvanetParam
+  override val param: FasterRcnnParam = new PvanetParam(isTrain)
 }
 
 object FasterPvanet {
   val defName = "/home/xianyan/objectRelated/pvanet/full/test.pt"
   val modelName = "/home/xianyan/objectRelated/pvanet/full/test.model"
   val caffeReader: CaffeReader[Float] = new CaffeReader(defName, modelName, "pvanet")
-  var modelWithCaffeWeight: FasterRCNN[Float] = null
+  var modelWithCaffeWeight: FasterRCNN[Float] = _
 
-  def model: FasterRCNN[Float] = {
+  def model(isTrain: Boolean = false): FasterRCNN[Float] = {
     if (modelWithCaffeWeight == null) modelWithCaffeWeight = new FasterPvanet[Float](caffeReader)
     modelWithCaffeWeight
   }
 
   def main(args: Array[String]): Unit = {
-    val pvanet = FasterPvanet.model
-    pvanet.featureAndRpnNetWithCache
-    pvanet.fastRcnnWithCache
+    val pvanet = FasterPvanet.model()
+    pvanet.featureAndRpnNet
+    pvanet.fastRcnn
   }
 }

@@ -23,7 +23,7 @@ import caffe.Caffe
 import caffe.Caffe.{LayerParameter, NetParameter}
 import com.google.protobuf.{CodedInputStream, TextFormat}
 import com.intel.analytics.bigdl.nn._
-import com.intel.analytics.bigdl.pvanet.utils.Config
+import com.intel.analytics.bigdl.pvanet.utils.FileUtil
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import com.intel.analytics.bigdl.utils.{File => DlFile}
@@ -53,8 +53,8 @@ object CaffeReader {
 class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: String)
   (implicit ev: TensorNumeric[T]) {
   private def cachePath(name: String): String = {
-    val folder = Config.cachePath + s"/$netName"
-    if (!Config.existFile(folder)) {
+    val folder = FileUtil.cachePath + s"/$netName"
+    if (!FileUtil.existFile(folder)) {
       new File(folder).mkdirs()
     }
     folder + "/" + name.replaceAll("/", "_")
@@ -66,7 +66,7 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: Stri
 
 
   def mapScale(name: String): (CMul[T], CAdd[T]) = {
-    if (Config.existFile(cachePath(name))) {
+    if (FileUtil.existFile(cachePath(name))) {
       return DlFile.load[(CMul[T], CAdd[T])](cachePath(name))
     }
     if (name2layer.isEmpty) {
@@ -93,7 +93,7 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: Stri
 
 
   def mapDeconvolution(name: String): SpatialFullConvolution[Tensor[T], T] = {
-    if (Config.existFile(cachePath(name))) {
+    if (FileUtil.existFile(cachePath(name))) {
       return DlFile.load[SpatialFullConvolution[Tensor[T], T]](cachePath(name))
     }
     if (name2layer.isEmpty) {
@@ -152,7 +152,7 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: Stri
   }
 
   def mapInnerProduct(name: String): Linear[T] = {
-    if (Config.existFile(cachePath(name))) {
+    if (FileUtil.existFile(cachePath(name))) {
       return DlFile.load[Linear[T]](cachePath(name))
     }
     if (name2layer.isEmpty) {
@@ -174,7 +174,7 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: Stri
   }
 
   def mapConvolution(name: String): SpatialConvolution[T] = {
-    if (Config.existFile(cachePath(name))) {
+    if (FileUtil.existFile(cachePath(name))) {
       return DlFile.load[SpatialConvolution[T]](cachePath(name))
     }
     if (name2layer.isEmpty) {

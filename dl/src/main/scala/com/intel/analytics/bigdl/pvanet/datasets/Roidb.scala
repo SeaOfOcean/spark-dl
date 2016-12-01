@@ -22,7 +22,7 @@ import javax.imageio.ImageIO
 
 import breeze.linalg.DenseMatrix
 import com.intel.analytics.bigdl.pvanet.layers.AnchorTarget
-import com.intel.analytics.bigdl.pvanet.utils.Config
+import com.intel.analytics.bigdl.pvanet.utils.FileUtil
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.File
 
@@ -63,8 +63,8 @@ object Roidb {
   }
 
   def getImageSizes(imdb: Imdb): Array[Array[Int]] = {
-    val cache_file = Config.cachePath + "/" + imdb.name + "_image_sizes.pkl"
-    if (Config.existFile(cache_file)) {
+    val cache_file = FileUtil.cachePath + "/" + imdb.name + "_image_sizes.pkl"
+    if (FileUtil.existFile(cache_file)) {
       return File.load[Array[Array[Int]]](cache_file)
     }
     val sizes = Array.ofDim[Int](imdb.numImages, 2)

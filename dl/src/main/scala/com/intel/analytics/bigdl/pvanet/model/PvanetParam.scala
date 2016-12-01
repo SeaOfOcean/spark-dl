@@ -15,10 +15,21 @@
  * limitations under the License.
  */
 
-package com.intel.analytics.bigdl.pvanet.utils
+package com.intel.analytics.bigdl.pvanet.model
 
-abstract class Param {
-  val scales: Array[Float]
-  val ratios: Array[Float]
-  val A: Int
+class PvanetParam(isTrain: Boolean) extends FasterRcnnParam(isTrain) {
+  override val anchorScales: Array[Float] = Array[Float](3, 6, 9, 16, 32)
+  override val anchorRatios: Array[Float] = Array(0.5f, 0.667f, 1.0f, 1.5f, 2.0f)
+  override val anchorNum: Int = 25
+
+  override val SCALE_MULTIPLE_OF = 32
+  SCALES = if (!isTrain) Array(640)
+  else Array(416, 448, 480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800, 832, 864)
+  override val BBOX_VOTE = true
+  override val NMS = 0.4
+  override val RPN_PRE_NMS_TOP_N = if (isTrain) 12000 else 6000
+  override val RPN_POST_NMS_TOP_N = if (isTrain) 2000 else 200
+  override val BG_THRESH_LO = 0.0
+  BBOX_NORMALIZE_TARGETS_PRECOMPUTED = true
+  override val MAX_SIZE = 1440
 }

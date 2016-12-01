@@ -19,7 +19,8 @@ package com.intel.analytics.bigdl.pvanet.model
 
 import com.intel.analytics.bigdl.nn._
 import com.intel.analytics.bigdl.pvanet.caffe.CaffeReader
-import com.intel.analytics.bigdl.pvanet.utils.{Config, Param}
+import com.intel.analytics.bigdl.pvanet.datasets.PascolVocDataSource
+import com.intel.analytics.bigdl.pvanet.utils.FileUtil
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.utils.{File, Table}
@@ -30,7 +31,7 @@ abstract class FasterRCNN[T: ClassTag](caffeReader: CaffeReader[T] = null)
   (implicit ev: TensorNumeric[T]) {
 
   val modelName: String
-  val param: Param
+  val param: FasterRcnnParam
 
   /**
    *
@@ -99,25 +100,29 @@ abstract class FasterRCNN[T: ClassTag](caffeReader: CaffeReader[T] = null)
 
   def fastRcnn: Module[Table, Table, T]
 
-  def featureAndRpnNetWithCache: Module[Tensor[T], Table, T] = {
-    val cache = Config.modelPath + "/" + s"${modelName}_featureAndRpnNet.obj"
-    if (Config.existFile(cache)) {
-      File.load[Module[Tensor[T], Table, T]](cache)
-    } else {
-      val net = featureAndRpnNet
-      File.save(net, cache, true)
-      net
-    }
-  }
+  val useCache = false
 
-  def fastRcnnWithCache: Module[Table, Table, T] = {
-    val cache = Config.modelPath + "/" + s"${modelName}_fastRcnn.obj"
-    if (Config.existFile(cache)) {
-      File.load[Module[Table, Table, T]](cache)
-    } else {
-      val net = fastRcnn
-      File.save(net, cache, true)
-      net
-    }
-  }
+//  def featureAndRpnNetWithCache: Module[Tensor[T], Table, T] = {
+//    val cache = Config.modelPath + "/" + s"${modelName}_featureAndRpnNet.obj"
+//    if (Config.existFile(cache) && useCache) {
+//      File.load[Module[Tensor[T], Table, T]](cache)
+//    } else {
+//      val net = featureAndRpnNet
+//      File.save(net, cache, true)
+//      net
+//    }
+//  }
+//
+//  def fastRcnnWithCache: Module[Table, Table, T] = {
+//    val cache = Config.modelPath + "/" + s"${modelName}_fastRcnn.obj"
+//    if (Config.existFile(cache) && useCache) {
+//      File.load[Module[Table, Table, T]](cache)
+//    } else {
+//      val net = fastRcnn
+//      File.save(net, cache, true)
+//      net
+//    }
+//  }
 }
+
+  

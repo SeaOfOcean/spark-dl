@@ -18,7 +18,7 @@
 package com.intel.analytics.bigdl.pvanet.tools
 
 import breeze.linalg.DenseMatrix
-import com.intel.analytics.bigdl.nn.{Module, Sequential, SoftMax}
+import com.intel.analytics.bigdl.nn.{Sequential, SoftMax}
 import com.intel.analytics.bigdl.pvanet.datasets.Roidb.ImageWithRoi
 import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, ImageToTensor, PascolVocDataSource}
 import com.intel.analytics.bigdl.pvanet.layers.{Proposal, Reshape2}
@@ -55,7 +55,7 @@ object Test {
       })
       out
     }
-    val imageScaler = new ImageScalerAndMeanSubstractor(dataSource, isShuffle = false)
+    val imageScaler = new ImageScalerAndMeanSubstractor(dataSource, isShuffle = false, net.param)
 
     // timer
     val imDetectTimer = new Timer
@@ -80,11 +80,11 @@ object Test {
             inds, Range(j * 4, (j + 1) * 4).toArray)
 
           var clsDets = DenseMatrix.horzcat(clsBoxes, clsScores)
-          val keep = Nms.nms(clsDets, Config.TEST.NMS.toFloat)
+          val keep = Nms.nms(clsDets, net.param.NMS.toFloat)
 
           val detsNMSed = MatrixUtil.selectMatrix(clsDets, keep, 0)
 
-          if (Config.TEST.BBOX_VOTE) {
+          if (net.param.BBOX_VOTE) {
             clsDets = Bbox.bboxVote(detsNMSed, clsDets)
           } else {
             clsDets = detsNMSed
@@ -122,15 +122,14 @@ object Test {
 
     println("Evaluating detections")
 
-    val outputDir = Config.getOutputDir(imdb, "VGG16")
+    val outputDir = FileUtil.getOutputDir(imdb, "VGG16")
     imdb.evaluateDetections(allBoxes, outputDir)
   }
 
-  def imDetect(d: ImageWithRoi,
-    rpnWithFeatureModel: Module[Tensor[Float], Table, Float],
-    fastRcnn: Module[Table, Table, Float], A: Int): (DenseMatrix[Float], DenseMatrix[Float]) = {
+  def imDetect(net: FasterRCNN[Float], d: ImageWithRoi): (DenseMatrix[Float], DenseMatrix[Float]) = {
     val imgTensor = ImageToTensor(d)
-    val rpnWithFeature = rpnWithFeatureModel.forward(imgTensor)
+    println(imgTensor.size().mkString(", "))
+    val rpnWithFeature = net.featureAndRpnNet.forward(imgTensor)
 
     val rpnBboxPred = rpnWithFeature(1).asInstanceOf[Table](2).asInstanceOf[Tensor[Float]]
     val rpnClsScore = rpnWithFeature(1).asInstanceOf[Table](1).asInstanceOf[Tensor[Float]]
@@ -139,7 +138,8 @@ object Test {
     val clsProc = new Sequential[Tensor[Float], Tensor[Float], Float]()
     clsProc.add(new Reshape2[Float](Array(2, -1), Some(false)))
     clsProc.add(new SoftMax[Float]())
-    clsProc.add(new Reshape2[Float](Array(1, 2 * A, -1, rpnBboxPred.size(4)), Some(false)))
+    clsProc.add(new Reshape2[Float](Array(1, 2 * net.param.anchorNum,
+      -1, rpnBboxPred.size(4)), Some(false)))
     val rpnClsScoreReshape = clsProc.forward(rpnClsScore)
 
     val proposalInput = new Table
@@ -147,7 +147,7 @@ object Test {
     proposalInput.insert(rpnBboxPred)
     proposalInput.insert(d.imInfo.get)
 
-    val propoal = new Proposal[Float](phase = 1)
+    val propoal = new Proposal[Float](net.param)
     val proposalOut = propoal.forward(proposalInput)
 
     val rois = proposalOut(1).asInstanceOf[Tensor[Float]]
@@ -156,7 +156,7 @@ object Test {
     propDecInput.insert(featureOut)
     propDecInput.insert(rois)
 
-    val result = fastRcnn.forward(propDecInput)
+    val result = net.fastRcnn.forward(propDecInput)
 
     val scores = result(1).asInstanceOf[Tensor[Float]]
     val boxDeltas = result(2).asInstanceOf[Tensor[Float]]
@@ -174,28 +174,24 @@ object Test {
   def visDetection(d: ImageWithRoi, clsname: String, clsDets: DenseMatrix[Float],
     thresh: Float = 0.3f): Unit = {
     Draw.vis(d.imagePath, clsname, clsDets,
-      Config.demoPath + s"/${clsname}_" + d.imagePath.substring(d.imagePath.lastIndexOf("/") + 1))
-  }
-
-  def imDetect(net: FasterRCNN[Float], d: ImageWithRoi)
-  : (DenseMatrix[Float], DenseMatrix[Float]) = {
-    imDetect(d, net.featureAndRpnNetWithCache, net.fastRcnnWithCache,
-      net.param.A)
+      FileUtil.demoPath + s"/${clsname}_" + d.imagePath.substring(d.imagePath.lastIndexOf("/") + 1))
   }
 
 
   def main(args: Array[String]) {
     import com.intel.analytics.bigdl.mkl.MKL
     val param = parser.parse(args, PascolVocLocalParam()).get
-    MKL.setNumThreads(param.nThread)
+
     var model: FasterRCNN[Float] = null
-    val testDataSource = new PascolVocDataSource("2007", "testcode", param.folder, false)
     param.net match {
       case "vgg16" =>
-        model = FasterVgg.model
+        model = FasterVgg.model()
       case "pvanet" =>
-        model = FasterPvanet.model
+        model = FasterPvanet.model()
     }
+    MKL.setNumThreads(param.nThread)
+    val testDataSource = new PascolVocDataSource("2007", "testcode", param.folder,
+      false, model.param)
     testNet(model, testDataSource)
   }
 

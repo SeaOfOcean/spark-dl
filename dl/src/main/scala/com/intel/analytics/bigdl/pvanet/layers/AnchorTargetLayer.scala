@@ -21,7 +21,8 @@ import java.util.logging.Logger
 
 import breeze.linalg.{*, DenseMatrix, DenseVector, convert, max}
 import com.intel.analytics.bigdl.pvanet.datasets.Roidb.ImageWithRoi
-import com.intel.analytics.bigdl.pvanet.utils.{Anchor, Bbox, Config, MatrixUtil}
+import com.intel.analytics.bigdl.pvanet.model.FasterRcnnParam
+import com.intel.analytics.bigdl.pvanet.utils._
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
@@ -34,20 +35,19 @@ case class AnchorTarget(labels: DenseVector[Int],
 
 }
 
-class AnchorTargetLayer(val scales: Array[Float] = Array[Float](3, 6, 9, 16, 32),
-  val ratios: Array[Float] = Array(0.5f, 0.667f, 1.0f, 1.5f, 2.0f)) {
+class AnchorTargetLayer(param: FasterRcnnParam) {
   val logger = Logger.getLogger(this.getClass.getName)
   // todo: now hard code
 
   val featStride = 16
-  val anchors = Anchor.generateAnchors(ratios = ratios, scales = scales)
+  val anchors = Anchor.generateAnchors(ratios = param.anchorRatios, scales = param.anchorScales)
   val numAnchors = anchors.rows
   // n_scales * n_ratios
   val allowedBorder = 0
-  assert(numAnchors == ratios.length * scales.length)
+  assert(numAnchors == param.anchorNum)
 
   // debug info
-  var counts = Config.EPS
+  var counts = 1e-14
   var fgSum = 0
   var bgSum = 0
   var count = 0
@@ -142,10 +142,10 @@ class AnchorTargetLayer(val scales: Array[Float] = Array[Float](3, 6, 9, 16, 32)
     })
 
 
-    if (!Config.TRAIN.RPN_CLOBBER_POSITIVES) {
+    if (!param.RPN_CLOBBER_POSITIVES) {
       // assign bg labels first so that positive labels can clobber them
       maxOverlaps.zipWithIndex.foreach(x => {
-        if (x._1 < Config.TRAIN.RPN_NEGATIVE_OVERLAP) labels(x._2) = 0
+        if (x._1 < param.RPN_NEGATIVE_OVERLAP) labels(x._2) = 0
       })
     }
 
@@ -154,18 +154,18 @@ class AnchorTargetLayer(val scales: Array[Float] = Array[Float](3, 6, 9, 16, 32)
 
     // fg label: above threshold IOU
     maxOverlaps.zipWithIndex.foreach(x => {
-      if (x._1 >= Config.TRAIN.RPN_POSITIVE_OVERLAP) maxOverlaps(x._2) = 1
+      if (x._1 >= param.RPN_POSITIVE_OVERLAP) maxOverlaps(x._2) = 1
     })
 
-    if (Config.TRAIN.RPN_CLOBBER_POSITIVES) {
+    if (param.RPN_CLOBBER_POSITIVES) {
       // assign bg labels last so that negative labels can clobber positives
       maxOverlaps.zipWithIndex.foreach(x => {
-        if (x._1 < Config.TRAIN.RPN_NEGATIVE_OVERLAP) maxOverlaps(x._2) = 0
+        if (x._1 < param.RPN_NEGATIVE_OVERLAP) maxOverlaps(x._2) = 0
       })
     }
 
     // subsample positive labels if we have too many
-    val numFg = Config.TRAIN.RPN_FG_FRACTION * Config.TRAIN.RPN_BATCHSIZE
+    val numFg = param.RPN_FG_FRACTION * param.RPN_BATCHSIZE
     val fgInds = labels.findAll(_ == 1)
     if (fgInds.length > numFg) {
       val disableInds = Random.shuffle(fgInds).take(fgInds.length - numFg.toInt)
@@ -179,7 +179,7 @@ class AnchorTargetLayer(val scales: Array[Float] = Array[Float](3, 6, 9, 16, 32)
     labels.foreachPair((k, v) => {
       if (v == 1) {
         bboxInsideWeights(k, ::) :=
-          convert(DenseVector(Config.TRAIN.RPN_BBOX_INSIDE_WEIGHTS), Float).t
+          convert(DenseVector(param.RPN_BBOX_INSIDE_WEIGHTS), Float).t
       }
     })
 
@@ -190,56 +190,30 @@ class AnchorTargetLayer(val scales: Array[Float] = Array[Float](3, 6, 9, 16, 32)
     val labelE0 = labels.findAll(x => x == 0).toArray
     var positiveWeights = None: Option[DenseMatrix[Float]]
     var negative_weights = None: Option[DenseMatrix[Float]]
-    if (Config.TRAIN.RPN_POSITIVE_WEIGHT < 0) {
+    if (param.RPN_POSITIVE_WEIGHT < 0) {
       // uniform weighting of examples (given non -uniform sampling)
       val numExamples = labelGe0.length
       positiveWeights = Some(DenseMatrix.ones[Float](1, 4) * (1.0f / numExamples))
       negative_weights = Some(DenseMatrix.ones[Float](1, 4) * (1.0f / numExamples))
     }
     else {
-      require((Config.TRAIN.RPN_POSITIVE_WEIGHT > 0) &
-        (Config.TRAIN.RPN_POSITIVE_WEIGHT < 1))
+      require((param.RPN_POSITIVE_WEIGHT > 0) &
+        (param.RPN_POSITIVE_WEIGHT < 1))
       positiveWeights = Some(
-        DenseMatrix(Config.TRAIN.RPN_POSITIVE_WEIGHT.toFloat / labelE1.length))
+        DenseMatrix(param.RPN_POSITIVE_WEIGHT.toFloat / labelE1.length))
       negative_weights = Some(
-        DenseMatrix((1.0f - Config.TRAIN.RPN_POSITIVE_WEIGHT.toFloat) / labelE0.length))
+        DenseMatrix((1.0f - param.RPN_POSITIVE_WEIGHT.toFloat) / labelE0.length))
     }
 
     labelE1.foreach(x => bboxOutSideWeights(x, ::) := positiveWeights.get.toDenseVector.t)
     labelE0.foreach(x => bboxOutSideWeights(x, ::) := negative_weights.get.toDenseVector.t)
-
-    if (Config.DEBUG) {
-      counts += labelE1.length
-    }
-
-
+    
     // map up to original set of anchors
     labels = convert(unmap(convert(
       DenseMatrix(labels.data.array).t, Float), totalAnchors, indsInside, -1).toDenseVector, Int)
     bboxTargets = unmap(bboxTargets, totalAnchors, indsInside, 0)
     bboxInsideWeights = unmap(bboxInsideWeights, totalAnchors, indsInside, 0)
     bboxOutSideWeights = unmap(bboxOutSideWeights, totalAnchors, indsInside, 0)
-
-    if (Config.DEBUG) {
-      println("generate anchors done")
-      println("rpn: max max_overlap %s".format(
-        if (maxOverlaps.length != 0) max(maxOverlaps) else ""))
-      println("rpn: num_positive %d".format(labelE1.length))
-      println("rpn: num_negative %d".format(labelE0.length))
-      fgSum += labelE1.length
-      bgSum += labelE0.length
-      count += 1
-      println("rpn: num_positive avg " + fgSum / count)
-      println("rpn: num_negative avg " + bgSum / count)
-
-      println("total anchors: " + numAnchors)
-      println("num shifts" + shifts.rows)
-      println("bbox target shape: " + bboxTargets.rows + ", " + bboxTargets.cols)
-      println("bbox_inside_weights shape: " +
-        bboxInsideWeights.rows + ", " + bboxInsideWeights.cols)
-      println("bbox_outside_weights shape: " +
-        bboxOutSideWeights.rows + ", " + bboxOutSideWeights.cols)
-    }
 
     AnchorTarget(labels, bboxTargets, bboxInsideWeights, bboxOutSideWeights)
 

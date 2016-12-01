@@ -22,7 +22,7 @@ import java.util
 
 import breeze.linalg.{DenseMatrix, DenseVector, argmax, argsort, convert, max}
 import com.intel.analytics.bigdl.pvanet.datasets.PascalVoc
-import com.intel.analytics.bigdl.pvanet.utils.Config
+import com.intel.analytics.bigdl.pvanet.utils.FileUtil
 import com.intel.analytics.bigdl.utils.{File => DlFile}
 
 import scala.io.Source
@@ -115,7 +115,7 @@ object VocEval {
     // cachedir caches the annotations in a pickle file
 
     // first load gt
-    if (!Config.existFile(cachedir)) {
+    if (!FileUtil.existFile(cachedir)) {
       new File(cachedir).mkdirs()
     }
     val cachefile = s"${cachedir}/annots.pkl"
@@ -132,7 +132,7 @@ object VocEval {
       }
       DlFile.save(recs, cachefile)
     }
-    if (!Config.existFile(cachefile)) {
+    if (!FileUtil.existFile(cachefile)) {
       loadAnnots
     } else {
       try {

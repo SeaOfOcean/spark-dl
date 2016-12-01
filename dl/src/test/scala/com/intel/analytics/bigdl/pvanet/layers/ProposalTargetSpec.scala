@@ -19,12 +19,14 @@ package com.intel.analytics.bigdl.pvanet.layers
 
 import breeze.linalg.{DenseMatrix, convert}
 import com.intel.analytics.bigdl.pvanet.TestUtil
-import com.intel.analytics.bigdl.pvanet.utils.Config
+import com.intel.analytics.bigdl.pvanet.model.VggParam
+import com.intel.analytics.bigdl.pvanet.utils.FileUtil
 import com.intel.analytics.bigdl.tensor.Tensor
 import org.scalatest.FlatSpec
 
 class ProposalTargetSpec extends FlatSpec {
 
+  val param = new VggParam(true)
   val exRois = DenseMatrix((0.543404941791, 0.278369385094, 0.424517590749, 0.84477613232),
     (0.00471885619097, 0.121569120783, 0.670749084727, 0.825852755105),
     (0.136706589685, 0.575093329427, 0.891321954312, 0.209202122117),
@@ -54,7 +56,7 @@ class ProposalTargetSpec extends FlatSpec {
 
 
   behavior of "ProposalTargetSpec"
-  val proposalTarget = new ProposalTarget[Float](21)
+  val proposalTarget = new ProposalTarget[Float](21, param)
   it should "computeTargets without norm correcly" in {
     val expected = DenseMatrix((0.508699, 0.202244, -0.15083, -0.0485428, -1.38974),
       (0.0884602, 0.0911369, -0.0446058, -0.0663423, -0.88127),
@@ -85,7 +87,7 @@ class ProposalTargetSpec extends FlatSpec {
       (0.313066, 5.3096, 0.968626, 3.24834, -4.35484),
       (0.634037, -5.76122, 0.550574, -4.62417, -1.50302))
 
-    Config.TRAIN.BBOX_NORMALIZE_TARGETS_PRECOMPUTED = true
+    param.BBOX_NORMALIZE_TARGETS_PRECOMPUTED = true
 
     val targets = proposalTarget.computeTargets(convert(exRois, Float),
       convert(gtRois, Float), labels)

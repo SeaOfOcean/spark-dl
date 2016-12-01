@@ -21,7 +21,7 @@ import com.intel.analytics.bigdl.nn.{Module, ParallelCriterion}
 import com.intel.analytics.bigdl.pvanet.datasets.Roidb.ImageWithRoi
 import com.intel.analytics.bigdl.pvanet.datasets.{AnchorToTensor, ImageToTensor}
 import com.intel.analytics.bigdl.pvanet.layers.{AnchorTargetLayer, SmoothL1Criterion2, SoftmaxWithCriterion}
-import com.intel.analytics.bigdl.pvanet.utils.VggParam
+import com.intel.analytics.bigdl.pvanet.model.VggParam
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.Table
 
@@ -45,14 +45,14 @@ object Train {
     //    val regOut = res(2).asInstanceOf[Tensor[Float]]
     val height = sizes(sizes.length - 2)
     val width = sizes(sizes.length - 1)
-    val anchorTargetLayer = new AnchorTargetLayer(param.scales, param.ratios)
+    val anchorTargetLayer = new AnchorTargetLayer(param)
     val anchors = anchorTargetLayer.generateAnchors(d, height, width)
     val anchorToTensor = new AnchorToTensor(1, height, width)
     val anchorTensors = anchorToTensor.apply(anchors)
     val target = new Table
     target.insert(anchorTensors._1)
     target.insert(anchorTensors._2)
-    (height, width, param.A, target)
+    (height, width, param.anchorNum, target)
   }
 
   def rpnLoss(res: Table, target: Table): Float = {

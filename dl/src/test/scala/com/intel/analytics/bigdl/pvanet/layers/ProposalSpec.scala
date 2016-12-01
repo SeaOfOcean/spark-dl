@@ -20,14 +20,16 @@ package com.intel.analytics.bigdl.pvanet.layers
 import breeze.linalg.DenseMatrix
 import breeze.numerics.abs
 import com.intel.analytics.bigdl.pvanet.TestUtil._
+import com.intel.analytics.bigdl.pvanet.model.VggParam
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.Table
 import org.scalatest.{FlatSpec, Matchers}
 
 class ProposalSpec extends FlatSpec with Matchers {
+  val param = new VggParam(true)
   "testUpdateOutput" should "be correct" in {
     val classLoader = getClass().getClassLoader()
-    val proposal = new Proposal[Float](0)
+    val proposal = new Proposal[Float](param)
     val input = new Table
     input.insert(loadDataFromFile(
       classLoader.getResource("pvanet/data1.dat").getFile, Array(1, 18, 30, 40)))

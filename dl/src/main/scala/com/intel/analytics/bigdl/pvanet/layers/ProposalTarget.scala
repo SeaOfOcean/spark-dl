@@ -20,7 +20,8 @@ package com.intel.analytics.bigdl.pvanet.layers
 import breeze.linalg.{DenseMatrix, DenseVector, min, sum}
 import breeze.numerics.round
 import com.intel.analytics.bigdl.nn.Module
-import com.intel.analytics.bigdl.pvanet.utils.{Bbox, Config, MatrixUtil}
+import com.intel.analytics.bigdl.pvanet.model.FasterRcnnParam
+import com.intel.analytics.bigdl.pvanet.utils.{Bbox, FileUtil, MatrixUtil}
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import com.intel.analytics.bigdl.utils.Table
@@ -31,12 +32,8 @@ import scala.util.Random
 /**
  * Assign object detection proposals to ground-truth targets. Produces proposal
  * classification labels and bounding-box regression targets.
- *
- * @param ev$1
- * @param ev
- * @tparam T
  */
-class ProposalTarget[@specialized(Float, Double) T: ClassTag](numClasses: Int)
+class ProposalTarget[@specialized(Float, Double) T: ClassTag](numClasses: Int, param: FasterRcnnParam)
   (implicit ev: TensorNumeric[T]) extends Module[Table, Table, T] {
 
   /**
@@ -52,11 +49,11 @@ class ProposalTarget[@specialized(Float, Double) T: ClassTag](numClasses: Int)
 
     val targets = Bbox.bboxTransform(ex_rois, gt_rois)
 
-    if (Config.TRAIN.BBOX_NORMALIZE_TARGETS_PRECOMPUTED) {
+    if (param.BBOX_NORMALIZE_TARGETS_PRECOMPUTED) {
       // Optionally normalize targets by a precomputed mean and stdev
       for (r <- 0 until targets.rows) {
-        targets(r, ::) :-= DenseVector(Config.TRAIN.BBOX_NORMALIZE_MEANS).t
-        targets(r, ::) :/= DenseVector(Config.TRAIN.BBOX_NORMALIZE_STDS).t
+        targets(r, ::) :-= DenseVector(param.BBOX_NORMALIZE_MEANS).t
+        targets(r, ::) :/= DenseVector(param.BBOX_NORMALIZE_STDS).t
       }
     }
     DenseMatrix.horzcat(DenseVector(labels).toDenseMatrix.t, targets)
@@ -73,22 +70,19 @@ class ProposalTarget[@specialized(Float, Double) T: ClassTag](numClasses: Int)
    * bbox_target (ndarray): N x 4K blob of regression targets
    * bbox_inside_weights (ndarray): N x 4K blob of loss weights
    *
-   * @param bbox_target_data
-   * @param numClasses
    */
   def getBboxRegressionLabels(bbox_target_data: DenseMatrix[Float],
     numClasses: Int): (DenseMatrix[Float], DenseMatrix[Float]) = {
     val clss = bbox_target_data(::, 0).toArray
-    val bbox_targets = DenseMatrix.zeros[Float](clss.size, 4 * numClasses)
+    val bbox_targets = DenseMatrix.zeros[Float](clss.length, 4 * numClasses)
     val bbox_inside_weights = DenseMatrix.zeros[Float](bbox_targets.rows, bbox_targets.cols)
     val inds = clss.zipWithIndex.filter(x => x._1 > 0).map(x => x._2)
     inds.foreach(ind => {
       val cls = clss(ind)
       val start = 4 * cls
-      val end = start + 4
       (1 until bbox_target_data.cols).foreach(x => {
-        bbox_targets(ind, (x + start.toInt - 1)) = bbox_target_data(ind, x)
-        bbox_inside_weights(ind, (x + start.toInt - 1)) = Config.TRAIN.BBOX_INSIDE_WEIGHTS(x - 1)
+        bbox_targets(ind, x + start.toInt - 1) = bbox_target_data(ind, x)
+        bbox_inside_weights(ind, x + start.toInt - 1) = param.BBOX_INSIDE_WEIGHTS(x - 1)
       })
     })
     (bbox_targets, bbox_inside_weights)
@@ -109,34 +103,34 @@ class ProposalTarget[@specialized(Float, Double) T: ClassTag](numClasses: Int)
 
     // Select foreground RoIs as those with >= FG_THRESH overlap
     var fg_inds = max_overlaps.zipWithIndex
-      .filter(x => x._1 >= Config.TRAIN.FG_THRESH).map(x => x._2)
+      .filter(x => x._1 >= param.FG_THRESH).map(x => x._2)
     // Guard against the case when an image has fewer than fg_rois_per_image
     // foreground RoIs
-    val fg_rois_per_this_image = min(fg_rois_per_image, fg_inds.size)
+    val fg_rois_per_this_image = min(fg_rois_per_image, fg_inds.length)
     // Sample foreground regions without replacement
-    if (fg_inds.size > 0) {
+    if (fg_inds.length > 0) {
       fg_inds = Random.shuffle(fg_inds.toList).slice(0, fg_rois_per_this_image).toArray
     }
 
     // Select background RoIs as those within [BG_THRESH_LO, BG_THRESH_HI)
     var bg_inds = max_overlaps.zipWithIndex
-      .filter(x => (x._1 < Config.TRAIN.BG_THRESH_HI) && (x._1 >= Config.TRAIN.BG_THRESH_LO))
+      .filter(x => (x._1 < param.BG_THRESH_HI) && (x._1 >= param.BG_THRESH_LO))
       .map(x => x._2)
     // Compute number of background RoIs to take from this image (guarding
     // against there being fewer than desired)
     var bg_rois_per_this_image = rois_per_image - fg_rois_per_this_image
-    bg_rois_per_this_image = min(bg_rois_per_this_image, bg_inds.size)
+    bg_rois_per_this_image = min(bg_rois_per_this_image, bg_inds.length)
     // Sample background regions without replacement
     if (bg_inds.length > 0) {
       bg_inds = Random.shuffle(bg_inds.toList).slice(0, bg_rois_per_this_image).toArray
     }
 
     // The indices that we're selecting (both fg and bg)
-    var keep_inds = fg_inds ++ bg_inds
+    val keep_inds = fg_inds ++ bg_inds
     // Select sampled values from various arrays:
     labels = keep_inds.map(x => labels(x))
     // Clamp labels for the background RoIs to 0
-    Range(fg_rois_per_this_image, labels.length).map(i => labels(i) = 0)
+    Range(fg_rois_per_this_image, labels.length).foreach(i => labels(i) = 0)
 
     val rois = MatrixUtil.selectMatrix(all_rois, keep_inds, 0)
 
@@ -167,21 +161,15 @@ class ProposalTarget[@specialized(Float, Double) T: ClassTag](numClasses: Int)
     assert(all_rois(::, 0).forall(x => x == 0), "Only single item batches are supported")
 
     val numImages = 1
-    val rois_per_image = Config.TRAIN.BATCH_SIZE / numImages
+    val rois_per_image = param.BATCH_SIZE / numImages
 
-    val fg_rois_per_image = round(Config.TRAIN.FG_FRACTION * rois_per_image).toInt
+    val fg_rois_per_image = round(param.FG_FRACTION * rois_per_image).toInt
 
     // Sample rois with classification labels and bounding box regression
     // targets
     val (labels, rois, bbox_targets, bbox_inside_weights) = sampleRois(
       all_rois, gt_boxes, fg_rois_per_image,
       rois_per_image, numClasses)
-
-    if (Config.DEBUG) {
-      println("num fg: %d ".format(sum(labels.map(x => if (x > 0) 1 else 0))))
-      println("num bg: %d ".format(sum(labels.map(x => if (x == 0) 1 else 0))))
-    }
-
 
     // sampled rois (0, x1, y1, x2, y2) (1,5)
     output.insert(matrix2tensor(rois))
