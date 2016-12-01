@@ -26,7 +26,7 @@ import com.intel.analytics.bigdl.utils.Table
 
 import scala.reflect.ClassTag
 
-class FasterPvanet[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeReader[T] = null,
+class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeReader[T] = null,
   isTrain: Boolean = false)
   (implicit ev: TensorNumeric[T])
   extends FasterRCNN[T](caffeReader) {
@@ -213,8 +213,12 @@ class FasterPvanet[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRe
       .add(new ReLU[T]()))
     compose.add(convTable)
     val rpnAndFeature = new ConcatTable[Table, T]()
-    rpnAndFeature.add(new Sequential[Table, Table, T]().add(new SelectTable[T](1)).add(rpn))
-    rpnAndFeature.add(new Concat[T](2))
+    rpnAndFeature.add(new Sequential[Table, Table, T]()
+      .add(new SelectTable[Tensor[T], T](1)).add(rpn))
+    val concatFeature = new Concat[T](2)
+    concatFeature.add(new SelectTable[Tensor[T], T](1))
+    concatFeature.add(new SelectTable[Tensor[T], T](2))
+    rpnAndFeature.add(concatFeature)
     compose.add(rpnAndFeature)
     compose
   }
@@ -256,19 +260,19 @@ class FasterPvanet[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRe
   override val param: FasterRcnnParam = new PvanetParam(isTrain)
 }
 
-object FasterPvanet {
+object PvanetFRcnn {
   val defName = "/home/xianyan/objectRelated/pvanet/full/test.pt"
   val modelName = "/home/xianyan/objectRelated/pvanet/full/test.model"
   val caffeReader: CaffeReader[Float] = new CaffeReader(defName, modelName, "pvanet")
   var modelWithCaffeWeight: FasterRCNN[Float] = _
 
   def model(isTrain: Boolean = false): FasterRCNN[Float] = {
-    if (modelWithCaffeWeight == null) modelWithCaffeWeight = new FasterPvanet[Float](caffeReader)
+    if (modelWithCaffeWeight == null) modelWithCaffeWeight = new PvanetFRcnn[Float](caffeReader)
     modelWithCaffeWeight
   }
 
   def main(args: Array[String]): Unit = {
-    val pvanet = FasterPvanet.model()
+    val pvanet = PvanetFRcnn.model()
     pvanet.featureAndRpnNet
     pvanet.fastRcnn
   }

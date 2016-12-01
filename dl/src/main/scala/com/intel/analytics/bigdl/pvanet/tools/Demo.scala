@@ -57,8 +57,8 @@ object Demo {
       "50.jpg", "60.jpg", "70.jpg", "80.jpg", "90.jpg", "100.jpg")
     var net: FasterRCNN[Float] = null
     param.net match {
-      case "vgg" => net = FasterVgg.model()
-      case "pvanet" => net = FasterPvanet.model()
+      case "vgg" => net = VggFRcnn.model()
+      case "pvanet" => net = PvanetFRcnn.model()
     }
     
     val imageScaler = new ImageScalerAndMeanSubstractor(null, param = net.param)

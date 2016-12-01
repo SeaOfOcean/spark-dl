@@ -22,7 +22,7 @@ import com.intel.analytics.bigdl.nn.{Sequential, SoftMax}
 import com.intel.analytics.bigdl.pvanet.datasets.Roidb.ImageWithRoi
 import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, ImageToTensor, PascolVocDataSource}
 import com.intel.analytics.bigdl.pvanet.layers.{Proposal, Reshape2}
-import com.intel.analytics.bigdl.pvanet.model.{FasterPvanet, FasterRCNN, FasterVgg}
+import com.intel.analytics.bigdl.pvanet.model.{FasterRCNN, PvanetFRcnn, VggFRcnn}
 import com.intel.analytics.bigdl.pvanet.utils._
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.{Table, Timer}
@@ -31,7 +31,7 @@ import scopt.OptionParser
 object Test {
 
   case class PascolVocLocalParam(folder: String = "/home/xianyan/objectRelated/VOCdevkit",
-    net: String = "vgg16", nThread: Int = 4)
+    net: String = "pvanet", nThread: Int = 4)
 
   private val parser = new OptionParser[PascolVocLocalParam]("Spark-DL PascolVoc Local Example") {
     head("Spark-DL PascolVoc Local Example")
@@ -185,9 +185,9 @@ object Test {
     var model: FasterRCNN[Float] = null
     param.net match {
       case "vgg16" =>
-        model = FasterVgg.model()
+        model = VggFRcnn.model()
       case "pvanet" =>
-        model = FasterPvanet.model()
+        model = PvanetFRcnn.model()
     }
     MKL.setNumThreads(param.nThread)
     val testDataSource = new PascolVocDataSource("2007", "testcode", param.folder,

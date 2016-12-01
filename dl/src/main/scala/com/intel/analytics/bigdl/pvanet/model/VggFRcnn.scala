@@ -26,7 +26,7 @@ import com.intel.analytics.bigdl.utils.Table
 
 import scala.reflect.ClassTag
 
-class FasterVgg[T: ClassTag](caffeReader: CaffeReader[T] = null,
+class VggFRcnn[T: ClassTag](caffeReader: CaffeReader[T] = null,
   isTrain: Boolean = false)(implicit ev: TensorNumeric[T])
   extends FasterRCNN[T](caffeReader) {
 
@@ -121,7 +121,7 @@ class FasterVgg[T: ClassTag](caffeReader: CaffeReader[T] = null,
 
 }
 
-object FasterVgg {
+object VggFRcnn {
   private val defName = "/home/xianyan/objectRelated/faster_rcnn_models/VGG16/" +
     "faster_rcnn_alt_opt/rpn_test.pt"
   private val modelName = "/home/xianyan/objectRelated/faster_rcnn_models/" +
@@ -132,7 +132,7 @@ object FasterVgg {
   private var modelWithCaffeWeight: FasterRCNN[Float] = null
 
   def model(isTrain: Boolean = false): FasterRCNN[Float] = {
-    if (modelWithCaffeWeight == null) modelWithCaffeWeight = new FasterVgg[Float](caffeReader)
+    if (modelWithCaffeWeight == null) modelWithCaffeWeight = new VggFRcnn[Float](caffeReader)
     modelWithCaffeWeight
   }
 
