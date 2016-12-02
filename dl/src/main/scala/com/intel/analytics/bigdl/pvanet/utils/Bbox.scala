@@ -17,12 +17,48 @@
 
 package com.intel.analytics.bigdl.pvanet.utils
 
-import breeze.linalg.{*, DenseMatrix, min}
+import breeze.linalg.{*, DenseMatrix, DenseVector, min}
 import breeze.numerics._
 
 object Bbox {
-  def bboxVote(detsNMSed: DenseMatrix[Float], clsDets: DenseMatrix[Float]): DenseMatrix[Float] = {
-    throw new UnsupportedOperationException
+  def bboxVote(detsNMS: DenseMatrix[Float], detsAll: DenseMatrix[Float]): DenseMatrix[Float] = {
+    val detsVoted = new DenseMatrix[Float](detsNMS.rows, detsNMS.cols)
+    var accBox: DenseVector[Float] = null
+    var accScore = 0f
+    var det: Array[Float] = null
+    for (i <- 0 until detsNMS.rows) {
+      det = MatrixUtil.selectRow(detsNMS, i)
+      if (accBox == null) {
+        accBox = DenseVector.zeros[Float](4)
+      } else {
+        accBox := 0f
+      }
+      accScore = 0f
+      for (m <- 0 until detsAll.rows) {
+        val det2 = MatrixUtil.selectRow(detsAll, m)
+
+        val bis0 = Math.max(det(0), det2(0))
+        val bis1 = Math.max(det(1), det2(1))
+        val bis2 = Math.min(det(2), det2(2))
+        val bis3 = Math.min(det(3), det2(3))
+
+        val iw = bis2 - bis0 + 1
+        val ih = bis3 - bis1 + 1
+
+        if (iw > 0 && ih > 0) {
+          val ua = (det(2) - det(0) + 1) * (det(3) - det(1) + 1) +
+            (det2(2) - det2(0) + 1) * (det2(3) - det2(1) + 1) - iw * ih
+          val ov = iw * ih / ua
+          if (ov >= 0.5) {
+            accBox :+= (DenseVector(det2.slice(0, 4)) :* det2(4))
+            accScore += det2(4)
+          }
+        }
+      }
+      (0 until 4).foreach(x => detsVoted(i, x) = (accBox(x) / accScore))
+      detsVoted(i, 4) = det(4)
+    }
+    detsVoted
   }
 
 
