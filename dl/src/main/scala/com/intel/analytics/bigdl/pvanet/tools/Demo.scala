@@ -18,10 +18,10 @@
 package com.intel.analytics.bigdl.pvanet.tools
 
 import breeze.linalg.DenseMatrix
+import com.intel.analytics.bigdl.pvanet.datasets.ImageScalerAndMeanSubstractor
 import com.intel.analytics.bigdl.pvanet.datasets.Roidb.ImageWithRoi
-import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor}
 import com.intel.analytics.bigdl.pvanet.model._
-import com.intel.analytics.bigdl.pvanet.utils.{Bbox, FileUtil, MatrixUtil, Nms}
+import com.intel.analytics.bigdl.pvanet.utils.{Bbox, MatrixUtil, Nms}
 import com.intel.analytics.bigdl.utils.Timer
 import scopt.OptionParser
 
@@ -49,7 +49,6 @@ object Demo {
       .action((x, c) => c.copy(net = x.toLowerCase))
   }
 
-  
 
   def main(args: Array[String]): Unit = {
     val param = parser.parse(args, PascolVocLocalParam()).get
@@ -60,9 +59,9 @@ object Demo {
       case "vgg" => net = VggFRcnn.model()
       case "pvanet" => net = PvanetFRcnn.model()
     }
-    
+
     val imageScaler = new ImageScalerAndMeanSubstractor(null, param = net.param)
-    
+
     imgNames.foreach(imaName => {
       val img = ImageWithRoi()
       img.imagePath = param.folder + "/" + imaName
@@ -70,8 +69,8 @@ object Demo {
       val scaledImage = imageScaler.apply(img)
       val timer = new Timer
       timer.tic()
-      val (scores: DenseMatrix[Float], boxes: DenseMatrix[Float]) =
-        Test.imDetect(net, scaledImage)
+      val (scores: DenseMatrix[Float], boxes: DenseMatrix[Float])
+      = Test.imDetect(net, scaledImage)
       timer.toc()
       println(s"Detection took ${"%.3f".format(timer.totalTime / 1e9)}s " +
         s"for ${boxes.rows} object proposals")
