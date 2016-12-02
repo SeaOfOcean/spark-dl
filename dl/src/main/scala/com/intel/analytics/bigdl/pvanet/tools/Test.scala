@@ -128,7 +128,6 @@ object Test {
 
   def imDetect(net: FasterRCNN[Float], d: ImageWithRoi): (DenseMatrix[Float], DenseMatrix[Float]) = {
     val imgTensor = ImageToTensor(d)
-    println(imgTensor.size().mkString(", "))
     val rpnWithFeature = net.featureAndRpnNet.forward(imgTensor)
 
     val rpnBboxPred = rpnWithFeature(1).asInstanceOf[Table](2).asInstanceOf[Tensor[Float]]
@@ -140,7 +139,7 @@ object Test {
     clsProc.add(new SoftMax[Float]())
     clsProc.add(new Reshape2[Float](Array(1, 2 * net.param.anchorNum,
       -1, rpnBboxPred.size(4)), Some(false)))
-    val rpnClsScoreReshape = clsProc.forward(rpnClsScore)
+    val rpnClsScoreReshape: Tensor[Float] = clsProc.forward(rpnClsScore)
 
     val proposalInput = new Table
     proposalInput.insert(rpnClsScoreReshape)
@@ -167,7 +166,6 @@ object Test {
     // Apply bounding-box regression deltas
     var predBoxes = Bbox.bboxTransformInv(boxes.toBreezeMatrix(), boxDeltas.toBreezeMatrix())
     predBoxes = Bbox.clipBoxes(predBoxes, d.oriHeight, d.oriWidth)
-
     (scores.toBreezeMatrix(), predBoxes)
   }
 
@@ -190,7 +188,7 @@ object Test {
         model = PvanetFRcnn.model()
     }
     MKL.setNumThreads(param.nThread)
-    val testDataSource = new PascolVocDataSource("2007", "testcode", param.folder,
+    val testDataSource = new PascolVocDataSource("2007", "testcode1", param.folder,
       false, model.param)
     testNet(model, testDataSource)
   }

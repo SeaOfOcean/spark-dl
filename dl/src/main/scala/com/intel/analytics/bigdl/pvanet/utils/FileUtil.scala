@@ -17,8 +17,9 @@
 
 package com.intel.analytics.bigdl.pvanet.utils
 
-import java.io.File
+import java.io.{BufferedWriter, File, FileNotFoundException, FileWriter}
 
+import breeze.linalg.DenseMatrix
 import com.intel.analytics.bigdl.pvanet.datasets.Imdb
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 
@@ -77,10 +78,60 @@ object FileUtil {
   }
 
 
-  def loadFeatures(s: String): Tensor[Float] = {
-    val middleRoot = "/home/xianyan/code/intel/pvanet/"
+  def loadFeaturesFullName(s: String): Tensor[Float] = {
+    val middleRoot = "data/middle/pvanet/14/"
     val size = s.substring(s.lastIndexOf("-") + 1, s.lastIndexOf(".")).split("_").map(x => x.toInt)
     Tensor(Storage(Source.fromFile(middleRoot + s).getLines()
       .map(x => x.toFloat).toArray)).reshape(size)
+  }
+
+  def loadFeaturesFullNameD(s: String): Tensor[Double] = {
+    val middleRoot = "/home/xianyan/code/intel/pvanet/spark-dl/data/middle/pvanet/14/"
+    val size = s.substring(s.lastIndexOf("-") + 1, s.lastIndexOf(".")).split("_").map(x => x.toInt)
+    Tensor(Storage(Source.fromFile(middleRoot + s).getLines()
+      .map(x => x.toDouble).toArray)).reshape(size)
+  }
+
+  def loadFeatures(s: String): Tensor[Float] = {
+    val middleRoot = "/home/xianyan/code/intel/pvanet/spark-dl/data/middle/pvanet/14/"
+    if (s.contains(".txt")) {
+      return loadFeaturesFullName(s)
+    } else {
+      val list = new File(middleRoot).listFiles()
+      list.foreach(x => {
+        if (x.getName.matches(s"${s}-.*txt")) {
+          return loadFeaturesFullName(x.getName)
+        }
+      })
+      throw new FileNotFoundException()
+    }
+  }
+
+  def loadFeaturesD(s: String): Tensor[Double] = {
+    val middleRoot = "/home/xianyan/code/intel/pvanet/spark-dl/data/middle/pvanet/14/"
+    if (s.contains(".txt")) {
+      return loadFeaturesFullNameD(s)
+    } else {
+      val list = new File(middleRoot).listFiles()
+      list.foreach(x => {
+        if (x.getName.matches(s"${s}-.*txt")) {
+          return loadFeaturesFullNameD(x.getName)
+        }
+      })
+      throw new FileNotFoundException()
+    }
+  }
+
+
+  def saveDenseMatrix(detsNMS: DenseMatrix[Float], s: String): Unit = {
+    val savePath = s"/home/xianyan/code/intel/pvanet/spark-dl/data/middle/pvanet/" +
+      s"${s}-${detsNMS.rows}_${detsNMS.cols}"
+    val writer = new BufferedWriter(new FileWriter(savePath))
+    for (i <- 0 until detsNMS.rows) {
+      for (j <- 0 until detsNMS.cols) {
+        writer.write(detsNMS(i, j) + "\n")
+      }
+    }
+    writer.close()
   }
 }

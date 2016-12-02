@@ -36,14 +36,14 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRea
   private def concatNeg(name: String): Concat[T] = {
     val concat = new Concat[T](2)
     concat.add(new Identity[T]())
-    concat.add(new Power[T](1, -1, 0).setName(name))
+    concat.add(new Power[T](1, -1, 0).setName(s"$name/neg"))
+    concat.setName(s"$name/concat")
     concat
   }
 
   private def addScale(module: Sequential[Tensor[T], Tensor[T], T],
     sizes: Array[Int], name: String): Unit = {
     val sc = scale(sizes, name)
-//    module.add(new Reshape2[T](Array(-1, 0), batchMode = Some(false)))
     module.add(sc._1)
     module.add(sc._2)
     module.add(new ReLU[T]())
@@ -65,7 +65,7 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRea
     conv_left.add(new ReLU[T]())
     conv_left.add(conv(p(i), s"conv$label/2/conv"))
     i += 1
-    conv_left.add(concatNeg(s"conv$label/2/neg"))
+    conv_left.add(concatNeg(s"conv$label/2"))
     if (compId == 2) {
       addScale(conv_left, Array(48), s"conv$label/2/scale")
     } else {
@@ -83,7 +83,7 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRea
       convTable.add(new Identity[T]())
     }
     pvanet.add(convTable)
-    pvanet.add(new CAddTable[T]())
+    pvanet.add(new CAddTable[T]().setName(s"conv$label"))
   }
 
   private def addInception(module: Sequential[Tensor[T], Tensor[T], T], label: String, index: Int,
@@ -115,7 +115,7 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRea
 
     if (index == 1) {
       val com4 = new Sequential[Tensor[T], Tensor[T], T]()
-      com4.add(new SpatialMaxPooling[T](3, 3, 2, 2, 0, 0).ceil().setName(s"conv$label/incep/pool"))
+      com4.add(new SpatialMaxPooling[T](3, 3, 2, 2).ceil().setName(s"conv$label/incep/pool"))
       com4.add(conv(p(i), s"conv$label/incep/poolproj/conv")).add(new ReLU[T]())
       i += 1
       incep.add(com4)
@@ -133,7 +133,7 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRea
       table.add(new Identity[T]())
     }
     module.add(table)
-    module.add(new CAddTable[T]())
+    module.add(new CAddTable[T]().setName(s"conv$label"))
   }
 
 
@@ -142,9 +142,9 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRea
     pvanet = new Sequential[Tensor[T], Tensor[T], T]()
     pvanet.add(conv((3, 16, 7, 2, 3), "conv1_1/conv"))
 
-    pvanet.add(concatNeg("conv1_1/neg"))
+    pvanet.add(concatNeg("conv1_1"))
     addScale(pvanet, Array(32), "conv1_1/scale")
-    pvanet.add(new SpatialMaxPooling[T](3, 3, 2, 2, 0, 0).ceil().setName("pool1"))
+    pvanet.add(new SpatialMaxPooling[T](3, 3, 2, 2).ceil().setName("pool1"))
 
 
     addConvComponent(2, 1, Array((32, 24, 1, 1, 0), (24, 24, 3, 1, 1),
@@ -183,6 +183,7 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRea
         (96, 192, 3, 1, 1), (384, 32, 1, 1, 0), (32, 64, 3, 1, 1), (64, 64, 3, 1, 1),
         (320, 384, 1, 1, 0)))
     }
+
     seq5.add(inceptions5)
     seq5.add(spatialFullConv((384, 384, 4, 2, 1), "upsample"))
 
@@ -192,10 +193,10 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRea
 
     inceptions4_5.add(concat5)
 
-    val concatIncept = new Concat[T](2)
-    concatIncept.add(new SpatialMaxPooling[T](3, 3, 2, 2, 0, 0).ceil())
-    concatIncept.add(inceptions4_5)
-    pvanet.add(concatIncept)
+    val concatConvf = new Concat[T](2).setName("concat")
+    concatConvf.add(new SpatialMaxPooling[T](3, 3, 2, 2).ceil().setName("downsample"))
+    concatConvf.add(inceptions4_5)
+    pvanet.add(concatConvf)
 
     pvanet
   }
@@ -215,10 +216,7 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRea
     val rpnAndFeature = new ConcatTable[Table, T]()
     rpnAndFeature.add(new Sequential[Table, Table, T]()
       .add(new SelectTable[Tensor[T], T](1)).add(rpn))
-    val concatFeature = new Concat[T](2)
-    concatFeature.add(new SelectTable[Tensor[T], T](1))
-    concatFeature.add(new SelectTable[Tensor[T], T](2))
-    rpnAndFeature.add(concatFeature)
+    rpnAndFeature.add(new JoinTable[T](2, 4))
     compose.add(rpnAndFeature)
     compose
   }

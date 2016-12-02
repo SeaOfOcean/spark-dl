@@ -20,6 +20,8 @@ package com.intel.analytics.bigdl.pvanet.utils
 import breeze.linalg.{DenseMatrix, DenseVector, argmax, max}
 
 object MatrixUtil {
+
+
   def selectMatrix2(mat: DenseMatrix[Float],
     rows: Array[Int], cols: Array[Int]): DenseMatrix[Float] = {
     val out = new DenseMatrix[Float](rows.length, cols.length)
@@ -113,6 +115,10 @@ object MatrixUtil {
       ind += 1
     }
     out
+  }
+
+  def selectRow(mat: DenseMatrix[Float], rid: Int): Array[Float] = {
+    selectMatrix(mat, Array(rid), 0).toArray
   }
 
   def printMatrix(info: String, data: DenseMatrix[Float]): Unit = {
