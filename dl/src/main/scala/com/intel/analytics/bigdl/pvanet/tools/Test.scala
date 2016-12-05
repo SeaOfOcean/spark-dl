@@ -127,7 +127,8 @@ object Test {
   }
 
   def imDetect(net: FasterRCNN[Float], d: ImageWithRoi): (DenseMatrix[Float], DenseMatrix[Float]) = {
-    val imgTensor = ImageToTensor(d)
+//    val imgTensor = ImageToTensor(d)
+    val imgTensor = FileUtil.loadFeatures("data")
     val rpnWithFeature = net.featureAndRpnNet.forward(imgTensor)
 
     val rpnBboxPred = rpnWithFeature(1).asInstanceOf[Table](2).asInstanceOf[Tensor[Float]]

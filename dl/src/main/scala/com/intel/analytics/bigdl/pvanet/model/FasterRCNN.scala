@@ -81,7 +81,7 @@ abstract class FasterRCNN[T: ClassTag](caffeReader: CaffeReader[T] = null)
   def spatialFullConv(p: (Int, Int, Int, Int, Int), name: String)
   : SpatialFullConvolution[Tensor[T], T] = {
     if (caffeReader != null) {
-      val out = caffeReader.mapDeconvolution(name)
+      val out = caffeReader.mapDeconvolution(name).setName(name)
       assert(out.nInputPlane == p._1)
       assert(out.nOutputPlane == p._2)
       assert(out.kW == p._3)
