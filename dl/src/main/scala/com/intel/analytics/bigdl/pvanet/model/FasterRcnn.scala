@@ -25,7 +25,11 @@ import com.intel.analytics.bigdl.utils.Table
 
 import scala.reflect.ClassTag
 
-abstract class FasterRCNN[T: ClassTag](caffeReader: CaffeReader[T] = null)
+object Phase extends Enumeration {
+  val TRAIN, TEST, FINETUNE = Value
+}
+
+abstract class FasterRcnn[T: ClassTag](caffeReader: CaffeReader[T] = null)
   (implicit ev: TensorNumeric[T]) {
 
   val modelName: String
@@ -78,25 +82,33 @@ abstract class FasterRCNN[T: ClassTag](caffeReader: CaffeReader[T] = null)
     }
   }
 
-  def spatialFullConv(p: (Int, Int, Int, Int, Int), name: String)
-  : SpatialFullConvolution[Tensor[T], T] = {
+  def spatialFullConv(p: (Int, Int, Int, Int, Boolean), name: String)
+  : SpatialFullConvolutionMap[T] = {
     if (caffeReader != null) {
       val out = caffeReader.mapDeconvolution(name).setName(name)
-      assert(out.nInputPlane == p._1)
-      assert(out.nOutputPlane == p._2)
-      assert(out.kW == p._3)
-      assert(out.dW == p._4)
-      assert(out.padH == p._5)
+      assert(out.connTable.size(1) == p._1)
+      assert(out.kW == p._2)
+      assert(out.dW == p._3)
+      assert(out.padH == p._4)
+      assert(out.noBias == !p._5)
       out
     } else {
-      new SpatialFullConvolution[Tensor[T], T](p._1, p._2, p._3, p._3, p._4, p._4,
-        p._5, p._5).setName(name)
+      new SpatialFullConvolutionMap[T](SpatialConvolutionMap.oneToOne[T](p._1),
+        p._2, p._2, p._3, p._3, p._4, p._4, p._5).setName(name)
     }
   }
 
-  def featureAndRpnNet: Module[Tensor[T], Table, T]
+  def rpnCriterion: ParallelCriterion[T]
+
+  def fastRcnnCriterion: ParallelCriterion[T]
+
+  def featureAndRpnNet(phase: Phase.Value = Phase.TEST): Module[Tensor[T], Table, T]
 
   def fastRcnn: Module[Table, Table, T]
+
+  def rpn: Module[Tensor[T], Table, T]
+
+  def rpnTrain: Module[Tensor[T], Table, T]
 }
 
   

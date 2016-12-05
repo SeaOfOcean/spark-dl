@@ -19,7 +19,7 @@ package com.intel.analytics.bigdl.pvanet.model
 
 import com.intel.analytics.bigdl.nn._
 import com.intel.analytics.bigdl.pvanet.caffe.CaffeReader
-import com.intel.analytics.bigdl.pvanet.layers.{Reshape2, RoiPooling}
+import com.intel.analytics.bigdl.pvanet.layers.{Reshape2, RoiPooling, SmoothL1Criterion2, SoftmaxWithCriterion}
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.utils.Table
@@ -28,7 +28,7 @@ import scala.reflect.ClassTag
 
 class VggFRcnn[T: ClassTag](caffeReader: CaffeReader[T] = null,
   isTrain: Boolean = false)(implicit ev: TensorNumeric[T])
-  extends FasterRCNN[T](caffeReader) {
+  extends FasterRcnn[T](caffeReader) {
 
   def vgg16: Module[Tensor[T], Tensor[T], T] = {
     val vggNet = new Sequential[Tensor[T], Tensor[T], T]()
@@ -69,24 +69,35 @@ class VggFRcnn[T: ClassTag](caffeReader: CaffeReader[T] = null,
     vggNet
   }
 
-  def rpn: Module[Tensor[T], Table, T] = {
+  def rpn(phase: Phase.Value = Phase.TEST): Module[Tensor[T], Table, T] = {
     val rpnModel = new Sequential[Tensor[T], Table, T]()
     rpnModel.add(conv((512, 512, 3, 1, 1), "rpn_conv/3x3"))
     rpnModel.add(new ReLU[T](true))
     val clsAndReg = new ConcatTable[Table, T]()
-    clsAndReg.add(conv((512, 18, 1, 1, 0), "rpn_cls_score"))
+    val clsSeq = new Sequential[Tensor[T], Tensor[T], T]()
+    clsSeq.add(conv((512, 18, 1, 1, 0), "rpn_cls_score"))
+    phase match {
+      case Phase.TRAIN => clsSeq.add(new Reshape2[T](Array(2, -1), Some(false)))
+      case _ =>
+    }
+    clsAndReg.add(clsSeq)
       .add(conv((512, 36, 1, 1, 0), "rpn_bbox_pred"))
     rpnModel.add(clsAndReg)
     rpnModel
   }
 
-  def featureAndRpnNet: Module[Tensor[T], Table, T] = {
+  def featureAndRpnNet(phase: Phase.Value = Phase.TEST): Module[Tensor[T], Table, T] = {
     val compose = new Sequential[Tensor[T], Table, T]()
-    val vggRpnModel = new ConcatTable[Tensor[T], T]()
-    vggRpnModel.add(rpn)
-    vggRpnModel.add(new Identity[T]())
     compose.add(vgg16)
-    compose.add(vggRpnModel)
+    phase match {
+      case Phase.TRAIN => compose.add(rpn(phase))
+      case Phase.TEST =>
+        val vggRpnModel = new ConcatTable[Tensor[T], T]()
+        vggRpnModel.add(rpn)
+        vggRpnModel.add(new Identity[T]())
+        compose.add(vggRpnModel)
+      case Phase.FINETUNE => throw new NotImplementedError()
+    }
     compose
   }
 
@@ -118,7 +129,23 @@ class VggFRcnn[T: ClassTag](caffeReader: CaffeReader[T] = null,
   override val modelName: String = "vgg16"
   override val param: FasterRcnnParam = new VggParam(isTrain)
 
+  override def rpnCriterion: ParallelCriterion[T] = {
+    val rpn_loss_bbox = new SmoothL1Criterion2[T](ev.fromType(3.0), 1)
+    val rpn_loss_cls = new SoftmaxWithCriterion[T](ignoreLabel = Some(-1))
+    val pc = new ParallelCriterion[T]()
+    pc.add(rpn_loss_cls, 1)
+    pc.add(rpn_loss_bbox, 1)
+    pc
+  }
 
+  override def fastRcnnCriterion: ParallelCriterion[T] = {
+    val loss_bbox = new SmoothL1Criterion2[T](ev.fromType(1.0), 1)
+    val loss_cls = new SoftmaxWithCriterion[T]()
+    val pc = new ParallelCriterion[T]()
+    pc.add(loss_cls, 1)
+    pc.add(loss_bbox, 1)
+    pc
+  }
 }
 
 object VggFRcnn {
@@ -127,18 +154,18 @@ object VggFRcnn {
   private val modelName = "/home/xianyan/objectRelated/faster_rcnn_models/" +
     "VGG16_faster_rcnn_final.caffemodel"
 
-  private var caffeReader: CaffeReader[Float] = new CaffeReader[Float](defName, modelName, "vgg16")
+  private val caffeReader: CaffeReader[Float] = new CaffeReader[Float](defName, modelName, "vgg16")
 
-  private var modelWithCaffeWeight: FasterRCNN[Float] = null
+  private var modelWithCaffeWeight: FasterRcnn[Float] = null
 
-  def model(isTrain: Boolean = false): FasterRCNN[Float] = {
+  def model(isTrain: Boolean = false): FasterRcnn[Float] = {
     if (modelWithCaffeWeight == null) modelWithCaffeWeight = new VggFRcnn[Float](caffeReader)
     modelWithCaffeWeight
   }
 
   def main(args: Array[String]): Unit = {
     val vgg = model()
-    vgg.featureAndRpnNet
+    vgg.featureAndRpnNet()
     vgg.fastRcnn
   }
 }

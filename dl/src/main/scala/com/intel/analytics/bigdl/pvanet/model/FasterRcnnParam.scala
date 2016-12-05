@@ -39,7 +39,7 @@ abstract class FasterRcnnParam(isTrain: Boolean = false) {
   val MAX_SIZE = 1000
 
   // Images to use per minibatch
-  val IMS_PER_BATCH = 1
+  var IMS_PER_BATCH = 1
 
   // Minibatch size (number of regions of interest [ROIs])
   val BATCH_SIZE = 3
@@ -120,5 +120,7 @@ abstract class FasterRcnnParam(isTrain: Boolean = false) {
 
   // Apply bounding box voting
   val BBOX_VOTE = false
+
+  var BBOX_REG = true
 }
 

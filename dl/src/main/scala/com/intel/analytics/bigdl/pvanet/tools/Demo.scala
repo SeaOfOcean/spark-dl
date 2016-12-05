@@ -54,7 +54,7 @@ object Demo {
     val param = parser.parse(args, PascolVocLocalParam()).get
     val imgNames = Array("1.jpg", "20.jpg", "30.jpg", "40.jpg",
       "50.jpg", "60.jpg", "70.jpg", "80.jpg", "90.jpg", "100.jpg")
-    var net: FasterRCNN[Float] = null
+    var net: FasterRcnn[Float] = null
     param.net match {
       case "vgg" => net = VggFRcnn.model()
       case "pvanet" => net = PvanetFRcnn.model()

@@ -22,30 +22,14 @@ import com.intel.analytics.bigdl.nn.{Sequential, SoftMax}
 import com.intel.analytics.bigdl.pvanet.datasets.Roidb.ImageWithRoi
 import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, ImageToTensor, PascolVocDataSource}
 import com.intel.analytics.bigdl.pvanet.layers.{Proposal, Reshape2}
-import com.intel.analytics.bigdl.pvanet.model.{FasterRCNN, PvanetFRcnn, VggFRcnn}
+import com.intel.analytics.bigdl.pvanet.model.{FasterRcnn, PvanetFRcnn, VggFRcnn}
 import com.intel.analytics.bigdl.pvanet.utils._
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.{Table, Timer}
 import scopt.OptionParser
 
 object Test {
-
-  case class PascolVocLocalParam(folder: String = "/home/xianyan/objectRelated/VOCdevkit",
-    net: String = "pvanet", nThread: Int = 4)
-
-  private val parser = new OptionParser[PascolVocLocalParam]("Spark-DL PascolVoc Local Example") {
-    head("Spark-DL PascolVoc Local Example")
-    opt[String]('f', "folder")
-      .text("where you put the PascolVoc data")
-      .action((x, c) => c.copy(folder = x))
-    opt[String]('n', "net")
-      .text("net type : vgg16 | pvanet")
-      .action((x, c) => c.copy(net = x.toLowerCase))
-    opt[String]('t', "mkl thread number")
-      .action((x, c) => c.copy(nThread = x.toInt))
-  }
-
-  def testNet(net: FasterRCNN[Float], dataSource: PascolVocDataSource, maxPerImage: Int = 100,
+  def testNet(net: FasterRcnn[Float], dataSource: PascolVocDataSource, maxPerImage: Int = 100,
     thresh: Double = 0.05, vis: Boolean = false): Unit = {
     val imdb = dataSource.imdb
     val allBoxes: Array[Array[DenseMatrix[Float]]] = {
@@ -126,10 +110,10 @@ object Test {
     imdb.evaluateDetections(allBoxes, outputDir)
   }
 
-  def imDetect(net: FasterRCNN[Float], d: ImageWithRoi): (DenseMatrix[Float], DenseMatrix[Float]) = {
-//    val imgTensor = ImageToTensor(d)
-    val imgTensor = FileUtil.loadFeatures("data")
-    val rpnWithFeature = net.featureAndRpnNet.forward(imgTensor)
+  def imDetect(net: FasterRcnn[Float], d: ImageWithRoi): (DenseMatrix[Float], DenseMatrix[Float]) = {
+        val imgTensor = ImageToTensor(d)
+//    val imgTensor = FileUtil.loadFeatures("data")
+    val rpnWithFeature = net.featureAndRpnNet().forward(imgTensor)
 
     val rpnBboxPred = rpnWithFeature(1).asInstanceOf[Table](2).asInstanceOf[Tensor[Float]]
     val rpnClsScore = rpnWithFeature(1).asInstanceOf[Table](1).asInstanceOf[Tensor[Float]]
@@ -176,12 +160,26 @@ object Test {
       FileUtil.demoPath + s"/${clsname}_" + d.imagePath.substring(d.imagePath.lastIndexOf("/") + 1))
   }
 
+  case class PascolVocLocalParam(folder: String = "/home/xianyan/objectRelated/VOCdevkit",
+    net: String = "vgg16", nThread: Int = 4)
+
+  private val parser = new OptionParser[PascolVocLocalParam]("Spark-DL PascolVoc Local Example") {
+    head("Spark-DL PascolVoc Local Example")
+    opt[String]('f', "folder")
+      .text("where you put the PascolVoc data")
+      .action((x, c) => c.copy(folder = x))
+    opt[String]('n', "net")
+      .text("net type : vgg16 | pvanet")
+      .action((x, c) => c.copy(net = x.toLowerCase))
+    opt[String]('t', "mkl thread number")
+      .action((x, c) => c.copy(nThread = x.toInt))
+  }
 
   def main(args: Array[String]) {
     import com.intel.analytics.bigdl.mkl.MKL
     val param = parser.parse(args, PascolVocLocalParam()).get
 
-    var model: FasterRCNN[Float] = null
+    var model: FasterRcnn[Float] = null
     param.net match {
       case "vgg16" =>
         model = VggFRcnn.model()
@@ -189,7 +187,7 @@ object Test {
         model = PvanetFRcnn.model()
     }
     MKL.setNumThreads(param.nThread)
-    val testDataSource = new PascolVocDataSource("2007", "testcode1", param.folder,
+    val testDataSource = new PascolVocDataSource("2007", "testcode", param.folder,
       false, model.param)
     testNet(model, testDataSource)
   }

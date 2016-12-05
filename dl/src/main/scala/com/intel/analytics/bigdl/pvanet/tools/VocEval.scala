@@ -124,7 +124,7 @@ object VocEval {
 
     var recs: util.HashMap[Int, List[Object]] = null
     def loadAnnots: Unit = {
-// load annots
+      // load annots
       recs = new util.HashMap[Int, List[Object]]()
       imagenames.zipWithIndex.foreach {
         case (imagename, i) =>

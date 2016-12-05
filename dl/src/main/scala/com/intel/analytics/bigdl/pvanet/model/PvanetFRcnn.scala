@@ -19,7 +19,7 @@ package com.intel.analytics.bigdl.pvanet.model
 
 import com.intel.analytics.bigdl.nn.{Sequential, _}
 import com.intel.analytics.bigdl.pvanet.caffe.CaffeReader
-import com.intel.analytics.bigdl.pvanet.layers.{Reshape2, RoiPooling}
+import com.intel.analytics.bigdl.pvanet.layers.{Reshape2, RoiPooling, SmoothL1Criterion2, SoftmaxWithCriterion}
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.utils.Table
@@ -29,7 +29,7 @@ import scala.reflect.ClassTag
 class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeReader[T] = null,
   isTrain: Boolean = false)
   (implicit ev: TensorNumeric[T])
-  extends FasterRCNN[T](caffeReader) {
+  extends FasterRcnn[T](caffeReader) {
 
   var pvanet: Sequential[Tensor[T], Tensor[T], T] = _
 
@@ -185,7 +185,7 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRea
     }
 
     seq5.add(inceptions5)
-    seq5.add(spatialFullConv((384, 384, 4, 2, 1), "upsample"))
+    seq5.add(spatialFullConv((384, 4, 2, 1, false), "upsample"))
 
     val concat5 = new Concat[T](2)
     concat5.add(new Identity[T]())
@@ -221,7 +221,7 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRea
     compose
   }
 
-  private def rpn: Module[Tensor[T], Table, T] = {
+  def rpn: Module[Tensor[T], Table, T] = {
     val rpnModel = new Sequential[Tensor[T], Table, T]()
     rpnModel.add(conv((128, 384, 3, 1, 1), "rpn_conv1"))
     rpnModel.add(new ReLU[T]())
@@ -256,15 +256,33 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRea
 
   override val modelName: String = "pvanet"
   override val param: FasterRcnnParam = new PvanetParam(isTrain)
+
+  override def rpnCriterion: ParallelCriterion[T] = {
+    val rpn_loss_bbox = new SmoothL1Criterion2[T](ev.fromType(3.0), 1)
+    val rpn_loss_cls = new SoftmaxWithCriterion[T](ignoreLabel = Some(-1))
+    val pc = new ParallelCriterion[T]()
+    pc.add(rpn_loss_cls, 1)
+    pc.add(rpn_loss_bbox, 1)
+    pc
+  }
+
+  override def fastRcnnCriterion: ParallelCriterion[T] = {
+    val loss_bbox = new SmoothL1Criterion2[T](ev.fromType(1.0), 1)
+    val loss_cls = new SoftmaxWithCriterion[T](ignoreLabel = Some(-1))
+    val pc = new ParallelCriterion[T]()
+    pc.add(loss_cls, 1)
+    pc.add(loss_bbox, 1)
+    pc
+  }
 }
 
 object PvanetFRcnn {
   val defName = "/home/xianyan/objectRelated/pvanet/full/test.pt"
   val modelName = "/home/xianyan/objectRelated/pvanet/full/test.model"
   val caffeReader: CaffeReader[Float] = new CaffeReader(defName, modelName, "pvanet")
-  var modelWithCaffeWeight: FasterRCNN[Float] = _
+  var modelWithCaffeWeight: FasterRcnn[Float] = _
 
-  def model(isTrain: Boolean = false): FasterRCNN[Float] = {
+  def model(isTrain: Boolean = false): FasterRcnn[Float] = {
     if (modelWithCaffeWeight == null) modelWithCaffeWeight = new PvanetFRcnn[Float](caffeReader)
     modelWithCaffeWeight
   }

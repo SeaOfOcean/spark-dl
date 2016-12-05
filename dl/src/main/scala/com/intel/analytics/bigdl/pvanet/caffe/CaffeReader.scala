@@ -35,21 +35,6 @@ object ModuleType extends Enumeration {
   val TensorModule, Criterion = Value
 }
 
-
-object CaffeReader {
-
-  def main(args: Array[String]): Unit = {
-    val defName = "/home/xianyan/objectRelated/faster_rcnn_models/VGG16/" +
-      "faster_rcnn_alt_opt/rpn_test.pt"
-    val modelName = "/home/xianyan/objectRelated/faster_rcnn_models/" +
-      "VGG16_faster_rcnn_final.caffemodel"
-    val caffeReader = new CaffeReader[Float](defName, modelName, "vgg16")
-    val conv = caffeReader.mapConvolution("conv1_1")
-    if (conv == null) println("conv is null")
-    else println(conv.getName())
-  }
-}
-
 class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: String)
   (implicit ev: TensorNumeric[T]) {
   private def cachePath(name: String): String = {
@@ -92,9 +77,9 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: Stri
   }
 
 
-  def mapDeconvolution(name: String): SpatialFullConvolution[Tensor[T], T] = {
+  def mapDeconvolution(name: String): SpatialFullConvolutionMap[T] = {
     if (FileUtil.existFile(cachePath(name))) {
-      return DlFile.load[SpatialFullConvolution[Tensor[T], T]](cachePath(name))
+      return DlFile.load[SpatialFullConvolutionMap[T]](cachePath(name))
     }
     if (name2layer.isEmpty) {
       loadCaffe(defName, modelName)
@@ -140,8 +125,8 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: Stri
       }
     }
     val hasBias = param.getBiasTerm
-    val module = new SpatialFullConvolution[Tensor[T], T](nInputPlane, nOutputPlane, kW,
-      kH, dW, dH, padW, padH, noBias = !hasBias)
+    val module = new SpatialFullConvolutionMap[T](SpatialConvolutionMap.oneToOne[T](groups),
+      kW, kH, dW, dH, padW, padH, noBias = !hasBias)
     val (weight, bias) = loadModule(name2layer(name), name, hasBias)
     module.weight.copy(weight)
     if (hasBias) module.bias.copy(bias)
@@ -284,6 +269,7 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: Stri
         printf("%s: %d %d (%d, %d)\n", name, 1, 1, nInputPlane, nOutputPlane)
         weight.resize(Array(layer.getConvolutionParam.getGroup, 1, 1, nInputPlane, nOutputPlane))
       case "Scale" =>
+      case "Deconvolution" => 
       case _ => weight.resize(Array(layer.getConvolutionParam.getGroup, nOutputPlane,
         nInputPlane, kW, kH))
     }
