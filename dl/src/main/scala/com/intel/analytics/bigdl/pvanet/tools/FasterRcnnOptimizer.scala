@@ -100,7 +100,8 @@ class RpnOptimizer(data: PascolVocDataSource,
     optimizeRpn(net.featureAndRpnNet)
   }
 
-  def optimizeRpn(rpnModel: Module[Tensor[Float], Table, Float]): Module[Tensor[Float], Table, Float] = {
+  def optimizeRpn(rpnModel: Module[Tensor[Float], Table, Float]):
+  Module[Tensor[Float], Table, Float] = {
     val (weights, grad) = rpnModel.getParameters()
     var wallClockTime = 0L
     var count = 0

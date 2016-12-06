@@ -35,11 +35,12 @@ abstract class FasterRcnn[T: ClassTag](val phase: Phase)
   val param: FasterRcnnParam
   var caffeReader: CaffeReader[T] = null
 
-  def modelName = model.toString
+  def modelName: String = model.toString
+
   def setCaffeReader(caffeReader: CaffeReader[T]): Unit = {
     this.caffeReader = caffeReader
   }
-  
+
   /**
    *
    * @param p    parameter: (nIn: Int, nOut: Int, ker: Int, stride: Int, pad: Int)
@@ -113,5 +114,3 @@ abstract class FasterRcnn[T: ClassTag](val phase: Phase)
 
   def rpn(): Module[Tensor[T], Table, T]
 }
-
-  

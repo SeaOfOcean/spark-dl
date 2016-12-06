@@ -269,7 +269,7 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: Stri
         printf("%s: %d %d (%d, %d)\n", name, 1, 1, nInputPlane, nOutputPlane)
         weight.resize(Array(layer.getConvolutionParam.getGroup, 1, 1, nInputPlane, nOutputPlane))
       case "Scale" =>
-      case "Deconvolution" => 
+      case "Deconvolution" =>
       case _ => weight.resize(Array(layer.getConvolutionParam.getGroup, nOutputPlane,
         nInputPlane, kW, kH))
     }
@@ -302,4 +302,3 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: Stri
     builder.build()
   }
 }
-

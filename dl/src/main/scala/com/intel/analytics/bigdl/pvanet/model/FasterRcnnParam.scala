@@ -27,8 +27,6 @@ object Phase extends Enumeration {
 
 }
 
-//type User = Person
-
 object Model extends Enumeration {
   type Model = Value
   val VGG16, PVANET = Value

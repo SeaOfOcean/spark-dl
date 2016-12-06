@@ -74,7 +74,7 @@ class Proposal[@specialized(Float, Double) T: ClassTag](param: FasterRcnnParam)
     val post_nms_topN = param.RPN_POST_NMS_TOP_N
     val nms_thresh = param.RPN_NMS_THRESH
     val min_size = param.RPN_MIN_SIZE
-    
+
     // the first set of _num_anchors channels are bg probs
     // the second set are the fg probs, which we want
     val dataSize = data.size()
@@ -112,7 +112,7 @@ class Proposal[@specialized(Float, Double) T: ClassTag](param: FasterRcnnParam)
     scoresTensor = transposeAndReshape(scoresTensor, 1)
 
     val imInfo = input(3).asInstanceOf[Array[Float]]
-    
+
     // 1. Generate proposals from bbox deltas and shifted anchors
     val height = dataSize(2)
     val width = dataSize(3)

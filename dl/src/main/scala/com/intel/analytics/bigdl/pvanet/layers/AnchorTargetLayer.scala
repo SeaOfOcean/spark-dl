@@ -19,7 +19,7 @@ package com.intel.analytics.bigdl.pvanet.layers
 
 import java.util.logging.Logger
 
-import breeze.linalg.{*, DenseMatrix, DenseVector, convert, max}
+import breeze.linalg.{*, DenseMatrix, DenseVector, convert}
 import com.intel.analytics.bigdl.pvanet.datasets.Roidb.ImageWithRoi
 import com.intel.analytics.bigdl.pvanet.model.FasterRcnnParam
 import com.intel.analytics.bigdl.pvanet.utils._
@@ -207,7 +207,7 @@ class AnchorTargetLayer(param: FasterRcnnParam) {
 
     labelE1.foreach(x => bboxOutSideWeights(x, ::) := positiveWeights.get.toDenseVector.t)
     labelE0.foreach(x => bboxOutSideWeights(x, ::) := negative_weights.get.toDenseVector.t)
-    
+
     // map up to original set of anchors
     labels = convert(unmap(convert(
       DenseMatrix(labels.data.array).t, Float), totalAnchors, indsInside, -1).toDenseVector, Int)

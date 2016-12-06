@@ -110,9 +110,10 @@ object Test {
     imdb.evaluateDetections(allBoxes, outputDir)
   }
 
-  def imDetect(net: FasterRcnn[Float], d: ImageWithRoi): (DenseMatrix[Float], DenseMatrix[Float]) = {
-        val imgTensor = ImageToTensor(d)
-//    val imgTensor = FileUtil.loadFeatures("data")
+  def imDetect(net: FasterRcnn[Float], d: ImageWithRoi):
+  (DenseMatrix[Float], DenseMatrix[Float]) = {
+    val imgTensor = ImageToTensor(d)
+    //    val imgTensor = FileUtil.loadFeatures("data")
     val rpnWithFeature = net.featureAndRpnNet().forward(imgTensor)
 
     val rpnBboxPred = rpnWithFeature(1).asInstanceOf[Table](2).asInstanceOf[Tensor[Float]]

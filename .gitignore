@@ -28,3 +28,4 @@ discard/*
 dl/data/cache/*
 dl/data/model/*
 dl/data
+data

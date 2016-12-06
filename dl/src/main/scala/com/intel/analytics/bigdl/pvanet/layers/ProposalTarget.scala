@@ -17,11 +17,11 @@
 
 package com.intel.analytics.bigdl.pvanet.layers
 
-import breeze.linalg.{DenseMatrix, DenseVector, min, sum}
+import breeze.linalg.{DenseMatrix, DenseVector, min}
 import breeze.numerics.round
 import com.intel.analytics.bigdl.nn.Module
 import com.intel.analytics.bigdl.pvanet.model.FasterRcnnParam
-import com.intel.analytics.bigdl.pvanet.utils.{Bbox, FileUtil, MatrixUtil}
+import com.intel.analytics.bigdl.pvanet.utils.{Bbox, MatrixUtil}
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import com.intel.analytics.bigdl.utils.Table
@@ -33,7 +33,8 @@ import scala.util.Random
  * Assign object detection proposals to ground-truth targets. Produces proposal
  * classification labels and bounding-box regression targets.
  */
-class ProposalTarget[@specialized(Float, Double) T: ClassTag](numClasses: Int, param: FasterRcnnParam)
+class ProposalTarget[@specialized(Float, Double) T: ClassTag]
+(numClasses: Int, param: FasterRcnnParam)
   (implicit ev: TensorNumeric[T]) extends Module[Table, Table, T] {
 
   /**

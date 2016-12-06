@@ -33,7 +33,8 @@ import scala.util.Random
 
 
 class PascolVocDataSource(year: String = "2007", imageSet: String,
-  devkitPath: String = FileUtil.DATA_DIR + "/VOCdevkit", looped: Boolean = true, param: FasterRcnnParam)
+  devkitPath: String = FileUtil.DATA_DIR + "/VOCdevkit",
+  looped: Boolean = true, param: FasterRcnnParam)
   extends LocalDataSource[ImageWithRoi] {
 
   val imdb: Imdb = new PascalVoc(year, imageSet, devkitPath)

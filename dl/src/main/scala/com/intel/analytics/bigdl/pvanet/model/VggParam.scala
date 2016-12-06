@@ -25,5 +25,5 @@ class VggParam(phase: Phase = TEST) extends FasterRcnnParam(phase) {
   override val anchorNum = 9
 
   override val RPN_PRE_NMS_TOP_N = if (phase == TRAIN) 12000 else 6000
-  override val RPN_POST_NMS_TOP_N = if(phase == TRAIN) 2000 else 300
+  override val RPN_POST_NMS_TOP_N = if (phase == TRAIN) 2000 else 300
 }

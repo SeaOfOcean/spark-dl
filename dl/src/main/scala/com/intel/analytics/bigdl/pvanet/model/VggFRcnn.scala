@@ -30,7 +30,7 @@ import scala.reflect.ClassTag
 
 class VggFRcnn[T: ClassTag](phase: Phase = TEST)(implicit ev: TensorNumeric[T])
   extends FasterRcnn[T](phase) {
-  
+
   def vgg16: Module[Tensor[T], Tensor[T], T] = {
     val vggNet = new Sequential[Tensor[T], Tensor[T], T]()
     vggNet.add(conv((3, 64, 3, 1, 1), "conv1_1"))
