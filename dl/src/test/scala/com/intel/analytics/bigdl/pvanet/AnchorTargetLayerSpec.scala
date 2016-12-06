@@ -21,11 +21,11 @@ import breeze.linalg.{DenseMatrix, convert, sum}
 import breeze.numerics.abs
 import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, ImdbFactory, PascolVocDataSource}
 import com.intel.analytics.bigdl.pvanet.layers.AnchorTargetLayer
-import com.intel.analytics.bigdl.pvanet.model.VggParam
+import com.intel.analytics.bigdl.pvanet.model.{Phase, VggParam}
 import org.scalatest.{FlatSpec, Matchers}
 
 class AnchorTargetLayerSpec extends FlatSpec with Matchers {
-  val param = new VggParam(true)
+  val param = new VggParam(Phase.TRAIN)
   param.SCALES = Array(100)
   val anchorTargetLayer = new AnchorTargetLayer(param)
   val width = 133

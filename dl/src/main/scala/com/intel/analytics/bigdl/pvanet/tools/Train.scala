@@ -18,6 +18,8 @@
 package com.intel.analytics.bigdl.pvanet.tools
 
 import com.intel.analytics.bigdl.dataset.ImageNetLocal.Config
+import com.intel.analytics.bigdl.pvanet.model.Model._
+import com.intel.analytics.bigdl.pvanet.model.Phase._
 import com.intel.analytics.bigdl.models.imagenet.{AlexNet, GoogleNet_v1}
 import com.intel.analytics.bigdl.nn.{ClassNLLCriterion, ParallelCriterion}
 import com.intel.analytics.bigdl.optim.SGD.EpochStep
@@ -99,16 +101,16 @@ object Train {
     val finalModelPath = fastRcnnStage2Model
   }
 
-  def rpnTest(imageToTensor: ImageToTensor,
-    net: FasterRcnn[Float], d: ImageWithRoi): Unit = {
-    val res = net.featureAndRpnNet.forward(imageToTensor.apply(d))
-    require(res.length() == 2)
-    val (height: Int, width: Int, nAnchors: Int, target: Table) = getRpnTarget(d, res, net.param)
-    res(1).asInstanceOf[Tensor[Float]].resize(2, nAnchors * height * width)
-    res(2).asInstanceOf[Tensor[Float]].resize(nAnchors * 4 * height * width)
-    val output: Float = rpnLoss(res, target)
-    println("output from parallel criterion: " + output)
-  }
+//  def rpnTest(imageToTensor: ImageToTensor,
+//    net: FasterRcnn[Float], d: ImageWithRoi): Unit = {
+//    val res = net.featureAndRpnNet.forward(imageToTensor.apply(d))
+//    require(res.length() == 2)
+//    val (height: Int, width: Int, nAnchors: Int, target: Table) = getRpnTarget(d, res, net.param)
+//    res(1).asInstanceOf[Tensor[Float]].resize(2, nAnchors * height * width)
+//    res(2).asInstanceOf[Tensor[Float]].resize(nAnchors * 4 * height * width)
+//    val output: Float = rpnLoss(res, target)
+//    println("output from parallel criterion: " + output)
+//  }
 
   def getRpnTarget(d: ImageWithRoi, res: Table, param: FasterRcnnParam): (Int, Int, Int, Table) = {
     val clsOut = res(1).asInstanceOf[Tensor[Float]]

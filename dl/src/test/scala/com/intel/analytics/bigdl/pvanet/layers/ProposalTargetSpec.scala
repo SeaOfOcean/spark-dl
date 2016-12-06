@@ -19,14 +19,14 @@ package com.intel.analytics.bigdl.pvanet.layers
 
 import breeze.linalg.{DenseMatrix, convert}
 import com.intel.analytics.bigdl.pvanet.TestUtil
-import com.intel.analytics.bigdl.pvanet.model.VggParam
+import com.intel.analytics.bigdl.pvanet.model.{Phase, VggParam}
 import com.intel.analytics.bigdl.pvanet.utils.FileUtil
 import com.intel.analytics.bigdl.tensor.Tensor
 import org.scalatest.FlatSpec
 
 class ProposalTargetSpec extends FlatSpec {
 
-  val param = new VggParam(true)
+  val param = new VggParam(Phase.TRAIN)
   val exRois = DenseMatrix((0.543404941791, 0.278369385094, 0.424517590749, 0.84477613232),
     (0.00471885619097, 0.121569120783, 0.670749084727, 0.825852755105),
     (0.136706589685, 0.575093329427, 0.891321954312, 0.209202122117),

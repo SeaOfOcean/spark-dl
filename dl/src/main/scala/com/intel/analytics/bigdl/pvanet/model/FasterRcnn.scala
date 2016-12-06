@@ -19,22 +19,27 @@ package com.intel.analytics.bigdl.pvanet.model
 
 import com.intel.analytics.bigdl.nn._
 import com.intel.analytics.bigdl.pvanet.caffe.CaffeReader
+import com.intel.analytics.bigdl.pvanet.model.Model._
+import com.intel.analytics.bigdl.pvanet.model.Phase._
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.utils.Table
 
 import scala.reflect.ClassTag
 
-object Phase extends Enumeration {
-  val TRAIN, TEST, FINETUNE = Value
-}
 
-abstract class FasterRcnn[T: ClassTag](caffeReader: CaffeReader[T] = null)
+abstract class FasterRcnn[T: ClassTag](val phase: Phase)
   (implicit ev: TensorNumeric[T]) {
 
-  val modelName: String
+  val model: Model
   val param: FasterRcnnParam
+  var caffeReader: CaffeReader[T] = null
 
+  def modelName = model.toString
+  def setCaffeReader(caffeReader: CaffeReader[T]): Unit = {
+    this.caffeReader = caffeReader
+  }
+  
   /**
    *
    * @param p    parameter: (nIn: Int, nOut: Int, ker: Int, stride: Int, pad: Int)
@@ -102,13 +107,11 @@ abstract class FasterRcnn[T: ClassTag](caffeReader: CaffeReader[T] = null)
 
   def fastRcnnCriterion: ParallelCriterion[T]
 
-  def featureAndRpnNet(phase: Phase.Value = Phase.TEST): Module[Tensor[T], Table, T]
+  def featureAndRpnNet(): Module[Tensor[T], Table, T]
 
-  def fastRcnn: Module[Table, Table, T]
+  def fastRcnn(): Module[Table, Table, T]
 
-  def rpn: Module[Tensor[T], Table, T]
-
-  def rpnTrain: Module[Tensor[T], Table, T]
+  def rpn(): Module[Tensor[T], Table, T]
 }
 
   

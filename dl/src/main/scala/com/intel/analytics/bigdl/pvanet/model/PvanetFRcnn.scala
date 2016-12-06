@@ -20,16 +20,17 @@ package com.intel.analytics.bigdl.pvanet.model
 import com.intel.analytics.bigdl.nn.{Sequential, _}
 import com.intel.analytics.bigdl.pvanet.caffe.CaffeReader
 import com.intel.analytics.bigdl.pvanet.layers.{Reshape2, RoiPooling, SmoothL1Criterion2, SoftmaxWithCriterion}
+import com.intel.analytics.bigdl.pvanet.model.Model._
+import com.intel.analytics.bigdl.pvanet.model.Phase._
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.utils.Table
 
 import scala.reflect.ClassTag
 
-class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeReader[T] = null,
-  isTrain: Boolean = false)
+class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: Phase = TEST)
   (implicit ev: TensorNumeric[T])
-  extends FasterRcnn[T](caffeReader) {
+  extends FasterRcnn[T](phase) {
 
   var pvanet: Sequential[Tensor[T], Tensor[T], T] = _
 
@@ -201,7 +202,7 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRea
     pvanet
   }
 
-  override def featureAndRpnNet: Module[Tensor[T], Table, T] = {
+  override def featureAndRpnNet(): Module[Tensor[T], Table, T] = {
     val compose = new Sequential[Tensor[T], Table, T]()
     compose.add(getPvanet)
 
@@ -215,13 +216,13 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRea
     compose.add(convTable)
     val rpnAndFeature = new ConcatTable[Table, T]()
     rpnAndFeature.add(new Sequential[Table, Table, T]()
-      .add(new SelectTable[Tensor[T], T](1)).add(rpn))
+      .add(new SelectTable[Tensor[T], T](1)).add(rpn()))
     rpnAndFeature.add(new JoinTable[T](2, 4))
     compose.add(rpnAndFeature)
     compose
   }
 
-  def rpn: Module[Tensor[T], Table, T] = {
+  def rpn(): Module[Tensor[T], Table, T] = {
     val rpnModel = new Sequential[Tensor[T], Table, T]()
     rpnModel.add(conv((128, 384, 3, 1, 1), "rpn_conv1"))
     rpnModel.add(new ReLU[T]())
@@ -232,7 +233,7 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRea
     rpnModel
   }
 
-  def fastRcnn: Module[Table, Table, T] = {
+  def fastRcnn(): Module[Table, Table, T] = {
     val model = new Sequential[Table, Table, T]()
     model.add(new RoiPooling[T](6, 6, ev.fromType(0.0625)))
     model.add(new Reshape2[T](Array(-1, 18432), Some(false)))
@@ -254,8 +255,9 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](caffeReader: CaffeRea
     model
   }
 
-  override val modelName: String = "pvanet"
-  override val param: FasterRcnnParam = new PvanetParam(isTrain)
+  override val model: Model = PVANET
+  override val modelName: String = model.toString
+  override val param: FasterRcnnParam = new PvanetParam(phase)
 
   override def rpnCriterion: ParallelCriterion[T] = {
     val rpn_loss_bbox = new SmoothL1Criterion2[T](ev.fromType(3.0), 1)
@@ -283,13 +285,14 @@ object PvanetFRcnn {
   var modelWithCaffeWeight: FasterRcnn[Float] = _
 
   def model(isTrain: Boolean = false): FasterRcnn[Float] = {
-    if (modelWithCaffeWeight == null) modelWithCaffeWeight = new PvanetFRcnn[Float](caffeReader)
+    if (modelWithCaffeWeight == null) modelWithCaffeWeight = new PvanetFRcnn[Float]()
+    modelWithCaffeWeight.setCaffeReader(caffeReader)
     modelWithCaffeWeight
   }
 
   def main(args: Array[String]): Unit = {
     val pvanet = PvanetFRcnn.model()
-    pvanet.featureAndRpnNet
-    pvanet.fastRcnn
+    pvanet.featureAndRpnNet()
+    pvanet.fastRcnn()
   }
 }

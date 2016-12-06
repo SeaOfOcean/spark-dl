@@ -22,7 +22,8 @@ import com.intel.analytics.bigdl.optim.{OptimMethod, Trigger}
 import com.intel.analytics.bigdl.pvanet.datasets.Roidb.ImageWithRoi
 import com.intel.analytics.bigdl.pvanet.datasets.{AnchorToTensor, ImageToTensor, PascolVocDataSource}
 import com.intel.analytics.bigdl.pvanet.layers.AnchorTargetLayer
-import com.intel.analytics.bigdl.pvanet.model.{FasterRcnn, Phase}
+import com.intel.analytics.bigdl.pvanet.model.Phase._
+import com.intel.analytics.bigdl.pvanet.model.{FasterRcnn, FasterRcnnParam, Model}
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.Table
 
@@ -96,7 +97,7 @@ class RpnOptimizer(data: PascolVocDataSource,
 
 
   def optimizeRpn(): Module[Tensor[Float], Table, Float] = {
-    optimizeRpn(net.featureAndRpnNet(Phase.TRAIN))
+    optimizeRpn(net.featureAndRpnNet)
   }
 
   def optimizeRpn(rpnModel: Module[Tensor[Float], Table, Float]): Module[Tensor[Float], Table, Float] = {
@@ -204,6 +205,10 @@ class RpnOptimizer(data: PascolVocDataSource,
       })
     }
     fastRcnnModel
+  }
+
+  def rpnGenerate(data: PascolVocDataSource, net: FasterRcnn[Float]): Unit = {
+    var param = FasterRcnnParam.getNetParam(Model.withName(net.modelName), TEST)
   }
 }
 

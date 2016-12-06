@@ -17,17 +17,34 @@
 
 package com.intel.analytics.bigdl.pvanet.model
 
-abstract class FasterRcnnParam(isTrain: Boolean = false) {
+import com.intel.analytics.bigdl.pvanet.model.Model.Model
+import com.intel.analytics.bigdl.pvanet.model.Phase.Phase
+
+
+object Phase extends Enumeration {
+  type Phase = Value
+  val TRAIN, TEST, FINETUNE = Value
+
+}
+
+//type User = Person
+
+object Model extends Enumeration {
+  type Model = Value
+  val VGG16, PVANET = Value
+}
+
+abstract class FasterRcnnParam(phase: Phase = Phase.TEST) {
   val anchorScales: Array[Float]
   val anchorRatios: Array[Float]
   val anchorNum: Int
 
-  
+
   // Pixel mean values (BGR order) as a (1, 1, 3) array
   // We use the same pixel mean for all networks even though it"s not exactly what
   // they were trained with
   var PIXEL_MEANS = List(List(List(102.9801, 115.9465, 122.7717)))
-  
+
   // Scales to use during training (can list multiple scales)
   // Each scale is the pixel size of an image"s shortest side
   var SCALES = Array(600)
@@ -122,5 +139,15 @@ abstract class FasterRcnnParam(isTrain: Boolean = false) {
   val BBOX_VOTE = false
 
   var BBOX_REG = true
+}
+
+object FasterRcnnParam {
+  def getNetParam(net: Model, phase: Phase): FasterRcnnParam = {
+    net match {
+      case Model.VGG16 => new VggParam(phase)
+      case Model.PVANET => new PvanetParam(phase)
+      case _ => throw new UnsupportedOperationException
+    }
+  }
 }
 

@@ -20,16 +20,17 @@ package com.intel.analytics.bigdl.pvanet.model
 import com.intel.analytics.bigdl.nn._
 import com.intel.analytics.bigdl.pvanet.caffe.CaffeReader
 import com.intel.analytics.bigdl.pvanet.layers.{Reshape2, RoiPooling, SmoothL1Criterion2, SoftmaxWithCriterion}
+import com.intel.analytics.bigdl.pvanet.model.Model._
+import com.intel.analytics.bigdl.pvanet.model.Phase._
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.utils.Table
 
 import scala.reflect.ClassTag
 
-class VggFRcnn[T: ClassTag](caffeReader: CaffeReader[T] = null,
-  isTrain: Boolean = false)(implicit ev: TensorNumeric[T])
-  extends FasterRcnn[T](caffeReader) {
-
+class VggFRcnn[T: ClassTag](phase: Phase = TEST)(implicit ev: TensorNumeric[T])
+  extends FasterRcnn[T](phase) {
+  
   def vgg16: Module[Tensor[T], Tensor[T], T] = {
     val vggNet = new Sequential[Tensor[T], Tensor[T], T]()
     vggNet.add(conv((3, 64, 3, 1, 1), "conv1_1"))
@@ -69,7 +70,7 @@ class VggFRcnn[T: ClassTag](caffeReader: CaffeReader[T] = null,
     vggNet
   }
 
-  def rpn(phase: Phase.Value = Phase.TEST): Module[Tensor[T], Table, T] = {
+  def rpn(): Module[Tensor[T], Table, T] = {
     val rpnModel = new Sequential[Tensor[T], Table, T]()
     rpnModel.add(conv((512, 512, 3, 1, 1), "rpn_conv/3x3"))
     rpnModel.add(new ReLU[T](true))
@@ -77,7 +78,7 @@ class VggFRcnn[T: ClassTag](caffeReader: CaffeReader[T] = null,
     val clsSeq = new Sequential[Tensor[T], Tensor[T], T]()
     clsSeq.add(conv((512, 18, 1, 1, 0), "rpn_cls_score"))
     phase match {
-      case Phase.TRAIN => clsSeq.add(new Reshape2[T](Array(2, -1), Some(false)))
+      case TRAIN => clsSeq.add(new Reshape2[T](Array(2, -1), Some(false)))
       case _ =>
     }
     clsAndReg.add(clsSeq)
@@ -86,17 +87,17 @@ class VggFRcnn[T: ClassTag](caffeReader: CaffeReader[T] = null,
     rpnModel
   }
 
-  def featureAndRpnNet(phase: Phase.Value = Phase.TEST): Module[Tensor[T], Table, T] = {
+  def featureAndRpnNet(): Module[Tensor[T], Table, T] = {
     val compose = new Sequential[Tensor[T], Table, T]()
     compose.add(vgg16)
     phase match {
-      case Phase.TRAIN => compose.add(rpn(phase))
-      case Phase.TEST =>
+      case TRAIN => compose.add(rpn)
+      case TEST =>
         val vggRpnModel = new ConcatTable[Tensor[T], T]()
         vggRpnModel.add(rpn)
         vggRpnModel.add(new Identity[T]())
         compose.add(vggRpnModel)
-      case Phase.FINETUNE => throw new NotImplementedError()
+      case FINETUNE => throw new NotImplementedError()
     }
     compose
   }
@@ -126,8 +127,8 @@ class VggFRcnn[T: ClassTag](caffeReader: CaffeReader[T] = null,
     model
   }
 
-  override val modelName: String = "vgg16"
-  override val param: FasterRcnnParam = new VggParam(isTrain)
+  override val model: Model = VGG16
+  override val param: FasterRcnnParam = new VggParam(phase)
 
   override def rpnCriterion: ParallelCriterion[T] = {
     val rpn_loss_bbox = new SmoothL1Criterion2[T](ev.fromType(3.0), 1)
@@ -159,13 +160,14 @@ object VggFRcnn {
   private var modelWithCaffeWeight: FasterRcnn[Float] = null
 
   def model(isTrain: Boolean = false): FasterRcnn[Float] = {
-    if (modelWithCaffeWeight == null) modelWithCaffeWeight = new VggFRcnn[Float](caffeReader)
+    if (modelWithCaffeWeight == null) modelWithCaffeWeight = new VggFRcnn[Float]()
+    modelWithCaffeWeight.setCaffeReader(caffeReader)
     modelWithCaffeWeight
   }
 
   def main(args: Array[String]): Unit = {
     val vgg = model()
-    vgg.featureAndRpnNet()
+    vgg.featureAndRpnNet
     vgg.fastRcnn
   }
 }
