@@ -227,8 +227,17 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: Phase = TEST)
     rpnModel.add(conv((128, 384, 3, 1, 1), "rpn_conv1"))
     rpnModel.add(new ReLU[T]())
     val clsAndReg = new ConcatTable[Table, T]()
-    clsAndReg.add(conv((384, 50, 1, 1, 0), "rpn_cls_score"))
     clsAndReg.add(conv((384, 100, 1, 1, 0), "rpn_bbox_pred"))
+    val clsSeq = new Sequential[Tensor[T], Tensor[T], T]()
+    phase match {
+      case TRAIN => clsSeq.add(new Reshape2[T](Array(0, 2, -1, 0), Some(false)))
+      case TEST =>
+        clsSeq.add(new Reshape2[T](Array(0, 2, -1, 0), Some(false)))
+          .add(new SoftMax[T]())
+          .add(new Reshape2[T](Array(1, 2 * param.anchorNum, -1, 0), Some(false)))
+    }
+    clsAndReg.add(clsSeq)
+      .add(conv((384, 50, 1, 1, 0), "rpn_cls_score"))
     rpnModel.add(clsAndReg)
     rpnModel
   }
@@ -276,6 +285,8 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: Phase = TEST)
     pc.add(loss_bbox, 1)
     pc
   }
+
+  override def fullModel(): Module[Table, Table, T] = ???
 }
 
 object PvanetFRcnn {

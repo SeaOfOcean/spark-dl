@@ -28,8 +28,8 @@ class PvanetParam(phase: Phase = TEST) extends FasterRcnnParam(phase) {
   else Array(416, 448, 480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800, 832, 864)
   override val BBOX_VOTE = true
   override val NMS = 0.4
-  override val RPN_PRE_NMS_TOP_N = if (phase == TRAIN) 12000 else 6000
-  override val RPN_POST_NMS_TOP_N = if (phase == TRAIN) 2000 else 200
+  RPN_PRE_NMS_TOP_N = if (phase == TRAIN) 12000 else 6000
+  RPN_POST_NMS_TOP_N = if (phase == TRAIN) 2000 else 200
   override val BG_THRESH_LO = 0.0
   BBOX_NORMALIZE_TARGETS_PRECOMPUTED = true
   override val MAX_SIZE = 1440

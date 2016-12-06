@@ -43,7 +43,7 @@ object Roidb {
     var oriWidth = 0
     var oriHeight = 0
     var imagePath = ""
-    var imInfo = None: Option[Array[Float]]
+    var imInfo = None: Option[Tensor[Float]]
     var max_classes = None: Option[Tensor[Float]]
     var max_overlaps = None: Option[Tensor[Float]]
     var anchorTarget = None: Option[AnchorTarget]

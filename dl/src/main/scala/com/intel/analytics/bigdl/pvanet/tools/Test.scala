@@ -18,10 +18,8 @@
 package com.intel.analytics.bigdl.pvanet.tools
 
 import breeze.linalg.DenseMatrix
-import com.intel.analytics.bigdl.nn.{Sequential, SoftMax}
 import com.intel.analytics.bigdl.pvanet.datasets.Roidb.ImageWithRoi
 import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, ImageToTensor, PascolVocDataSource}
-import com.intel.analytics.bigdl.pvanet.layers.{Proposal, Reshape2}
 import com.intel.analytics.bigdl.pvanet.model.{FasterRcnn, PvanetFRcnn, VggFRcnn}
 import com.intel.analytics.bigdl.pvanet.utils._
 import com.intel.analytics.bigdl.tensor.Tensor
@@ -112,43 +110,18 @@ object Test {
 
   def imDetect(net: FasterRcnn[Float], d: ImageWithRoi):
   (DenseMatrix[Float], DenseMatrix[Float]) = {
-    val imgTensor = ImageToTensor(d)
-    //    val imgTensor = FileUtil.loadFeatures("data")
-    val rpnWithFeature = net.featureAndRpnNet().forward(imgTensor)
+    val input = new Table
+    input.insert(ImageToTensor(d))
+    input.insert(d.imInfo.get)
+    val result = net.fullModel.forward(input)
 
-    val rpnBboxPred = rpnWithFeature(1).asInstanceOf[Table](2).asInstanceOf[Tensor[Float]]
-    val rpnClsScore = rpnWithFeature(1).asInstanceOf[Table](1).asInstanceOf[Tensor[Float]]
-    val featureOut = rpnWithFeature(2).asInstanceOf[Tensor[Float]]
-
-    val clsProc = new Sequential[Tensor[Float], Tensor[Float], Float]()
-    clsProc.add(new Reshape2[Float](Array(2, -1), Some(false)))
-    clsProc.add(new SoftMax[Float]())
-    clsProc.add(new Reshape2[Float](Array(1, 2 * net.param.anchorNum,
-      -1, rpnBboxPred.size(4)), Some(false)))
-    val rpnClsScoreReshape: Tensor[Float] = clsProc.forward(rpnClsScore)
-
-    val proposalInput = new Table
-    proposalInput.insert(rpnClsScoreReshape)
-    proposalInput.insert(rpnBboxPred)
-    proposalInput.insert(d.imInfo.get)
-
-    val propoal = new Proposal[Float](net.param)
-    val proposalOut = propoal.forward(proposalInput)
-
-    val rois = proposalOut(1).asInstanceOf[Tensor[Float]]
-
-    val propDecInput = new Table()
-    propDecInput.insert(featureOut)
-    propDecInput.insert(rois)
-
-    val result = net.fastRcnn.forward(propDecInput)
-
-    val scores = result(1).asInstanceOf[Tensor[Float]]
-    val boxDeltas = result(2).asInstanceOf[Tensor[Float]]
+    val scores = result(1).asInstanceOf[Table](1).asInstanceOf[Tensor[Float]]
+    val boxDeltas = result(1).asInstanceOf[Table](2).asInstanceOf[Tensor[Float]]
+    val rois = result(2).asInstanceOf[Tensor[Float]]
 
     // post process
     // unscale back to raw image space
-    val boxes = rois.narrow(2, 2, 4).div(d.imInfo.get(2))
+    val boxes = rois.narrow(2, 2, 4).div(d.imInfo.get.valueAt(3))
     // Apply bounding-box regression deltas
     var predBoxes = Bbox.bboxTransformInv(boxes.toBreezeMatrix(), boxDeltas.toBreezeMatrix())
     predBoxes = Bbox.clipBoxes(predBoxes, d.oriHeight, d.oriWidth)

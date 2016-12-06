@@ -145,7 +145,8 @@ class ImageScalerAndMeanSubstractor(dataSource: PascolVocDataSource, isShuffle: 
 
     data.scaledImage = new RGBImageOD(meanPixels, imageBuff.getWidth, imageBuff.getHeight)
     val imScales = Array(im_scale_x, im_scale_y, im_scale_x, im_scale_y)
-    data.imInfo = Some(Array(imageBuff.getHeight(), imageBuff.getWidth, im_scale_x))
+    data.imInfo = Some(Tensor(Storage(
+      Array(imageBuff.getHeight(), imageBuff.getWidth, im_scale_x))))
 
     if (data.gt_classes != null) {
       val gt_inds = data.gt_classes.storage().array().zipWithIndex

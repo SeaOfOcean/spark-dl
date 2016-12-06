@@ -111,7 +111,7 @@ class Proposal[@specialized(Float, Double) T: ClassTag](param: FasterRcnnParam)
 
     scoresTensor = transposeAndReshape(scoresTensor, 1)
 
-    val imInfo = input(3).asInstanceOf[Array[Float]]
+    val imInfo = input(3).asInstanceOf[Tensor[Float]]
 
     // 1. Generate proposals from bbox deltas and shifted anchors
     val height = dataSize(2)
@@ -126,11 +126,11 @@ class Proposal[@specialized(Float, Double) T: ClassTag](param: FasterRcnnParam)
     var proposals = Bbox.bboxTransformInv(anchors, bboxDeltas.toBreezeMatrix())
 
     // 2. clip predicted boxes to image
-    proposals = Bbox.clipBoxes(proposals, imInfo(0), imInfo(1))
+    proposals = Bbox.clipBoxes(proposals, imInfo.valueAt(1), imInfo.valueAt(2))
 
     // 3. remove predicted boxes with either height or width < threshold
     // (NOTE: convert min_size to input image scale stored in im_info[2])
-    var keep = filterBoxes(proposals, min_size * imInfo(2))
+    var keep = filterBoxes(proposals, min_size * imInfo.valueAt(3))
 
     proposals = MatrixUtil.selectMatrix(proposals, keep, 0)
     var scores = MatrixUtil.selectMatrix(scoresTensor.toBreezeMatrix(), keep, 0)

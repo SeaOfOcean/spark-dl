@@ -19,7 +19,7 @@ package com.intel.analytics.bigdl.pvanet.model
 
 import com.intel.analytics.bigdl.nn._
 import com.intel.analytics.bigdl.pvanet.caffe.CaffeReader
-import com.intel.analytics.bigdl.pvanet.layers.{Reshape2, RoiPooling, SmoothL1Criterion2, SoftmaxWithCriterion}
+import com.intel.analytics.bigdl.pvanet.layers._
 import com.intel.analytics.bigdl.pvanet.model.Model._
 import com.intel.analytics.bigdl.pvanet.model.Phase._
 import com.intel.analytics.bigdl.tensor.Tensor
@@ -78,8 +78,11 @@ class VggFRcnn[T: ClassTag](phase: Phase = TEST)(implicit ev: TensorNumeric[T])
     val clsSeq = new Sequential[Tensor[T], Tensor[T], T]()
     clsSeq.add(conv((512, 18, 1, 1, 0), "rpn_cls_score"))
     phase match {
-      case TRAIN => clsSeq.add(new Reshape2[T](Array(2, -1), Some(false)))
-      case _ =>
+      case TRAIN => clsSeq.add(new Reshape2[T](Array(0, 2, -1, 0), Some(false)))
+      case TEST =>
+        clsSeq.add(new Reshape2[T](Array(0, 2, -1, 0), Some(false)))
+          .add(new SoftMax[T]())
+          .add(new Reshape2[T](Array(1, 2 * param.anchorNum, -1, 0), Some(false)))
     }
     clsAndReg.add(clsSeq)
       .add(conv((512, 36, 1, 1, 0), "rpn_bbox_pred"))
@@ -146,6 +149,41 @@ class VggFRcnn[T: ClassTag](phase: Phase = TEST)(implicit ev: TensorNumeric[T])
     pc.add(loss_cls, 1)
     pc.add(loss_bbox, 1)
     pc
+  }
+
+  override def fullModel: Module[Table, Table, T] = {
+    val model = new Sequential[Table, Table, T]()
+    val model1 = new ParallelTable[T]()
+    model1.add(featureAndRpnNet)
+    model1.add(new Identity[T]())
+    model.add(model1)
+    // connect rpn and fast-rcnn
+    val middle = new ConcatTable[Tensor[T], T]()
+    val left = new Sequential[Table, Table, T]()
+    val left1 = new ConcatTable[Tensor[T], T]()
+    left1.add(new Sequential[Table, Tensor[T], T]()
+      .add(new SelectTable[Table, T](1))
+      .add(new SelectTable[Table, T](1))
+      .add(new SelectTable[Tensor[T], T](1)))
+    left1.add(new Sequential[Table, Tensor[T], T]()
+      .add(new SelectTable[Table, T](1))
+      .add(new SelectTable[Table, T](1))
+      .add(new SelectTable[Tensor[T], T](2)))
+    left1.add(new Sequential[Table, Tensor[T], T]()
+      .add(new SelectTable[Tensor[T], T](2)))
+    left.add(left1)
+    left.add(new Proposal[T](param))
+    left.add(new SelectTable[Tensor[T], T](1))
+    // first add feature from feature net
+    middle.add(new Sequential[Table, Tensor[T], T]()
+      .add(new SelectTable[Table, T](1))
+      .add(new SelectTable[Tensor[T], T](2)))
+    // then add rois from proposal
+    middle.add(left)
+    model.add(middle)
+    // get the fast rcnn results and rois
+    model.add(new ConcatTable[Table, T]().add(fastRcnn).add(new SelectTable[Tensor[T], T](2)))
+    model
   }
 }
 
