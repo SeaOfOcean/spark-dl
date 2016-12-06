@@ -170,7 +170,7 @@ class VggFRcnn[T: ClassTag](phase: Phase = TEST)(implicit ev: TensorNumeric[T])
     module
   }
 
-  def selectTensor1(depth: Int): SelectTable[Table, T] = {
+  def selectTable1(depth: Int): SelectTable[Table, T] = {
     new SelectTable[Table, T](depth)
   }
 
@@ -259,7 +259,7 @@ class VggFRcnn[T: ClassTag](phase: Phase = TEST)(implicit ev: TensorNumeric[T])
   type CT = ConcatTable[Table, T]
   type Ct = ConcatTable[Tensor[T], T]
 
-  def fullModelTrain: Module[Table, Table, T] = {
+  def fullModelTrain(): Module[Table, Table, T] = {
     val model = new STT()
 
     val rpnFeatureWithInfoGt = new ParallelTable[T]()

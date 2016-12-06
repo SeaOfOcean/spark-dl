@@ -41,7 +41,6 @@ class FasterRcnnOptimizer(data: PascolVocDataSource,
   protected var cachePath: Option[String] = None
   protected var isOverWrite: Boolean = false
   protected var validationTrigger: Option[Trigger] = None
-  protected val validationMethods: ArrayBuffer[ValidationMethod[Float]] = new ArrayBuffer()
 
   def setCache(path: String, trigger: Trigger): this.type = {
     this.cachePath = Some(path)
@@ -66,11 +65,6 @@ class FasterRcnnOptimizer(data: PascolVocDataSource,
 
   def setValidationTrigger(trigger: Trigger): this.type = {
     this.validationTrigger = Some(trigger)
-    this
-  }
-
-  def addValidation(validationMethod: ValidationMethod[Float]): this.type = {
-    validationMethods.append(validationMethod)
     this
   }
 
