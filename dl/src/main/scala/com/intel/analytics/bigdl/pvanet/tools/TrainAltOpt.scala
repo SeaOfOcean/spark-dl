@@ -32,7 +32,7 @@ import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.{T, Table}
 import scopt.OptionParser
 
-object Train {
+object TrainAltOpt {
   private val configs = Map(
     "vgg16" -> Config(
       AlexNet[Float](classNum = 1000),
@@ -100,17 +100,6 @@ object Train {
       dataSource, rpnStage2Model, 10, rpnStage2Proposals)
     val finalModelPath = fastRcnnStage2Model
   }
-
-//  def rpnTest(imageToTensor: ImageToTensor,
-//    net: FasterRcnn[Float], d: ImageWithRoi): Unit = {
-//    val res = net.featureAndRpnNet.forward(imageToTensor.apply(d))
-//    require(res.length() == 2)
-//    val (height: Int, width: Int, nAnchors: Int, target: Table) = getRpnTarget(d, res, net.param)
-//    res(1).asInstanceOf[Tensor[Float]].resize(2, nAnchors * height * width)
-//    res(2).asInstanceOf[Tensor[Float]].resize(nAnchors * 4 * height * width)
-//    val output: Float = rpnLoss(res, target)
-//    println("output from parallel criterion: " + output)
-//  }
 
   def getRpnTarget(d: ImageWithRoi, res: Table, param: FasterRcnnParam): (Int, Int, Int, Table) = {
     val clsOut = res(1).asInstanceOf[Tensor[Float]]

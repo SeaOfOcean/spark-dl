@@ -94,10 +94,10 @@ class VggFRcnn[T: ClassTag](phase: Phase = TEST)(implicit ev: TensorNumeric[T])
     val compose = new Sequential[Tensor[T], Table, T]()
     compose.add(vgg16)
     phase match {
-      case TRAIN => compose.add(rpn)
+      case TRAIN => compose.add(rpn())
       case TEST =>
         val vggRpnModel = new ConcatTable[Tensor[T], T]()
-        vggRpnModel.add(rpn)
+        vggRpnModel.add(rpn())
         vggRpnModel.add(new Identity[T]())
         compose.add(vggRpnModel)
       case FINETUNE => throw new NotImplementedError()
@@ -105,7 +105,7 @@ class VggFRcnn[T: ClassTag](phase: Phase = TEST)(implicit ev: TensorNumeric[T])
     compose
   }
 
-  def fastRcnn: Module[Table, Table, T] = {
+  def fastRcnn(): Module[Table, Table, T] = {
     val model = new Sequential[Table, Table, T]()
     model.add(new RoiPooling[T](7, 7, ev.fromType(0.0625f)))
     model.add(new Reshape2[T](Array(-1, 25088), Some(false)))
@@ -133,57 +133,202 @@ class VggFRcnn[T: ClassTag](phase: Phase = TEST)(implicit ev: TensorNumeric[T])
   override val model: Model = VGG16
   override val param: FasterRcnnParam = new VggParam(phase)
 
-  override def rpnCriterion: ParallelCriterion[T] = {
+  override def criterion4: ParallelCriterion[T] = {
     val rpn_loss_bbox = new SmoothL1Criterion2[T](ev.fromType(3.0), 1)
     val rpn_loss_cls = new SoftmaxWithCriterion[T](ignoreLabel = Some(-1))
-    val pc = new ParallelCriterion[T]()
-    pc.add(rpn_loss_cls, 1)
-    pc.add(rpn_loss_bbox, 1)
-    pc
-  }
-
-  override def fastRcnnCriterion: ParallelCriterion[T] = {
     val loss_bbox = new SmoothL1Criterion2[T](ev.fromType(1.0), 1)
     val loss_cls = new SoftmaxWithCriterion[T]()
     val pc = new ParallelCriterion[T]()
+    pc.add(rpn_loss_cls, 1)
+    pc.add(rpn_loss_bbox, 1)
     pc.add(loss_cls, 1)
     pc.add(loss_bbox, 1)
     pc
   }
 
-  override def fullModel: Module[Table, Table, T] = {
+  /**
+   * select tensor from nested tables
+   *
+   * @param depths a serious of depth to use when fetching certain tensor
+   * @return a wanted tensor
+   */
+  def selectTensor(depths: Int*): Sequential[Table, Tensor[T], T] = {
+    val module = new Sequential[Table, Tensor[T], T]()
+    depths.slice(0, depths.length - 1).foreach(depth =>
+      module.add(new SelectTable[Table, T](depth)))
+    module.add(new SelectTable[Tensor[T], T](depths(depths.length - 1)))
+  }
+
+  def selectTensor1(depth: Int): SelectTable[Tensor[T], T] = {
+    new SelectTable[Tensor[T], T](depth)
+  }
+
+  def selectTable(depths: Int*): Sequential[Table, Table, T] = {
+    val module = new Sequential[Table, Table, T]()
+    depths.slice(0, depths.length).foreach(depth =>
+      module.add(new SelectTable[Table, T](depth)))
+    module
+  }
+
+  def selectTensor1(depth: Int): SelectTable[Table, T] = {
+    new SelectTable[Table, T](depth)
+  }
+
+  def fullModelTest(): Module[Table, Table, T] = {
     val model = new Sequential[Table, Table, T]()
     val model1 = new ParallelTable[T]()
-    model1.add(featureAndRpnNet)
+    model1.add(featureAndRpnNet())
     model1.add(new Identity[T]())
     model.add(model1)
     // connect rpn and fast-rcnn
     val middle = new ConcatTable[Tensor[T], T]()
     val left = new Sequential[Table, Table, T]()
     val left1 = new ConcatTable[Tensor[T], T]()
-    left1.add(new Sequential[Table, Tensor[T], T]()
-      .add(new SelectTable[Table, T](1))
-      .add(new SelectTable[Table, T](1))
-      .add(new SelectTable[Tensor[T], T](1)))
-    left1.add(new Sequential[Table, Tensor[T], T]()
-      .add(new SelectTable[Table, T](1))
-      .add(new SelectTable[Table, T](1))
-      .add(new SelectTable[Tensor[T], T](2)))
-    left1.add(new Sequential[Table, Tensor[T], T]()
-      .add(new SelectTable[Tensor[T], T](2)))
+    left1.add(selectTensor(1, 1, 1))
+    left1.add(selectTensor(1, 1, 2))
+    left1.add(selectTensor1(2))
     left.add(left1)
     left.add(new Proposal[T](param))
-    left.add(new SelectTable[Tensor[T], T](1))
+    left.add(selectTensor1(1))
     // first add feature from feature net
-    middle.add(new Sequential[Table, Tensor[T], T]()
-      .add(new SelectTable[Table, T](1))
-      .add(new SelectTable[Tensor[T], T](2)))
+    middle.add(selectTensor(1, 2))
     // then add rois from proposal
     middle.add(left)
     model.add(middle)
     // get the fast rcnn results and rois
-    model.add(new ConcatTable[Table, T]().add(fastRcnn).add(new SelectTable[Tensor[T], T](2)))
+    model.add(new ConcatTable[Table, T]().add(fastRcnn()).add(selectTensor(2)))
     model
+  }
+
+
+  def fullModelTrain2(): Module[Table, Table, T] = {
+    val model = new Sequential[Table, Table, T]()
+    val rpnFeatureWithInfoGt = new ParallelTable[T]()
+    // (rcls, rreg), feature)
+    rpnFeatureWithInfoGt.add(featureAndRpnNet())
+    // im_info
+    rpnFeatureWithInfoGt.add(new Identity[T]())
+    // gt_boxes
+    rpnFeatureWithInfoGt.add(new Identity[T]())
+    // (((rcls, rreg), feature), im_info, gt_boxes)
+    model.add(rpnFeatureWithInfoGt)
+    val rpnAndFastRcnn = new ConcatTable[Tensor[T], T]()
+    // rpn cls
+    rpnAndFastRcnn.add(selectTensor(1, 1, 1))
+    // rpn reg
+    rpnAndFastRcnn.add(selectTensor(1, 1, 2))
+    val modelWithGt = new ConcatTable[Tensor[T], T]()
+    // connect rpn and fast-rcnn
+    val middle = new ConcatTable[Tensor[T], T]()
+    val left = new Sequential[Table, Table, T]()
+    val left1 = new ConcatTable[Tensor[T], T]()
+    left1.add(new Sequential[Table, Tensor[T], T]()
+      .add(selectTensor(1, 1, 1))
+      .add(new SoftMax[T]())
+      .add(new Reshape2[T](Array(1, 2 * param.anchorNum, -1, 0), Some(false))))
+    left1.add(selectTensor(1, 1, 2))
+    left1.add(selectTensor1(2))
+    left.add(left1)
+    left.add(new Proposal[T](param))
+    // add rois
+    left.add(selectTensor1(1))
+    // first add feature from feature net
+    middle.add(selectTensor(1, 2))
+    // then add rois from proposal
+    middle.add(left)
+    // add gt_boxes
+    modelWithGt.add(middle).add(selectTensor1(3))
+
+    rpnAndFastRcnn.add(new STT().add(middle)
+      .add(new ConcatTable[Table, T]().add(fastRcnn()).add(selectTensor(2))))
+    model.add(rpnAndFastRcnn)
+    // make each res a tensor
+    model.add(new ConcatTable[Tensor[T], T]()
+      .add(selectTensor1(1))
+      .add(selectTensor1(2))
+      .add(selectTensor(3, 1, 1))
+      .add(selectTensor(3, 1, 2))
+      .add(selectTensor(3, 2)))
+    model
+  }
+
+  type STT = Sequential[Table, Table, T]
+  type STt = Sequential[Table, Tensor[T], T]
+  type StT = Sequential[Tensor[T], Table, T]
+  type Stt = Sequential[Tensor[T], Tensor[T], T]
+  type CT = ConcatTable[Table, T]
+  type Ct = ConcatTable[Tensor[T], T]
+
+  def fullModelTrain: Module[Table, Table, T] = {
+    val model = new STT()
+
+    val rpnFeatureWithInfoGt = new ParallelTable[T]()
+    rpnFeatureWithInfoGt.add(featureAndRpnNet())
+    // im_info
+    rpnFeatureWithInfoGt.add(new Identity[T]())
+    // gt_boxes
+    rpnFeatureWithInfoGt.add(new Identity[T]())
+    model.add(rpnFeatureWithInfoGt)
+
+    val lossModels = new CT()
+
+    // rpn cls
+    lossModels.add(selectTensor(1, 1, 1))
+    // rpn reg
+    lossModels.add(selectTensor(1, 1, 2))
+    // loss from fast rcnn
+    val fastRcnnLossModel = new STT
+    // fast-rcnn
+    val fastRcnnInputModel = new CT
+    // add features
+    fastRcnnInputModel.add(selectTensor(1, 2))
+    val sampleRoisModel = new STT
+    fastRcnnInputModel.add(sampleRoisModel)
+    // add sample rois
+    lossModels.add(fastRcnnLossModel)
+
+    val proposalTargetInput = new CT()
+    val proposalModel = new STt()
+      .add(new Ct()
+        // rpn cls
+        .add(new STt()
+        .add(selectTensor(1, 1, 1))
+        .add(new SoftMax[T]())
+        .add(new Reshape2[T](Array(1, 2 * param.anchorNum, -1, 0), Some(false))))
+        // rpn reg
+        .add(selectTensor(1, 1, 2))
+        // im_info
+        .add(selectTensor(2)))
+      .add(new Proposal[T](param))
+    proposalTargetInput.add(proposalModel)
+    proposalTargetInput.add(selectTensor1(3))
+    sampleRoisModel.add(proposalTargetInput)
+    sampleRoisModel.add(new ProposalTarget[T](param))
+
+    // ((rois, otherProposalTargets), features
+    fastRcnnLossModel.add(fastRcnnInputModel)
+    fastRcnnLossModel.add(new CT()
+      .add(new CT().add(selectTensor1(2)).add(selectTensor(1, 1)))
+      .add(selectTable(1, 2)))
+    fastRcnnLossModel.add(new ParallelTable[T]()
+      .add(fastRcnn())
+      .add(new Identity[T]()))
+    // make each res a tensor
+    model.add(new ConcatTable[Tensor[T], T]()
+      .add(selectTensor1(1))
+      .add(selectTensor1(2))
+      .add(selectTensor(3, 1, 1))
+      .add(selectTensor(3, 1, 2))
+      .add(selectTensor(3, 2)))
+    model
+  }
+
+  override def fullModel(): Module[Table, Table, T] = {
+    phase match {
+      case TEST => fullModelTest()
+      case TRAIN => fullModelTrain()
+      case _ => throw new UnsupportedOperationException
+    }
   }
 }
 
@@ -195,7 +340,7 @@ object VggFRcnn {
 
   private val caffeReader: CaffeReader[Float] = new CaffeReader[Float](defName, modelName, "vgg16")
 
-  private var modelWithCaffeWeight: FasterRcnn[Float] = null
+  private var modelWithCaffeWeight: FasterRcnn[Float] = _
 
   def model(isTrain: Boolean = false): FasterRcnn[Float] = {
     if (modelWithCaffeWeight == null) modelWithCaffeWeight = new VggFRcnn[Float]()
@@ -205,8 +350,8 @@ object VggFRcnn {
 
   def main(args: Array[String]): Unit = {
     val vgg = model()
-    vgg.featureAndRpnNet
-    vgg.fastRcnn
+    vgg.featureAndRpnNet()
+    vgg.fastRcnn()
   }
 }
 

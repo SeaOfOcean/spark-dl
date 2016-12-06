@@ -17,12 +17,11 @@
 
 package com.intel.analytics.bigdl.pvanet.layers
 
-import java.util.logging.Logger
-
 import breeze.linalg.{*, DenseMatrix, DenseVector, convert}
 import com.intel.analytics.bigdl.pvanet.datasets.Roidb.ImageWithRoi
 import com.intel.analytics.bigdl.pvanet.model.FasterRcnnParam
 import com.intel.analytics.bigdl.pvanet.utils._
+import com.intel.analytics.bigdl.utils.Table
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
@@ -36,15 +35,8 @@ case class AnchorTarget(labels: DenseVector[Int],
 }
 
 class AnchorTargetLayer(param: FasterRcnnParam) {
-  val logger = Logger.getLogger(this.getClass.getName)
-  // todo: now hard code
-
-  val featStride = 16
   val anchors = Anchor.generateAnchors(ratios = param.anchorRatios, scales = param.anchorScales)
-  val numAnchors = anchors.rows
-  // n_scales * n_ratios
   val allowedBorder = 0
-  assert(numAnchors == param.anchorNum)
 
   // debug info
   var counts = 1e-14
@@ -101,10 +93,9 @@ class AnchorTargetLayer(param: FasterRcnnParam) {
    */
 
   def generateAnchors(data: ImageWithRoi, height: Int, width: Int): AnchorTarget = {
-    logger.info("start generating anchors ----------------------")
     // 1. Generate proposals from bbox deltas and shifted anchors
-    val shifts = generateShifts(width, height, featStride)
-    val totalAnchors = shifts.rows * numAnchors
+    val shifts = generateShifts(width, height, param.featStride)
+    val totalAnchors = shifts.rows * param.anchorNum
     val allAnchors: DenseMatrix[Float] = getAllAnchors(shifts, anchors)
     val indsInside: ArrayBuffer[Int] = getIndsInside(data.scaledImage.width(),
       data.scaledImage.height(), allAnchors, allowedBorder)

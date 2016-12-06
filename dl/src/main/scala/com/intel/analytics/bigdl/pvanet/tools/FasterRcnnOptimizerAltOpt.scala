@@ -22,14 +22,14 @@ import com.intel.analytics.bigdl.optim.{OptimMethod, Trigger}
 import com.intel.analytics.bigdl.pvanet.datasets.Roidb.ImageWithRoi
 import com.intel.analytics.bigdl.pvanet.datasets.{AnchorToTensor, ImageToTensor, PascolVocDataSource}
 import com.intel.analytics.bigdl.pvanet.layers.AnchorTargetLayer
-import com.intel.analytics.bigdl.pvanet.model.{FasterRcnn, Phase}
+import com.intel.analytics.bigdl.pvanet.model.Phase._
+import com.intel.analytics.bigdl.pvanet.model.{FasterRcnn, FasterRcnnParam, Model}
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.Table
 
 import scala.collection.mutable.ArrayBuffer
 
-class FasterRcnnOptimizer(data: PascolVocDataSource,
-  validationData: PascolVocDataSource,
+class RpnOptimizer(data: PascolVocDataSource,
   net: FasterRcnn[Float],
   optimMethod: OptimMethod[Float],
   state: Table,
@@ -79,33 +79,30 @@ class FasterRcnnOptimizer(data: PascolVocDataSource,
     this
   }
 
-  /**
-   *
-   * @param d      image data class
-   * @param output (rpn_cls, rpn_reg, cls, reg, rois)
-   * @return
-   */
-  def getAnchorTarget(target: Table, d: ImageWithRoi, output: Table): Unit = {
+  def getAnchorTarget(d: ImageWithRoi, output: Table): Table = {
     val sizes = output(2).asInstanceOf[Tensor[Float]].size()
     val height = sizes(sizes.length - 2)
     val width = sizes(sizes.length - 1)
     val anchorTargetLayer = new AnchorTargetLayer(net.param)
     val anchors = anchorTargetLayer.generateAnchors(d, height, width)
-    val anchorTensors = new AnchorToTensor(1, height, width).apply(anchors)
+    val anchorToTensor = new AnchorToTensor(1, height, width)
+    val anchorTensors = anchorToTensor.apply(anchors)
+    val target = new Table
     target.insert(anchorTensors._1)
     target.insert(anchorTensors._2)
-  }
-
-  def getProposalTarget(target: Table, d: ImageWithRoi, output: Table): Unit = {
-    val pTargets = output(5).asInstanceOf[Table]
-    target.insert(pTargets(1))
-    target.insert(pTargets(2))
+    target
   }
 
   val imageToTensor = new ImageToTensor(batchSize = 1)
 
-  def optimize(model: Module[Table, Table, Float]): Module[Table, Table, Float] = {
-    val (weights, grad) = model.getParameters()
+
+  def optimizeRpn(): Module[Tensor[Float], Table, Float] = {
+    optimizeRpn(net.featureAndRpnNet)
+  }
+
+  def optimizeRpn(rpnModel: Module[Tensor[Float], Table, Float]):
+  Module[Tensor[Float], Table, Float] = {
+    val (weights, grad) = rpnModel.getParameters()
     var wallClockTime = 0L
     var count = 0
 
@@ -116,20 +113,70 @@ class FasterRcnnOptimizer(data: PascolVocDataSource,
     while (!endWhen(state)) {
       val start = System.nanoTime()
       val d = data.next()
-      val input = new Table
-      input.insert(ImageToTensor(d))
-      input.insert(d.imInfo.get)
+      val input = imageToTensor(d)
       val dataFetchTime = System.nanoTime()
-      model.zeroGradParameters()
-      // (rpn_cls, rpn_reg, cls, reg, proposalTargets)
-      val output = model.forward(input)
-      val target = new Table
-      getAnchorTarget(target, d, output)
-      getProposalTarget(target, d, output)
-
+      rpnModel.zeroGradParameters()
+      val output = rpnModel.forward(input)
+      val target = getAnchorTarget(d, output)
       val loss = net.criterion4.forward(output, target)
       val gradOutput = net.criterion4.backward(output, target)
-      model.backward(input, gradOutput)
+      rpnModel.backward(input, gradOutput)
+      optimMethod.optimize(_ => (loss, grad), weights, state)
+      val end = System.nanoTime()
+      wallClockTime += end - start
+      count += input.size(1)
+      println(s"[Epoch ${state[Int]("epoch")} $count/${data.total()}][Iteration ${
+        state[Int]("neval")
+      }][Wall Clock ${
+        wallClockTime / 1e9
+      }s] loss is $loss, iteration time is ${(end - start) / 1e9}s data " +
+        s"fetch time is " +
+        s"${(dataFetchTime - start) / 1e9}s, train time ${(end - dataFetchTime) / 1e9}s." +
+        s" Throughput is ${input.size(1).toDouble / (end - start) * 1e9} img / second")
+      state("neval") = state[Int]("neval") + 1
+
+      if (count >= data.total()) {
+        state("epoch") = state[Int]("epoch") + 1
+        data.reset()
+        data.shuffle()
+        count = 0
+      }
+      cacheTrigger.foreach(trigger => {
+        if (trigger(state) && cachePath.isDefined) {
+          println(s"[Wall Clock ${wallClockTime / 1e9}s] Save model to ${cachePath.get}")
+          saveModel(s".${state[Int]("neval")}")
+          saveState(state, s".${state[Int]("neval")}")
+        }
+      })
+    }
+    rpnModel
+  }
+
+  def optimizeFastRcnn(fastRcnnModel: Module[Table, Table, Float]): Module[Table, Table, Float] = {
+    val (weights, grad) = fastRcnnModel.getParameters()
+    var wallClockTime = 0L
+    var count = 0
+
+    state("epoch") = state.get[Int]("epoch").getOrElse(1)
+    state("neval") = state.get[Int]("neval").getOrElse(1)
+    data.reset()
+    data.shuffle()
+    while (!endWhen(state)) {
+      val start = System.nanoTime()
+      val d = data.next()
+      val input1 = imageToTensor(d)
+      // todo
+      val rois = Tensor[Float]
+      val input = new Table
+      input.insert(input1)
+      input.insert(rois)
+      val dataFetchTime = System.nanoTime()
+      fastRcnnModel.zeroGradParameters()
+      val output = fastRcnnModel.forward(input)
+      val target = getAnchorTarget(d, output)
+      val loss = net.criterion4.forward(output, target)
+      val gradOutput = net.criterion4.backward(output, target)
+      fastRcnnModel.backward(input, gradOutput)
       optimMethod.optimize(_ => (loss, grad), weights, state)
       val end = System.nanoTime()
       wallClockTime += end - start
@@ -150,7 +197,6 @@ class FasterRcnnOptimizer(data: PascolVocDataSource,
         data.shuffle()
         count = 0
       }
-      validate(wallClockTime)
       cacheTrigger.foreach(trigger => {
         if (trigger(state) && cachePath.isDefined) {
           println(s"[Wall Clock ${wallClockTime / 1e9}s] Save model to ${cachePath.get}")
@@ -159,20 +205,14 @@ class FasterRcnnOptimizer(data: PascolVocDataSource,
         }
       })
     }
-    validate(wallClockTime)
-    model
+    fastRcnnModel
   }
 
-  private def validate(wallClockTime: Long): Unit = {
-    validationTrigger.foreach(trigger => {
-      if (trigger(state) && validationMethods.length > 0) {
-        println(s"[Wall Clock ${wallClockTime / 1e9}s] Validate model...")
-        net.setPhase(Phase.TEST)
-        validationData.reset()
-        Test.testNet(net, validationData)
-        net.setPhase(Phase.TRAIN)
-      }
-    })
+  def rpnGenerate(data: PascolVocDataSource, net: FasterRcnn[Float]): Unit = {
+    var param = FasterRcnnParam.getNetParam(Model.withName(net.modelName), TEST)
+    param.RPN_PRE_NMS_TOP_N = -1     // no pre NMS filtering
+    param.RPN_POST_NMS_TOP_N = 2000  // limit top boxes after NMS
+    net.setPhase(TEST)
   }
 }
 

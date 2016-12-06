@@ -106,9 +106,7 @@ abstract class FasterRcnn[T: ClassTag](var phase: Phase)
     }
   }
 
-  def rpnCriterion: ParallelCriterion[T]
-
-  def fastRcnnCriterion: ParallelCriterion[T]
+  def criterion4: ParallelCriterion[T]
 
   def featureAndRpnNet(): Module[Tensor[T], Table, T]
 

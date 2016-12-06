@@ -79,8 +79,8 @@ class Proposal[@specialized(Float, Double) T: ClassTag](param: FasterRcnnParam)
     // the second set are the fg probs, which we want
     val dataSize = data.size()
     data.resize(dataSize(1), data.nElement() / dataSize(1))
-    var scoresTensor = data.narrow(1, at.numAnchors + 1, at.numAnchors)
-    scoresTensor.resize(1, at.numAnchors, dataSize(2), dataSize(3))
+    var scoresTensor = data.narrow(1, param.anchorNum + 1, param.anchorNum)
+    scoresTensor.resize(1, param.anchorNum, dataSize(2), dataSize(3))
     // bbox_deltas: (1, 4A, H, W)
     var bboxDeltas = input(2).asInstanceOf[Tensor[Float]]
 
@@ -118,7 +118,7 @@ class Proposal[@specialized(Float, Double) T: ClassTag](param: FasterRcnnParam)
     val width = dataSize(3)
 
     // Enumerate all shifts
-    val shifts = at.generateShifts(width = width, height = height, featStride = at.featStride)
+    val shifts = at.generateShifts(width = width, height = height, featStride = param.featStride)
 
     val anchors: DenseMatrix[Float] = at.getAllAnchors(shifts)
 

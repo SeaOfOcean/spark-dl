@@ -56,7 +56,7 @@ class ProposalTargetSpec extends FlatSpec {
 
 
   behavior of "ProposalTargetSpec"
-  val proposalTarget = new ProposalTarget[Float](21, param)
+  val proposalTarget = new ProposalTarget[Float](param)
   it should "computeTargets without norm correcly" in {
     val expected = DenseMatrix((0.508699, 0.202244, -0.15083, -0.0485428, -1.38974),
       (0.0884602, 0.0911369, -0.0446058, -0.0663423, -0.88127),

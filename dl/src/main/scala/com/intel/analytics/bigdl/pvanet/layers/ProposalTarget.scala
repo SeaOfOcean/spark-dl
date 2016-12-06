@@ -34,7 +34,7 @@ import scala.util.Random
  * classification labels and bounding-box regression targets.
  */
 class ProposalTarget[@specialized(Float, Double) T: ClassTag]
-(numClasses: Int, param: FasterRcnnParam)
+(param: FasterRcnnParam)
   (implicit ev: TensorNumeric[T]) extends Module[Table, Table, T] {
 
   /**
@@ -170,26 +170,39 @@ class ProposalTarget[@specialized(Float, Double) T: ClassTag]
     // targets
     val (labels, rois, bbox_targets, bbox_inside_weights) = sampleRois(
       all_rois, gt_boxes, fg_rois_per_image,
-      rois_per_image, numClasses)
+      rois_per_image, param.numClasses)
 
     // sampled rois (0, x1, y1, x2, y2) (1,5)
     output.insert(matrix2tensor(rois))
     // labels (1,1)
     output.insert(Tensor(Storage(labels)))
-    // bbox_targets (1, numClasses * 4)
-    output.insert(matrix2tensor(bbox_targets))
-    // bbox_inside_weights (1, numClasses * 4)
-    output.insert(matrix2tensor(bbox_inside_weights))
-    // bbox_outside_weights (1, numClasses * 4)
-    output.insert(matrix2tensor(bbox_inside_weights.map(x => if (x > 0) 1f else 0f)))
+    // bbox_targets (1, numClasses * 4) + bbox_inside_weights (1, numClasses * 4)
+    // + bbox_outside_weights (1, numClasses * 4)
+
+    output.insert(matrix2tensor(bbox_targets, bbox_inside_weights,
+      bbox_inside_weights.map(x => if (x > 0) 1f else 0f)))
     output
   }
 
+  // todo: may not need
   def matrix2tensor(mat: DenseMatrix[Float]): Tensor[Float] = {
     val out = Tensor[Float]().resize(mat.rows, mat.cols)
     for (i <- 0 until mat.rows) {
       for (j <- 0 until mat.cols) {
         out.setValue(i + 1, j + 1, mat(i, j))
+      }
+    }
+    out
+  }
+
+  def matrix2tensor(mat1: DenseMatrix[Float], mat2: DenseMatrix[Float],
+    mat3: DenseMatrix[Float]): Tensor[Float] = {
+    val out = Tensor[Float]().resize(mat1.rows * 3, mat1.cols)
+    for (i <- 0 until mat1.rows) {
+      for (j <- 0 until mat1.cols) {
+        out.setValue(i + 1, j + 1, mat1(i, j))
+        out.setValue(i + 1 + mat1.rows, j + 1, mat2(i, j))
+        out.setValue(i + 1 + mat1.rows * 2, j + 1, mat3(i, j))
       }
     }
     out

@@ -268,19 +268,14 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: Phase = TEST)
   override val modelName: String = model.toString
   override val param: FasterRcnnParam = new PvanetParam(phase)
 
-  override def rpnCriterion: ParallelCriterion[T] = {
+  override def criterion4: ParallelCriterion[T] = {
     val rpn_loss_bbox = new SmoothL1Criterion2[T](ev.fromType(3.0), 1)
     val rpn_loss_cls = new SoftmaxWithCriterion[T](ignoreLabel = Some(-1))
-    val pc = new ParallelCriterion[T]()
-    pc.add(rpn_loss_cls, 1)
-    pc.add(rpn_loss_bbox, 1)
-    pc
-  }
-
-  override def fastRcnnCriterion: ParallelCriterion[T] = {
     val loss_bbox = new SmoothL1Criterion2[T](ev.fromType(1.0), 1)
     val loss_cls = new SoftmaxWithCriterion[T](ignoreLabel = Some(-1))
     val pc = new ParallelCriterion[T]()
+    pc.add(rpn_loss_cls, 1)
+    pc.add(rpn_loss_bbox, 1)
     pc.add(loss_cls, 1)
     pc.add(loss_bbox, 1)
     pc
