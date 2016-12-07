@@ -18,18 +18,20 @@
 package com.intel.analytics.bigdl.pvanet.tools
 
 import com.intel.analytics.bigdl.dataset.LocalDataSource
-import com.intel.analytics.bigdl.nn.Module
+import com.intel.analytics.bigdl.nn.{Module, ParallelCriterion}
 import com.intel.analytics.bigdl.optim.{OptimMethod, Trigger}
 import com.intel.analytics.bigdl.pvanet.datasets.{AnchorToTensor, ImageToTensor, ImageWithRoi, ObjectDataSource}
 import com.intel.analytics.bigdl.pvanet.layers.AnchorTargetLayer
-import com.intel.analytics.bigdl.pvanet.model.{FasterRcnn, Phase}
+import com.intel.analytics.bigdl.pvanet.model.FasterRcnn
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.Table
 
 class FasterRcnnOptimizer(data: LocalDataSource[ImageWithRoi],
   validationData: ObjectDataSource,
   net: FasterRcnn[Float],
+  model: Module[Table, Table, Float],
   optimMethod: OptimMethod[Float],
+  criterion: ParallelCriterion[Float],
   state: Table,
   endWhen: Trigger) {
 
@@ -47,8 +49,7 @@ class FasterRcnnOptimizer(data: LocalDataSource[ImageWithRoi],
 
   protected def saveModel(postfix: String = ""): this.type = {
     if (this.cachePath.isDefined) {
-      net.rpn.save(s"${cachePath.get}.rpn_model$postfix", isOverWrite)
-      net.fastRcnn.save(s"${cachePath.get}.fastRcnn_model$postfix", isOverWrite)
+      model.save(s"${cachePath.get}.model$postfix", isOverWrite)
     }
     this
   }
@@ -96,7 +97,7 @@ class FasterRcnnOptimizer(data: LocalDataSource[ImageWithRoi],
 
   val imageToTensor = new ImageToTensor(batchSize = 1)
 
-  def optimize(model: Module[Table, Table, Float]): Module[Table, Table, Float] = {
+  def optimize(): Module[Table, Table, Float] = {
     val (weights, grad) = model.getParameters()
     var wallClockTime = 0L
     var count = 0
@@ -120,8 +121,8 @@ class FasterRcnnOptimizer(data: LocalDataSource[ImageWithRoi],
       getAnchorTarget(target, d, output)
       getProposalTarget(target, d, output)
 
-      val loss = net.criterion4.forward(output, target)
-      val gradOutput = net.criterion4.backward(output, target)
+      val loss = criterion.forward(output, target)
+      val gradOutput = criterion.backward(output, target)
       model.backward(input, gradOutput)
       optimMethod.optimize(_ => (loss, grad), weights, state)
       val end = System.nanoTime()
@@ -160,10 +161,11 @@ class FasterRcnnOptimizer(data: LocalDataSource[ImageWithRoi],
     validationTrigger.foreach(trigger => {
       if (trigger(state)) {
         println(s"[Wall Clock ${wallClockTime / 1e9}s] Validate model...")
-        net.setPhase(Phase.TEST)
+        net.evaluate
         validationData.reset()
+        net.copyParamToTest(model)
         Test.testNet(net, validationData)
-        net.setPhase(Phase.TRAIN)
+        net.train
       }
     })
   }

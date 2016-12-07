@@ -30,7 +30,6 @@ import scala.reflect.ClassTag
 
 abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
   (implicit ev: TensorNumeric[T]) {
-
   val modelType: ModelType
   val param: FasterRcnnParam
   var caffeReader: CaffeReader[T] = _
@@ -41,7 +40,20 @@ abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
     this.caffeReader = caffeReader
   }
 
-  def setPhase(phase: PhaseType): Unit = this.phase = phase
+  def train: Unit = setPhase(TRAIN)
+
+  def evaluate: Unit = setPhase(TEST)
+
+  def isTrain: Boolean = phase == TRAIN
+
+  private def setPhase(phase: PhaseType): Unit = this.phase = phase
+
+  def copyParamToTest(model: Module[Table, Table, T]) = {
+    val name2model = Utils.getParamModules[T](model)
+    evaluate
+    val testModel = getTestModel()
+    Utils.copyParamModules[T](testModel, name2model)
+  }
 
   /**
    *
@@ -64,7 +76,9 @@ abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
     }
   }
 
-  def scale(size: Array[Int], name: String): (CMul[T], CAdd[T]) = {
+  type Scale[T] = (CMul[T], CAdd[T])
+
+  def scale(size: Array[Int], name: String): Scale[T] = {
     if (caffeReader != null) {
       val out = caffeReader.mapScale(name)
       (size zip out._1.size).foreach(x => assert(x._1 == x._2))
@@ -106,6 +120,25 @@ abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
     }
   }
 
+  var testModel: Option[Module[Table, Table, T]] = None
+  var trainModel: Option[Module[Table, Table, T]] = None
+
+  def getTestModel(): Module[Table, Table, T] = {
+    testModel match {
+      case None => testModel = Some(createTestModel())
+      case _ =>
+    }
+    testModel.get
+  }
+
+  def getTrainModel(): Module[Table, Table, T] = {
+    trainModel match {
+      case None => trainModel = Some(createTrainModel())
+      case _ =>
+    }
+    trainModel.get
+  }
+
   def criterion4: ParallelCriterion[T]
 
   def featureAndRpnNet(): Module[Tensor[T], Table, T]
@@ -114,7 +147,9 @@ abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
 
   def rpn(): Module[Tensor[T], Table, T]
 
-  def fullModel(): Module[Table, Table, T]
+  def createTestModel(): Module[Table, Table, T]
+
+  def createTrainModel(): Module[Table, Table, T]
 
   type STT = Sequential[Table, Table, T]
   type STt = Sequential[Table, Tensor[T], T]
@@ -122,4 +157,32 @@ abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
   type Stt = Sequential[Tensor[T], Tensor[T], T]
   type CT = ConcatTable[Table, T]
   type Ct = ConcatTable[Tensor[T], T]
+
+  /**
+   * select tensor from nested tables
+   *
+   * @param depths a serious of depth to use when fetching certain tensor
+   * @return a wanted tensor
+   */
+  def selectTensor(depths: Int*): STt = {
+    val module = new STt()
+    depths.slice(0, depths.length - 1).foreach(depth =>
+      module.add(new SelectTable[Table, T](depth)))
+    module.add(new SelectTable[Tensor[T], T](depths(depths.length - 1)))
+  }
+
+  def selectTensor1(depth: Int): SelectTable[Tensor[T], T] = {
+    new SelectTable[Tensor[T], T](depth)
+  }
+
+  def selectTable(depths: Int*): STT = {
+    val module = new STT()
+    depths.slice(0, depths.length).foreach(depth =>
+      module.add(new SelectTable[Table, T](depth)))
+    module
+  }
+
+  def selectTable1(depth: Int): SelectTable[Table, T] = {
+    new SelectTable[Table, T](depth)
+  }
 }

@@ -113,7 +113,7 @@ object Test {
     val input = new Table
     input.insert(ImageToTensor(d))
     input.insert(d.imInfo.get)
-    val result = net.fullModel.forward(input)
+    val result = net.getTestModel().forward(input)
 
     val scores = result(1).asInstanceOf[Table](1).asInstanceOf[Tensor[Float]]
     val boxDeltas = result(1).asInstanceOf[Table](2).asInstanceOf[Tensor[Float]]

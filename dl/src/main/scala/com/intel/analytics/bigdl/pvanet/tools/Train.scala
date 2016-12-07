@@ -20,8 +20,8 @@ package com.intel.analytics.bigdl.pvanet.tools
 import com.intel.analytics.bigdl.optim.SGD.EpochStep
 import com.intel.analytics.bigdl.optim.{SGD, Trigger}
 import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, ObjectDataSource}
-import com.intel.analytics.bigdl.pvanet.model._
 import com.intel.analytics.bigdl.pvanet.model.Model._
+import com.intel.analytics.bigdl.pvanet.model._
 import com.intel.analytics.bigdl.utils.T
 import scopt.OptionParser
 
@@ -65,10 +65,13 @@ object Train {
       false, model.param)
     val config = model.param.optimizeConfig
     val imgScaler = new ImageScalerAndMeanSubstractor(model.param)
+    model.train
     val optimizer = new FasterRcnnOptimizer(
       data = dataSource -> imgScaler,
       validationData = valSource,
       net = model,
+      model = model.getTrainModel(),
+      criterion = model.criterion4,
       optimMethod = new SGD[Float](),
       state = T(
         "learningRate" -> config.learningRate,
@@ -82,6 +85,6 @@ object Train {
     optimizer.setCache(param.cache + "/" + param.net, config.cacheTrigger)
     optimizer.setValidationTrigger(config.testTrigger)
     optimizer.overWriteCache()
-    optimizer.optimize(model.fullModel())
+    optimizer.optimize()
   }
 }

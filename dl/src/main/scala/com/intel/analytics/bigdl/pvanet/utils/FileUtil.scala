@@ -31,7 +31,7 @@ object FileUtil {
   var ROOT_DIR = System.getProperty("user.dir")
 
   // Data directory
-  var DATA_DIR = ROOT_DIR + "/dl/data"
+  var DATA_DIR = ROOT_DIR + "/data"
 
   // Place outputs under an experiments directory
   var EXP_DIR = "default"
