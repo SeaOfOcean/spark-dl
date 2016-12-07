@@ -28,7 +28,7 @@ import com.intel.analytics.bigdl.utils.Table
 
 import scala.reflect.ClassTag
 
-class VggFRcnn[T: ClassTag](phase: Phase = TEST)(implicit ev: TensorNumeric[T])
+class VggFRcnn[T: ClassTag](phase: PhaseType = TEST)(implicit ev: TensorNumeric[T])
   extends FasterRcnn[T](phase) {
 
   def vgg16: Module[Tensor[T], Tensor[T], T] = {
@@ -93,44 +93,33 @@ class VggFRcnn[T: ClassTag](phase: Phase = TEST)(implicit ev: TensorNumeric[T])
   def featureAndRpnNet(): Module[Tensor[T], Table, T] = {
     val compose = new Sequential[Tensor[T], Table, T]()
     compose.add(vgg16)
-    phase match {
-      case TRAIN => compose.add(rpn())
-      case TEST =>
-        val vggRpnModel = new ConcatTable[Tensor[T], T]()
-        vggRpnModel.add(rpn())
-        vggRpnModel.add(new Identity[T]())
-        compose.add(vggRpnModel)
-      case FINETUNE => throw new NotImplementedError()
-    }
+    val vggRpnModel = new ConcatTable[Tensor[T], T]()
+    vggRpnModel.add(rpn())
+    vggRpnModel.add(new Identity[T]())
+    compose.add(vggRpnModel)
     compose
   }
 
   def fastRcnn(): Module[Table, Table, T] = {
-    val model = new Sequential[Table, Table, T]()
-    model.add(new RoiPooling[T](7, 7, ev.fromType(0.0625f)))
-    model.add(new Reshape2[T](Array(-1, 25088), Some(false)))
+    val model = new STT()
+      .add(new RoiPooling[T](7, 7, ev.fromType(0.0625f)))
+      .add(new Reshape2[T](Array(-1, 25088), Some(false)))
+      .add(linear((25088, 4096), "fc6"))
+      .add(new ReLU[T]())
+      .add(linear((4096, 4096), "fc7"))
+      .add(new ReLU[T]())
 
-    model.add(linear((25088, 4096), "fc6"))
-    model.add(new ReLU[T]())
-
-    model.add(linear((4096, 4096), "fc7"))
-    model.add(new ReLU[T]())
-
-    val clsReg = new ConcatTable[Table, T]()
-
-    val cls = new Sequential[Tensor[T], Tensor[T], T]()
-    cls.add(linear((4096, 21), "cls_score"))
-    cls.add(new SoftMax[T]())
-    clsReg.add(cls)
-
-    val bboxPred = linear((4096, 84), "bbox_pred")
-    clsReg.add(bboxPred)
+    val clsReg = new CT()
+      .add(new Stt()
+        .add(linear((4096, 21), "cls_score"))
+        .add(new SoftMax[T]()))
+      .add(linear((4096, 84), "bbox_pred"))
 
     model.add(clsReg)
     model
   }
 
-  override val modelType: Model = VGG16
+  override val modelType: ModelType = VGG16
   override val param: FasterRcnnParam = new VggParam(phase)
 
   override def criterion4: ParallelCriterion[T] = {
@@ -139,10 +128,10 @@ class VggFRcnn[T: ClassTag](phase: Phase = TEST)(implicit ev: TensorNumeric[T])
     val loss_bbox = new SmoothL1Criterion2[T](ev.fromType(1.0), 1)
     val loss_cls = new SoftmaxWithCriterion[T]()
     val pc = new ParallelCriterion[T]()
-    pc.add(rpn_loss_cls, 1)
-    pc.add(rpn_loss_bbox, 1)
-    pc.add(loss_cls, 1)
-    pc.add(loss_bbox, 1)
+    pc.add(rpn_loss_cls, 1.0f)
+    pc.add(rpn_loss_bbox, 1.0f)
+    pc.add(loss_cls, 1.0f)
+    pc.add(loss_bbox, 1.0f)
     pc
   }
 
@@ -252,13 +241,6 @@ class VggFRcnn[T: ClassTag](phase: Phase = TEST)(implicit ev: TensorNumeric[T])
     model
   }
 
-  type STT = Sequential[Table, Table, T]
-  type STt = Sequential[Table, Tensor[T], T]
-  type StT = Sequential[Tensor[T], Table, T]
-  type Stt = Sequential[Tensor[T], Tensor[T], T]
-  type CT = ConcatTable[Table, T]
-  type Ct = ConcatTable[Tensor[T], T]
-
   def fullModelTrain(): Module[Table, Table, T] = {
     val model = new STT()
 
@@ -271,45 +253,46 @@ class VggFRcnn[T: ClassTag](phase: Phase = TEST)(implicit ev: TensorNumeric[T])
     model.add(rpnFeatureWithInfoGt)
 
     val lossModels = new CT()
+    model.add(lossModels)
 
-    // rpn cls
-    lossModels.add(selectTensor(1, 1, 1))
-    // rpn reg
-    lossModels.add(selectTensor(1, 1, 2))
-    // loss from fast rcnn
-    val fastRcnnLossModel = new STT
-    // fast-rcnn
-    val fastRcnnInputModel = new CT
-    // add features
-    fastRcnnInputModel.add(selectTensor(1, 2))
+    lossModels.add(selectTensor(1, 1, 1).setName("rpn_cls"))
+    lossModels.add(selectTensor(1, 1, 2).setName("rpn_reg"))
+    val fastRcnnLossModel = new STT().setName("loss from fast rcnn")
+    // get ((rois, otherProposalTargets), features
+    val fastRcnnInputModel = new CT().setName("fast-rcnn")
+    fastRcnnInputModel.add(selectTensor(1, 2).setName("features"))
     val sampleRoisModel = new STT
     fastRcnnInputModel.add(sampleRoisModel)
     // add sample rois
     lossModels.add(fastRcnnLossModel)
 
     val proposalTargetInput = new CT()
+    // get rois from proposal layer
     val proposalModel = new STt()
       .add(new Ct()
-        // rpn cls
         .add(new STt()
-        .add(selectTensor(1, 1, 1))
-        .add(new SoftMax[T]())
-        .add(new Reshape2[T](Array(1, 2 * param.anchorNum, -1, 0), Some(false))))
-        // rpn reg
-        .add(selectTensor(1, 1, 2))
-        // im_info
-        .add(selectTensor(2)))
+          .add(selectTensor(1, 1, 1))
+          .add(new SoftMax[T]())
+          .add(new Reshape2[T](Array(1, 2 * param.anchorNum, -1, 0), Some(false)))
+          .setName("rpn_cls_softmax_reshape"))
+        .add(selectTensor(1, 1, 2).setName("rpn_reg"))
+        .add(selectTensor1(2).setName("im_info")))
       .add(new Proposal[T](param))
+      .add(selectTensor1(1).setName("rois"))
+
     proposalTargetInput.add(proposalModel)
-    proposalTargetInput.add(selectTensor1(3))
+    proposalTargetInput.add(selectTensor1(3).setName("gtBoxes"))
     sampleRoisModel.add(proposalTargetInput)
     sampleRoisModel.add(new ProposalTarget[T](param))
 
-    // ((rois, otherProposalTargets), features
+    // ( features, (rois, otherProposalTargets))
     fastRcnnLossModel.add(fastRcnnInputModel)
-    fastRcnnLossModel.add(new CT()
-      .add(new CT().add(selectTensor1(2)).add(selectTensor(1, 1)))
-      .add(selectTable(1, 2)))
+    fastRcnnLossModel.add(
+      new CT()
+        .add(new CT()
+          .add(selectTensor1(1).setName("features"))
+          .add(selectTensor(2, 1).setName("rois")))
+        .add(selectTable(2, 2).setName("other targets info")))
     fastRcnnLossModel.add(new ParallelTable[T]()
       .add(fastRcnn())
       .add(new Identity[T]()))
@@ -342,8 +325,8 @@ object VggFRcnn {
 
   private var modelWithCaffeWeight: FasterRcnn[Float] = _
 
-  def model(isTrain: Boolean = false): FasterRcnn[Float] = {
-    if (modelWithCaffeWeight == null) modelWithCaffeWeight = new VggFRcnn[Float]()
+  def model(phase: PhaseType = TEST): FasterRcnn[Float] = {
+    if (modelWithCaffeWeight == null) modelWithCaffeWeight = new VggFRcnn[Float](phase)
     modelWithCaffeWeight.setCaffeReader(caffeReader)
     modelWithCaffeWeight
   }

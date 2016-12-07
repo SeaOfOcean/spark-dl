@@ -30,9 +30,9 @@ class SoftmaxWithCriterion[T: ClassTag](weights: Tensor[T] = null,
   (implicit ev: TensorNumeric[T]) extends TensorCriterion[T] {
   private val gradInput: Tensor[T] = Tensor[T]()
 
-  @transient var softmax: SoftMax[T] = null
+  @transient var softmax: SoftMax[T] = _
 
-  @transient var prob: Tensor[T] = null
+  @transient var prob: Tensor[T] = _
 
   @transient var outerNum = 0 // batchsize
 
@@ -60,9 +60,9 @@ class SoftmaxWithCriterion[T: ClassTag](weights: Tensor[T] = null,
     for (i <- 0 until outerNum) {
       for (j <- 0 until innerNum) {
         val curTarget = ev.toType[Int](labelData(i * innerNum + j))
-        if (ignoreLabel == None || ignoreLabel.get != curTarget) {
+        if (ignoreLabel.isEmpty || ignoreLabel.get != curTarget) {
           assert(curTarget >= 0 && curTarget < nClasses,
-            s"curTarget ${curTarget} is out of range 0 to ${nClasses - 1} ")
+            s"curTarget $curTarget is out of range 0 to ${nClasses - 1} ")
           loss = ev.minus(loss,
             ev.log(
               ev.max(probData(i * dim + curTarget * innerNum + j), ev.fromType(Double.MinValue))
@@ -81,12 +81,12 @@ class SoftmaxWithCriterion[T: ClassTag](weights: Tensor[T] = null,
     val labelData = target.storage().array()
 
     val dim = prob.nElement() / outerNum
-    var gradData = gradInput.storage().array()
+    val gradData = gradInput.storage().array()
     var count = 0
     for (i <- 0 until outerNum) {
       for (j <- 0 until innerNum) {
         val curTarget = ev.toType[Int](labelData(i * innerNum + j))
-        if (ignoreLabel == None || ignoreLabel.get != curTarget) {
+        if (ignoreLabel.isEmpty || ignoreLabel.get != curTarget) {
           gradData(i * dim + curTarget * innerNum + j) =
             ev.minus(gradData(i * dim + curTarget * innerNum + j), ev.fromType(1))
           count = count + 1
@@ -99,7 +99,7 @@ class SoftmaxWithCriterion[T: ClassTag](weights: Tensor[T] = null,
     }
 
     val lossWeight = ev.divide(ev.fromType(1), getNormalizer(normalizeMode, count))
-    for (i <- 0 until gradData.length) {
+    for (i <- gradData.indices) {
       gradData(i) = ev.times(gradData(i), lossWeight)
     }
     gradInput

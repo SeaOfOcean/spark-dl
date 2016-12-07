@@ -76,19 +76,19 @@ abstract class Imdb(val param: FasterRcnnParam) {
       roidb(i).oriWidth = sizes(i)(0)
       roidb(i).oriHeight = sizes(i)(1)
       // max overlap with gt over classes(columns)
-      val maxRes = roidb(i).gt_overlaps.max(2) // gt class that had the max overlap
-      maxRes match {
-        case (max_overlaps, max_classes) =>
-          roidb(i).max_overlaps = Some(max_overlaps)
-          roidb(i).max_classes = Some(max_classes)
-      }
-      var zero_inds = None: Option[Iterable[(Float, Float)]]
+//      val maxRes = roidb(i).gt_overlaps.max(2) // gt class that had the max overlap
+//      maxRes match {
+//        case (max_overlaps, max_classes) =>
+//          roidb(i).max_overlaps = Some(max_overlaps)
+//          roidb(i).max_classes = Some(max_classes)
+//      }
+//      var zero_inds = None: Option[Iterable[(Float, Float)]]
       // sanity check, max overlap of 0 => class should be zero (background)
-      zero_inds = Some(roidb(i).max_overlaps.get.storage() zip roidb(i).max_classes.get.storage())
-      for ((maxOverlap, cls) <- zero_inds.get) {
-        if (maxOverlap == 0) assert(cls == 0)
-        if (maxOverlap > 0) assert(cls != 0)
-      }
+//      zero_inds = Some(roidb(i).max_overlaps.get.storage() zip roidb(i).max_classes.get.storage())
+//      for ((maxOverlap, cls) <- zero_inds.get) {
+//        if (maxOverlap == 0) assert(cls == 0)
+//        if (maxOverlap > 0) assert(cls != 0)
+//      }
     }
   }
 
@@ -115,16 +115,16 @@ abstract class Imdb(val param: FasterRcnnParam) {
 
 case class ImageWithRoi(boxes: DenseMatrix[Float] = null,
   gt_classes: Tensor[Float] = null,
-  gt_overlaps: Tensor[Float] = null,
+//  gt_overlaps: Tensor[Float] = null,
   flipped: Boolean = false) {
-  var gtBoxes = None: Option[DenseMatrix[Float]]
+  var gtBoxes = None: Option[Tensor[Float]]
   var scaledImage: RGBImageOD = _
   var oriWidth = 0
   var oriHeight = 0
-  var imagePath = ""
+  var imagePath: String = null
   var imInfo = None: Option[Tensor[Float]]
-  var max_classes = None: Option[Tensor[Float]]
-  var max_overlaps = None: Option[Tensor[Float]]
+//  var max_classes = None: Option[Tensor[Float]]
+//  var max_overlaps = None: Option[Tensor[Float]]
 }
 
 object Imdb {

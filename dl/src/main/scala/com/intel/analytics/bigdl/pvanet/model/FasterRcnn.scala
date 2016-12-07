@@ -28,12 +28,12 @@ import com.intel.analytics.bigdl.utils.Table
 import scala.reflect.ClassTag
 
 
-abstract class FasterRcnn[T: ClassTag](var phase: Phase)
+abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
   (implicit ev: TensorNumeric[T]) {
 
-  val modelType: Model
+  val modelType: ModelType
   val param: FasterRcnnParam
-  var caffeReader: CaffeReader[T] = null
+  var caffeReader: CaffeReader[T] = _
 
   def modelName: String = modelType.toString
 
@@ -41,7 +41,7 @@ abstract class FasterRcnn[T: ClassTag](var phase: Phase)
     this.caffeReader = caffeReader
   }
 
-  def setPhase(phase: Phase): Unit = this.phase = phase
+  def setPhase(phase: PhaseType): Unit = this.phase = phase
 
   /**
    *
@@ -115,4 +115,11 @@ abstract class FasterRcnn[T: ClassTag](var phase: Phase)
   def rpn(): Module[Tensor[T], Table, T]
 
   def fullModel(): Module[Table, Table, T]
+
+  type STT = Sequential[Table, Table, T]
+  type STt = Sequential[Table, Tensor[T], T]
+  type StT = Sequential[Tensor[T], Table, T]
+  type Stt = Sequential[Tensor[T], Tensor[T], T]
+  type CT = ConcatTable[Table, T]
+  type Ct = ConcatTable[Tensor[T], T]
 }

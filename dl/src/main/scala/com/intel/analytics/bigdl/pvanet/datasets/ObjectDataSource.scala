@@ -21,7 +21,7 @@ import java.awt.Color
 import java.awt.image.{BufferedImage, DataBufferByte}
 import javax.imageio.ImageIO
 
-import breeze.linalg.{DenseMatrix, DenseVector}
+import breeze.linalg.DenseVector
 import com.intel.analytics.bigdl.dataset.{LocalDataSource, Transformer}
 import com.intel.analytics.bigdl.pvanet.layers.AnchorTarget
 import com.intel.analytics.bigdl.pvanet.model.FasterRcnnParam
@@ -142,14 +142,14 @@ class ImageScalerAndMeanSubstractor(param: FasterRcnnParam)
     if (data.gt_classes != null) {
       val gt_inds = data.gt_classes.storage().array().zipWithIndex
         .filter(x => x._1 != 0).map(x => x._2)
-      val gt_boxes = new DenseMatrix[Float](gt_inds.length, 5)
+      val gt_boxes = Tensor[Float](gt_inds.length, 5)
       gt_inds.zipWithIndex.foreach(ind => {
         val scaled = data.boxes(ind._1, 0 until 4).t :* DenseVector(imScales)
-        gt_boxes(ind._2, 0) = scaled(0)
-        gt_boxes(ind._2, 1) = scaled(1)
-        gt_boxes(ind._2, 2) = scaled(2)
-        gt_boxes(ind._2, 3) = scaled(3)
-        gt_boxes(ind._2, 4) = data.gt_classes.valueAt(ind._1 + 1)
+        gt_boxes.setValue(ind._2 + 1, 1, scaled(0))
+        gt_boxes.setValue(ind._2 + 1, 2, scaled(1))
+        gt_boxes.setValue(ind._2 + 1, 3, scaled(2))
+        gt_boxes.setValue(ind._2 + 1, 4, scaled(3))
+        gt_boxes.setValue(ind._2 + 1, 5, data.gt_classes.valueAt(ind._1 + 1))
       })
       data.gtBoxes = Some(gt_boxes)
     }
@@ -176,8 +176,9 @@ class AnchorToTensor(batchSize: Int = 1, height: Int, width: Int) {
     val labelData: Array[Float] = new Array[Float](batchSize * anchorTarget.labels.length)
     val stride = anchorTarget.bboxTargets.rows * anchorTarget.bboxTargets.cols
     for (r <- 0 until anchorTarget.bboxTargets.rows) {
-      labelData(r) = if (anchorTarget.labels(r) != -1) anchorTarget.labels(r) + 1
-      else anchorTarget.labels(r)
+      labelData(r) = anchorTarget.labels(r)
+//        if (anchorTarget.labels(r) != -1) anchorTarget.labels(r) + 1
+//      else anchorTarget.labels(r)
 
       for (c <- 0 until anchorTarget.bboxTargets.cols) {
         roiLabelData(k) = anchorTarget.bboxTargets.valueAt(r, c)
@@ -187,9 +188,11 @@ class AnchorToTensor(batchSize: Int = 1, height: Int, width: Int) {
       }
     }
     labelTensor.set(Storage[Float](labelData),
-      storageOffset = 1, sizes = Array(labelData.length))
+      storageOffset = 1, sizes = Array(batchSize, 1,
+        labelData.length/ width / batchSize, width))
     roiLabelTensor.set(Storage[Float](roiLabelData),
-      storageOffset = 1, sizes = Array(roiLabelData.length))
+      storageOffset = 1, sizes = Array(batchSize, 12,
+        roiLabelData.length / 12 / width / batchSize, width))
     (labelTensor, roiLabelTensor)
   }
 }

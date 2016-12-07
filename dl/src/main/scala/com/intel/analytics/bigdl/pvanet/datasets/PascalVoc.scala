@@ -103,9 +103,6 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
 
     val boxes = new DenseMatrix[Float](objs.length, 4)
     val gt_classes = Tensor[Float](objs.length)
-    val overlaps = Tensor[Float](objs.length, classes.length)
-    // "Seg" area for pascal is just the box area
-    val seg_areas = Tensor[Float](objs.length)
     // Load object bounding boxes into a data frame.
     for ((obj, ix) <- objs.zip(Stream from 1)) {
       // pixel indexes 1-based
@@ -120,10 +117,8 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
       boxes(ix - 1, 2) = x2
       boxes(ix - 1, 3) = y2
       gt_classes.setValue(ix, cls)
-      overlaps.setValue(ix, cls, 1)
-      // seg_areas.setValue(ix, (x2 - x1 + 1) * (y2 - y1 + 1))
     }
-    ImageWithRoi(boxes, gt_classes, overlaps, param.USE_FLIPPED)
+    ImageWithRoi(boxes, gt_classes, param.USE_FLIPPED)
   }
 
 

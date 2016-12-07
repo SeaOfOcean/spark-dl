@@ -88,6 +88,7 @@ class FasterRcnnOptimizer(data: LocalDataSource[ImageWithRoi],
   }
 
   def getProposalTarget(target: Table, d: ImageWithRoi, output: Table): Unit = {
+    println(output.length())
     val pTargets = output(5).asInstanceOf[Table]
     target.insert(pTargets(1))
     target.insert(pTargets(2))
@@ -110,6 +111,7 @@ class FasterRcnnOptimizer(data: LocalDataSource[ImageWithRoi],
       val input = new Table
       input.insert(ImageToTensor(d))
       input.insert(d.imInfo.get)
+      input.insert(d.gtBoxes.get)
       val dataFetchTime = System.nanoTime()
       model.zeroGradParameters()
       // (rpn_cls, rpn_reg, cls, reg, proposalTargets)

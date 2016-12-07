@@ -174,13 +174,16 @@ class ProposalTarget[@specialized(Float, Double) T: ClassTag]
 
     // sampled rois (0, x1, y1, x2, y2) (1,5)
     output.insert(matrix2tensor(rois))
+
+    val target = new Table
     // labels (1,1)
-    output.insert(Tensor(Storage(labels)))
+    target.insert(Tensor(Storage(labels)))
     // bbox_targets (1, numClasses * 4) + bbox_inside_weights (1, numClasses * 4)
     // + bbox_outside_weights (1, numClasses * 4)
 
-    output.insert(matrix2tensor(bbox_targets, bbox_inside_weights,
+    target.insert(matrix2tensor(bbox_targets, bbox_inside_weights,
       bbox_inside_weights.map(x => if (x > 0) 1f else 0f)))
+    output.insert(target)
     output
   }
 

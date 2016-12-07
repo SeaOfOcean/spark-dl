@@ -25,10 +25,10 @@ import scala.reflect.ClassTag
 
 class SmoothL1Criterion2[T: ClassTag](@transient val sigma: T, @transient val num: Int)
                                      (implicit ev: TensorNumeric[T]) extends TensorCriterion[T] {
-  @transient var gradInput: Tensor[T] = null
-  @transient var buffer: Tensor[T] = null
+  @transient var gradInput: Tensor[T] = _
+  @transient var buffer: Tensor[T] = _
   // diff holds (input - gt) * w_in
-  @transient var diff: Tensor[T] = null
+  @transient var diff: Tensor[T] = _
   @transient val sigma2 = ev.times(sigma, sigma)
   @transient var hasWeights = true
 
@@ -60,8 +60,8 @@ class SmoothL1Criterion2[T: ClassTag](@transient val sigma: T, @transient val nu
     }
     // |input - gt| * w_in
     buffer.resizeAs(diff).copy(diff).abs()
-    var data = buffer.storage().array()
-    for (i <- 0 until data.length) {
+    val data = buffer.storage().array()
+    for (i <- data.indices) {
       // f(x) = 0.5 * (sigma * x)^2          if |x| < 1 / sigma / sigma
       //        |x| - 0.5 / sigma / sigma    otherwise
       if (ev.isGreater(ev.divide(ev.fromType(1.0), sigma2), data(i))) {
@@ -90,8 +90,8 @@ class SmoothL1Criterion2[T: ClassTag](@transient val sigma: T, @transient val nu
     if (gradInput == null) {
       gradInput = Tensor[T]()
     }
-    var data = diff.storage().array()
-    for (i <- 0 until data.length) {
+    val data = diff.storage().array()
+    for (i <- data.indices) {
       // f'(x) = sigma * sigma * x         if |x| < 1 / sigma / sigma
       //       = sign(x)
       val x = data(i)
@@ -108,8 +108,8 @@ class SmoothL1Criterion2[T: ClassTag](@transient val sigma: T, @transient val nu
         }
       }
     }
-    var sign = ev.fromType(1)
-    var alpha = ev.divide(sign, ev.fromType(num))
+    val sign = ev.fromType(1)
+    val alpha = ev.divide(sign, ev.fromType(num))
     gradInput.resizeAs(diff).copy(diff).mul(alpha)
     if (hasWeights) {
       // scale by inside weight

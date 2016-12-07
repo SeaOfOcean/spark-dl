@@ -108,7 +108,7 @@ class AnchorTargetLayer(param: FasterRcnnParam) {
 
     // overlaps between the anchors and the gt boxes
     // overlaps (ex, gt)
-    val overlaps = Bbox.bboxOverlap(insideAnchors, data.gtBoxes.get)
+    val overlaps = Bbox.bboxOverlap(insideAnchors, data.gtBoxes.get.toBreezeMatrix())
 
     val argmaxOverlaps = MatrixUtil.argmax2(overlaps, 1)
 
@@ -163,7 +163,7 @@ class AnchorTargetLayer(param: FasterRcnnParam) {
     }
 
     var bboxTargets = computeTargets(insideAnchors,
-      MatrixUtil.selectMatrix(data.gtBoxes.get, argmaxOverlaps, 0))
+      MatrixUtil.selectMatrix(data.gtBoxes.get.toBreezeMatrix(), argmaxOverlaps, 0))
 
     var bboxInsideWeights = DenseMatrix.zeros[Float](indsInside.length, 4)
     labels.foreachPair((k, v) => {

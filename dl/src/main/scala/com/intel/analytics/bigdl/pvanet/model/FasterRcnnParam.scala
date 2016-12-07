@@ -17,22 +17,24 @@
 
 package com.intel.analytics.bigdl.pvanet.model
 
-import com.intel.analytics.bigdl.pvanet.model.Model.Model
-import com.intel.analytics.bigdl.pvanet.model.Phase.Phase
+import com.intel.analytics.bigdl.optim.SGD.LearningRateSchedule
+import com.intel.analytics.bigdl.optim.{OptimMethod, Trigger}
+import com.intel.analytics.bigdl.pvanet.model.Model.ModelType
+import com.intel.analytics.bigdl.pvanet.model.Phase.PhaseType
 
 
 object Phase extends Enumeration {
-  type Phase = Value
+  type PhaseType = Value
   val TRAIN, TEST, FINETUNE = Value
 
 }
 
 object Model extends Enumeration {
-  type Model = Value
+  type ModelType = Value
   val VGG16, PVANET = Value
 }
 
-abstract class FasterRcnnParam(phase: Phase = Phase.TEST) {
+abstract class FasterRcnnParam(phase: PhaseType = Phase.TEST) {
   val anchorScales: Array[Float]
   val anchorRatios: Array[Float]
   val anchorNum: Int
@@ -138,10 +140,23 @@ abstract class FasterRcnnParam(phase: Phase = Phase.TEST) {
   val BBOX_VOTE = false
 
   var BBOX_REG = true
+
+  val optimizeConfig: OptimizeConfig
 }
 
+case class OptimizeConfig(
+  optimMethod: OptimMethod[Float],
+  momentum: Double,
+  weightDecay: Double,
+  testTrigger: Trigger,
+  cacheTrigger: Trigger,
+  endWhen: Trigger,
+  learningRate: Double,
+  learningRateSchedule: LearningRateSchedule
+)
+
 object FasterRcnnParam {
-  def getNetParam(net: Model, phase: Phase): FasterRcnnParam = {
+  def getNetParam(net: ModelType, phase: PhaseType): FasterRcnnParam = {
     net match {
       case Model.VGG16 => new VggParam(phase)
       case Model.PVANET => new PvanetParam(phase)

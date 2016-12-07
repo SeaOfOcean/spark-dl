@@ -135,7 +135,7 @@ object Test {
   }
 
   case class PascolVocLocalParam(folder: String = "/home/xianyan/objectRelated/VOCdevkit",
-    net: Model = VGG16, nThread: Int = 4)
+    net: ModelType = VGG16, nThread: Int = 4)
 
   private val parser = new OptionParser[PascolVocLocalParam]("Spark-DL PascolVoc Local Example") {
     head("Spark-DL PascolVoc Local Example")

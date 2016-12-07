@@ -28,7 +28,7 @@ import com.intel.analytics.bigdl.utils.Table
 
 import scala.reflect.ClassTag
 
-class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: Phase = TEST)
+class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: PhaseType = TEST)
   (implicit ev: TensorNumeric[T])
   extends FasterRcnn[T](phase) {
 
@@ -264,7 +264,7 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: Phase = TEST)
     model
   }
 
-  override val modelType: Model = PVANET
+  override val modelType: ModelType = PVANET
   override val modelName: String = modelType.toString
   override val param: FasterRcnnParam = new PvanetParam(phase)
 
@@ -290,15 +290,9 @@ object PvanetFRcnn {
   val caffeReader: CaffeReader[Float] = new CaffeReader(defName, modelName, "pvanet")
   var modelWithCaffeWeight: FasterRcnn[Float] = _
 
-  def model(isTrain: Boolean = false): FasterRcnn[Float] = {
-    if (modelWithCaffeWeight == null) modelWithCaffeWeight = new PvanetFRcnn[Float]()
+  def model(phase: PhaseType = TEST): FasterRcnn[Float] = {
+    if (modelWithCaffeWeight == null) modelWithCaffeWeight = new PvanetFRcnn[Float](phase)
     modelWithCaffeWeight.setCaffeReader(caffeReader)
     modelWithCaffeWeight
-  }
-
-  def main(args: Array[String]): Unit = {
-    val pvanet = PvanetFRcnn.model()
-    pvanet.featureAndRpnNet()
-    pvanet.fastRcnn()
   }
 }
