@@ -188,7 +188,8 @@ class Proposal[@specialized(Float, Double) T: ClassTag](param: FasterRcnnParam)
   }
 
   override def updateGradInput(input: Table, gradOutput: Table): Table = {
-    null
+    gradInput = gradOutput
+    gradInput
   }
 }
 

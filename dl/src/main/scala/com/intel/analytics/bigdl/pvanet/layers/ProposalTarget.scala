@@ -212,6 +212,7 @@ class ProposalTarget[@specialized(Float, Double) T: ClassTag]
   }
 
   override def updateGradInput(input: Table, gradOutput: Table): Table = {
-    null
+    gradInput = gradOutput
+    gradInput
   }
 }
