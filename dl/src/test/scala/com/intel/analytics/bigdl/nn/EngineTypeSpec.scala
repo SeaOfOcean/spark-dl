@@ -14,35 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.intel.analytics.bigdl.nn
 
-import com.intel.analytics.bigdl.tensor.Tensor
-import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
+import com.intel.analytics.bigdl.models.imagenet.{GoogleNet_v2}
+import org.scalatest.{FlatSpec, Matchers}
 
-import scala.reflect.ClassTag
-
-/**
- * compute L1 norm for input, and sign of input
- */
-class L1Cost[T: ClassTag]()
- (implicit ev: TensorNumeric[T]) extends TensorCriterion[T] {
-
-  override def updateOutput(input: Tensor[T], target: Tensor[T]): T = {
-    input.norm(1)
-  }
-
-  override def updateGradInput(input: Tensor[T], target: Tensor[T]): Tensor[T] = {
-    input.clone.sign()
-  }
-
-  override def toString(): String = {
-    s"nn.L1Cost"
-  }
-}
-
-object L1Cost {
-  def apply[@specialized(Float, Double) T: ClassTag]()
-      (implicit ev: TensorNumeric[T]) : L1Cost[T] = {
-    new L1Cost[T]()
+class EngineTypeSpec extends FlatSpec with Matchers {
+  "checkEngineType" should "return right result" in {
+    val model = GoogleNet_v2[Float](1000)
+    model.checkEngineType()
   }
 }
