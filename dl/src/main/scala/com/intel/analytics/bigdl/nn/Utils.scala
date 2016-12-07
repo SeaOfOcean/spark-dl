@@ -26,12 +26,47 @@ import scala.reflect.ClassTag
 object Utils {
 
   /**
+   * This method recursively keep the shape of the source table `t2` and
+   * set the elements of each tensor to zero, saving the result on the destination
+   * table `t1`
+   * Notice that `t1` and `t2` can only contain tables or tensors
+   *
+   * @param t1 is the destination table
+   * @param t2 is the source table
+   * @return
+   */
+  def zeroTableCopy[T: ClassTag](t1: Table, t2: Table)(
+    implicit ev: TensorNumeric[T]): Table = {
+    for ((k, v) <- t2.getState()) {
+      if (v.isInstanceOf[Table]) {
+        t1.update(k, zeroTableCopy(if (t1.contains(k)) t1(k) else T(), t2(k)))
+      } else {
+        require(v.isInstanceOf[Tensor[T]], "Input can only consist of Tensor or Table")
+        val tensorV = v.asInstanceOf[Tensor[T]]
+        if (!t1.contains(k)) {
+          t1.update(k, tensorV.clone().zero())
+        } else {
+          t1[Tensor[T]](k).resizeAs(tensorV)
+          t1[Tensor[T]](k).zero()
+        }
+      }
+    }
+    for ((k, v) <- t1.getState()) {
+      if (!t2.contains(k)) {
+        t1.update(k, null)
+      }
+    }
+
+    t1
+  }
+
+  /**
    * Resize table target as table src.
- *
+   *
    * @param target
    * @param src
    */
-  def recursiveResizeAs[T : ClassTag](target : Activities, src: Activities)(
+  def recursiveResizeAs[T: ClassTag](target: Activities, src: Activities)(
     implicit ev: TensorNumeric[T]): Activities = {
     var result: Activities = null
     if (src.isInstanceOf[Table]) {
@@ -71,7 +106,7 @@ object Utils {
 
   /**
    * Apply function 'func' on all tensor in the table.
- *
+   *
    * @param x
    * @param func
    */
@@ -112,7 +147,7 @@ object Utils {
       require(x.toTable().length() == y.toTable().length(), "x, y should have the same size")
       var i = 1
       while (i <= x.toTable().length()) {
-        recursiveTensorApply2[T](x, y, func)
+        recursiveTensorApply2[T](x.toTable()(i), y.toTable()(i), func)
         i += 1
       }
     }
@@ -128,10 +163,10 @@ object Utils {
    * @param y
    * @param alpha
    * @param x
-   * @tparam T: Float or Double
+   * @tparam T : Float or Double
    * @return y
    */
-  def recursiveAdd[T](y: Activities, alpha: Double = 1.0, x: Activities )(
+  def recursiveAdd[T](y: Activities, alpha: Double = 1.0, x: Activities)(
     implicit ev: TensorNumeric[T]): Activities = {
     recursiveTensorApply2[T](y, x, (t1, t2) => t1.add(ev.fromType[Double](alpha), t2))
     y
@@ -144,10 +179,10 @@ object Utils {
    *
    * @param y
    * @param x
-   * @tparam T: Float or Double
+   * @tparam T : Float or Double
    * @return y
    */
-  def recursiveCopy[T](y: Activities, x: Activities )(
+  def recursiveCopy[T](y: Activities, x: Activities)(
     implicit ev: TensorNumeric[T]): Activities = {
     recursiveTensorApply2[T](y, x, (t1, t2) => t1.copy(t2))
     y
@@ -155,13 +190,50 @@ object Utils {
 
   /**
    * Fill the value to each Tensor in the table recursively
- *
+   *
    * @param x
    * @param value
    */
-  def recursiveFill[T](x: Activities, value : Double)(
+  def recursiveFill[T](x: Activities, value: Double)(
     implicit ev: TensorNumeric[T]): Unit = {
     recursiveTensorApply1[T](x, t => t.fill(ev.fromType[Double](value)))
   }
 
+  /**
+   * get all modules and map by name, currently only map Module[Tensor[T], Tensor[T], T]
+   *
+   * @param model
+   * @tparam T
+   * @return
+   */
+  def getParamModules[T](model: Module[_, _, T]):
+  Map[String, Module[_, _, T]] = {
+    var modules: Map[String, Module[_, _, T]] = Map()
+    def getModules(module: Module[_, _, T]): Unit = {
+      module match {
+        case m: Container[_, _, T] =>
+          for (m <- module.asInstanceOf[Container[_, _, T]].modules) getModules(m)
+        case _ => modules += (module.getName() -> module)
+      }
+    }
+    getModules(model)
+    modules
+  }
+
+  def copyParamModules[T](testModel: Module[_, _, T],
+    name2model: Map[String, Module[_, _, T]]) = {
+    def setModules(module: Module[_, _, T]): Unit = {
+      if (module.isInstanceOf[Container[_, _, T]]) {
+        val m2 = module.asInstanceOf[Container[_, _, T]].modules
+        for (i <- m2.indices) {
+          if (m2(i).isInstanceOf[Container[_, _, T]]) {
+            setModules(m2(i))
+          } else {
+            m2(i) = name2model(m2(i).getName()).asInstanceOf[Module[Activities, Activities, T]]
+          }
+        }
+      }
+    }
+    setModules(testModel)
+  }
 }
