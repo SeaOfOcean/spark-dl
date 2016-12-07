@@ -32,7 +32,7 @@ class VggFRcnn[T: ClassTag](phase: PhaseType = TEST)(implicit ev: TensorNumeric[
   extends FasterRcnn[T](phase) {
 
   def vgg16: Module[Tensor[T], Tensor[T], T] = {
-    val vggNet = new Sequential[Tensor[T], Tensor[T], T]()
+    val vggNet = new Stt()
     vggNet.add(conv((3, 64, 3, 1, 1), "conv1_1"))
     vggNet.add(new ReLU[T](true))
     vggNet.add(conv((64, 64, 3, 1, 1), "conv1_2"))
@@ -71,11 +71,11 @@ class VggFRcnn[T: ClassTag](phase: PhaseType = TEST)(implicit ev: TensorNumeric[
   }
 
   def rpn(): Module[Tensor[T], Table, T] = {
-    val rpnModel = new Sequential[Tensor[T], Table, T]()
+    val rpnModel = new StT()
     rpnModel.add(conv((512, 512, 3, 1, 1), "rpn_conv/3x3"))
     rpnModel.add(new ReLU[T](true))
-    val clsAndReg = new ConcatTable[Table, T]()
-    val clsSeq = new Sequential[Tensor[T], Tensor[T], T]()
+    val clsAndReg = new CT()
+    val clsSeq = new Stt()
     clsSeq.add(conv((512, 18, 1, 1, 0), "rpn_cls_score"))
     phase match {
       case TRAIN => clsSeq.add(new Reshape2[T](Array(0, 2, -1, 0), Some(false)))
@@ -91,9 +91,9 @@ class VggFRcnn[T: ClassTag](phase: PhaseType = TEST)(implicit ev: TensorNumeric[
   }
 
   def featureAndRpnNet(): Module[Tensor[T], Table, T] = {
-    val compose = new Sequential[Tensor[T], Table, T]()
+    val compose = new StT()
     compose.add(vgg16)
-    val vggRpnModel = new ConcatTable[Tensor[T], T]()
+    val vggRpnModel = new Ct()
     vggRpnModel.add(rpn())
     vggRpnModel.add(new Identity[T]())
     compose.add(vggRpnModel)
@@ -135,44 +135,16 @@ class VggFRcnn[T: ClassTag](phase: PhaseType = TEST)(implicit ev: TensorNumeric[
     pc
   }
 
-  /**
-   * select tensor from nested tables
-   *
-   * @param depths a serious of depth to use when fetching certain tensor
-   * @return a wanted tensor
-   */
-  def selectTensor(depths: Int*): Sequential[Table, Tensor[T], T] = {
-    val module = new Sequential[Table, Tensor[T], T]()
-    depths.slice(0, depths.length - 1).foreach(depth =>
-      module.add(new SelectTable[Table, T](depth)))
-    module.add(new SelectTable[Tensor[T], T](depths(depths.length - 1)))
-  }
-
-  def selectTensor1(depth: Int): SelectTable[Tensor[T], T] = {
-    new SelectTable[Tensor[T], T](depth)
-  }
-
-  def selectTable(depths: Int*): Sequential[Table, Table, T] = {
-    val module = new Sequential[Table, Table, T]()
-    depths.slice(0, depths.length).foreach(depth =>
-      module.add(new SelectTable[Table, T](depth)))
-    module
-  }
-
-  def selectTable1(depth: Int): SelectTable[Table, T] = {
-    new SelectTable[Table, T](depth)
-  }
-
-  def fullModelTest(): Module[Table, Table, T] = {
-    val model = new Sequential[Table, Table, T]()
+  def createTestModel(): Module[Table, Table, T] = {
+    val model = new STT()
     val model1 = new ParallelTable[T]()
     model1.add(featureAndRpnNet())
     model1.add(new Identity[T]())
     model.add(model1)
     // connect rpn and fast-rcnn
-    val middle = new ConcatTable[Tensor[T], T]()
-    val left = new Sequential[Table, Table, T]()
-    val left1 = new ConcatTable[Tensor[T], T]()
+    val middle = new Ct()
+    val left = new STT()
+    val left1 = new Ct()
     left1.add(selectTensor(1, 1, 1))
     left1.add(selectTensor(1, 1, 2))
     left1.add(selectTensor1(2))
@@ -185,63 +157,12 @@ class VggFRcnn[T: ClassTag](phase: PhaseType = TEST)(implicit ev: TensorNumeric[
     middle.add(left)
     model.add(middle)
     // get the fast rcnn results and rois
-    model.add(new ConcatTable[Table, T]().add(fastRcnn()).add(selectTensor(2)))
+    model.add(new CT().add(fastRcnn()).add(selectTensor(2)))
     model
   }
 
 
-  def fullModelTrain2(): Module[Table, Table, T] = {
-    val model = new Sequential[Table, Table, T]()
-    val rpnFeatureWithInfoGt = new ParallelTable[T]()
-    // (rcls, rreg), feature)
-    rpnFeatureWithInfoGt.add(featureAndRpnNet())
-    // im_info
-    rpnFeatureWithInfoGt.add(new Identity[T]())
-    // gt_boxes
-    rpnFeatureWithInfoGt.add(new Identity[T]())
-    // (((rcls, rreg), feature), im_info, gt_boxes)
-    model.add(rpnFeatureWithInfoGt)
-    val rpnAndFastRcnn = new ConcatTable[Tensor[T], T]()
-    // rpn cls
-    rpnAndFastRcnn.add(selectTensor(1, 1, 1))
-    // rpn reg
-    rpnAndFastRcnn.add(selectTensor(1, 1, 2))
-    val modelWithGt = new ConcatTable[Tensor[T], T]()
-    // connect rpn and fast-rcnn
-    val middle = new ConcatTable[Tensor[T], T]()
-    val left = new Sequential[Table, Table, T]()
-    val left1 = new ConcatTable[Tensor[T], T]()
-    left1.add(new Sequential[Table, Tensor[T], T]()
-      .add(selectTensor(1, 1, 1))
-      .add(new SoftMax[T]())
-      .add(new Reshape2[T](Array(1, 2 * param.anchorNum, -1, 0), Some(false))))
-    left1.add(selectTensor(1, 1, 2))
-    left1.add(selectTensor1(2))
-    left.add(left1)
-    left.add(new Proposal[T](param))
-    // add rois
-    left.add(selectTensor1(1))
-    // first add feature from feature net
-    middle.add(selectTensor(1, 2))
-    // then add rois from proposal
-    middle.add(left)
-    // add gt_boxes
-    modelWithGt.add(middle).add(selectTensor1(3))
-
-    rpnAndFastRcnn.add(new STT().add(middle)
-      .add(new ConcatTable[Table, T]().add(fastRcnn()).add(selectTensor(2))))
-    model.add(rpnAndFastRcnn)
-    // make each res a tensor
-    model.add(new ConcatTable[Tensor[T], T]()
-      .add(selectTensor1(1))
-      .add(selectTensor1(2))
-      .add(selectTensor(3, 1, 1))
-      .add(selectTensor(3, 1, 2))
-      .add(selectTensor(3, 2)))
-    model
-  }
-
-  def fullModelTrain(): Module[Table, Table, T] = {
+  def createTrainModel(): Module[Table, Table, T] = {
     val model = new STT()
 
     val rpnFeatureWithInfoGt = new ParallelTable[T]()
@@ -297,21 +218,13 @@ class VggFRcnn[T: ClassTag](phase: PhaseType = TEST)(implicit ev: TensorNumeric[
       .add(fastRcnn())
       .add(new Identity[T]()))
     // make each res a tensor
-    model.add(new ConcatTable[Tensor[T], T]()
+    model.add(new Ct()
       .add(selectTensor1(1))
       .add(selectTensor1(2))
       .add(selectTensor(3, 1, 1))
       .add(selectTensor(3, 1, 2))
       .add(selectTensor(3, 2)))
     model
-  }
-
-  override def fullModel(): Module[Table, Table, T] = {
-    phase match {
-      case TEST => fullModelTest()
-      case TRAIN => fullModelTrain()
-      case _ => throw new UnsupportedOperationException
-    }
   }
 }
 
