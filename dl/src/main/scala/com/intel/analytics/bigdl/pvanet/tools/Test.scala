@@ -18,32 +18,32 @@
 package com.intel.analytics.bigdl.pvanet.tools
 
 import breeze.linalg.DenseMatrix
-import com.intel.analytics.bigdl.pvanet.datasets.Roidb.ImageWithRoi
-import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, ImageToTensor, PascolVocDataSource}
-import com.intel.analytics.bigdl.pvanet.model.{FasterRcnn, PvanetFRcnn, VggFRcnn}
+import com.intel.analytics.bigdl.pvanet.datasets._
+import com.intel.analytics.bigdl.pvanet.model.Model._
+import com.intel.analytics.bigdl.pvanet.model.{FasterRcnn, Model, PvanetFRcnn, VggFRcnn}
 import com.intel.analytics.bigdl.pvanet.utils._
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.{Table, Timer}
 import scopt.OptionParser
 
 object Test {
-  def testNet(net: FasterRcnn[Float], dataSource: PascolVocDataSource, maxPerImage: Int = 100,
-    thresh: Double = 0.05, vis: Boolean = false): Unit = {
+  def testNet(net: FasterRcnn[Float], dataSource: ObjectDataSource,
+    maxPerImage: Int = 100, thresh: Double = 0.05, vis: Boolean = false): Unit = {
     val imdb = dataSource.imdb
     val allBoxes: Array[Array[DenseMatrix[Float]]] = {
       val out = new Array[Array[DenseMatrix[Float]]](imdb.numClasses)
       Range(0, imdb.numClasses).foreach(x => {
-        out(x) = new Array[DenseMatrix[Float]](imdb.numImages)
+        out(x) = new Array[DenseMatrix[Float]](dataSource.total().toInt)
       })
       out
     }
-    val imageScaler = new ImageScalerAndMeanSubstractor(dataSource, isShuffle = false, net.param)
+    val imageScaler = new ImageScalerAndMeanSubstractor(net.param)
 
     // timer
     val imDetectTimer = new Timer
     val miscTimer = new Timer
 
-    for (i <- 0 until imdb.numImages) {
+    for (i <- 0 until dataSource.total().toInt) {
       val d = imageScaler.apply(dataSource.next())
       println(s"process ${d.imagePath} ...............")
 
@@ -135,7 +135,7 @@ object Test {
   }
 
   case class PascolVocLocalParam(folder: String = "/home/xianyan/objectRelated/VOCdevkit",
-    net: String = "vgg16", nThread: Int = 4)
+    net: Model = VGG16, nThread: Int = 4)
 
   private val parser = new OptionParser[PascolVocLocalParam]("Spark-DL PascolVoc Local Example") {
     head("Spark-DL PascolVoc Local Example")
@@ -143,8 +143,8 @@ object Test {
       .text("where you put the PascolVoc data")
       .action((x, c) => c.copy(folder = x))
     opt[String]('n', "net")
-      .text("net type : vgg16 | pvanet")
-      .action((x, c) => c.copy(net = x.toLowerCase))
+      .text("net type : VGG16 | PVANET")
+      .action((x, c) => c.copy(net = Model.withName(x)))
     opt[String]('t', "mkl thread number")
       .action((x, c) => c.copy(nThread = x.toInt))
   }
@@ -155,14 +155,14 @@ object Test {
 
     var model: FasterRcnn[Float] = null
     param.net match {
-      case "vgg16" =>
+      case VGG16 =>
         model = VggFRcnn.model()
-      case "pvanet" =>
+      case PVANET =>
         model = PvanetFRcnn.model()
     }
     MKL.setNumThreads(param.nThread)
-    val testDataSource = new PascolVocDataSource("2007", "testcode", param.folder,
-      false, model.param)
+    val testDataSource = new ObjectDataSource("voc_2007_testcode",
+      FileUtil.DATA_DIR + "/VOCdevkit", false, model.param)
     testNet(model, testDataSource)
   }
 

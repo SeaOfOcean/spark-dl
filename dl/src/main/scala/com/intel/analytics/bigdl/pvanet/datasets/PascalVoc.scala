@@ -21,8 +21,8 @@ import java.io.{File, PrintWriter}
 import java.util.UUID
 
 import breeze.linalg.DenseMatrix
+import com.intel.analytics.bigdl.pvanet.model.FasterRcnnParam
 import com.intel.analytics.bigdl.pvanet.tools.VocEval
-import Roidb.ImageWithRoi
 import com.intel.analytics.bigdl.pvanet.utils.FileUtil
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.{File => DlFile}
@@ -33,15 +33,12 @@ import scala.xml.XML
 
 
 class PascalVoc(val year: String = "2007", val imageSet: String,
-  var devkitPath: String = FileUtil.DATA_DIR + "/VOCdevkit") extends Imdb {
-  def this(year: String, imageSet: String) {
-    this(year, imageSet, FileUtil.DATA_DIR + "/VOCdevkit")
-  }
+  val devkitPath: String = FileUtil.DATA_DIR + "/VOCdevkit", param: FasterRcnnParam)
+  extends Imdb(param) {
 
-  name = "voc_" + year + "_" + imageSet
-  if (devkitPath == None) devkitPath = getDefaultPath
+  override val name = "voc_" + year + "_" + imageSet
   val dataPath = devkitPath + "/VOC" + year
-  classes = Array[String](
+  override val classes = Array[String](
     "__background__", // always index 0
     "aeroplane", "bicycle", "bird", "boat",
     "bottle", "bus", "car", "cat", "chair",
@@ -51,7 +48,7 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
   )
   val classToInd = (classes zip (Stream from 1)).toMap
   val imageExt = ".jpg"
-  imageIndex = loadImageSetIndex()
+  override val imageIndex = loadImageSetIndex()
 
   val compId = "comp4"
   val salt = UUID.randomUUID().toString
@@ -70,9 +67,6 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
 
   /**
    * Return the absolute path to image i in the image sequence.
-   *
-   * @param i
-   * @return
    */
   def imagePathAt(i: Int): String = imagePathFromIndex(imageIndex(i))
 
@@ -87,22 +81,15 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
    *
    * @return
    */
-  def loadImageSetIndex(): List[String] = {
-    println(dataPath)
+  def loadImageSetIndex(): Array[String] = {
     val imageSetFile = dataPath + "/ImageSets/Main/" + imageSet + ".txt"
     assert(FileUtil.existFile(imageSetFile), "Path does not exist " + imageSetFile)
-    Source.fromFile(imageSetFile).getLines().map(line => line.trim).toList
+    Source.fromFile(imageSetFile).getLines().map(line => line.trim).toArray
   }
-
-
-  // Return the default path where PASCAL VOC is expected to be installed.
-  private def getDefaultPath = FileUtil.DATA_DIR + "/VOCdevkit"
 
   /**
    * Load image and bounding boxes info from XML file in the PASCAL VOC
    * format.
-   *
-   * @param index
    */
   def loadPascalAnnotation(index: String): ImageWithRoi = {
     val xml = XML.loadFile(dataPath + "/Annotations/" + index + ".xml")
@@ -118,7 +105,7 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
     val gt_classes = Tensor[Float](objs.length)
     val overlaps = Tensor[Float](objs.length, classes.length)
     // "Seg" area for pascal is just the box area
-    var seg_areas = Tensor[Float](objs.length)
+    val seg_areas = Tensor[Float](objs.length)
     // Load object bounding boxes into a data frame.
     for ((obj, ix) <- objs.zip(Stream from 1)) {
       // pixel indexes 1-based
@@ -134,9 +121,9 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
       boxes(ix - 1, 3) = y2
       gt_classes.setValue(ix, cls)
       overlaps.setValue(ix, cls, 1)
-      seg_areas.setValue(ix, (x2 - x1 + 1) * (y2 - y1 + 1))
+      // seg_areas.setValue(ix, (x2 - x1 + 1) * (y2 - y1 + 1))
     }
-    return ImageWithRoi(boxes, gt_classes, overlaps, false, seg_areas)
+    ImageWithRoi(boxes, gt_classes, overlaps, param.USE_FLIPPED)
   }
 
 
@@ -145,44 +132,43 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
    *
    * @return the database of ground-truth regions of interest.
    */
-  def getGroundTruth(): Array[ImageWithRoi] = {
+  def getGroundTruth: Array[ImageWithRoi] = {
     val cache_file = FileUtil.cachePath + "/" + name + "_gt_roidb.pkl"
     if (FileUtil.existFile(cache_file)) {
       println("%s gt roidb loaded from %s".format(name, cache_file))
       try {
-        return DlFile.load[Array[ImageWithRoi]](cache_file)
+        DlFile.load[Array[ImageWithRoi]](cache_file)
       } catch {
         case e: Exception =>
-          val gtRoidb = imageIndex.map(index => loadPascalAnnotation(index)).toArray
+          val gtRoidb = imageIndex.map(index => loadPascalAnnotation(index))
           new java.io.File(cache_file).delete()
           DlFile.save(gtRoidb, cache_file)
           gtRoidb
       }
     } else {
-      val gtRoidb = imageIndex.map(index => loadPascalAnnotation(index)).toArray
+      val gtRoidb = imageIndex.map(index => loadPascalAnnotation(index))
       DlFile.save(gtRoidb, cache_file)
       gtRoidb
     }
   }
 
   def getCompId: String = {
-    if (config("use_salt").asInstanceOf[Boolean]) s"${compId}_${salt}" else compId
+    if (config("use_salt").asInstanceOf[Boolean]) s"${compId}_$salt" else compId
   }
 
   /**
    * VOCdevkit / results / VOC2007 / Main /< comp_id > _det_test_aeroplane.txt
    */
-  def getVocResultsFileTemplate(): String = {
-    val filename = compId + "_det_" + imageSet + "_%s.txt"
-    devkitPath + s"/results/VOC$year/Main/$filename"
+  def getVocResultsFileTemplate: String = {
+    devkitPath + s"/results/VOC$year/Main/${compId}_det_${imageSet}_%s.txt"
   }
 
   private def writeVocResultsFile(allBoxes: Array[Array[DenseMatrix[Float]]]) = {
     classToInd.foreach {
       case (cls, clsInd) =>
         if (cls != "__background__") {
-          println(s"writing ${cls} VOC results file")
-          val filename = getVocResultsFileTemplate().format(cls)
+          println(s"writing $cls VOC results file")
+          val filename = getVocResultsFileTemplate.format(cls)
           val of = new PrintWriter(new java.io.File(filename))
           imageIndex.zipWithIndex.foreach {
             case (imInd, index) =>
@@ -217,8 +203,8 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
     classes.zipWithIndex.foreach {
       case (cls, i) =>
         if (cls != "__background__") {
-          val filename = getVocResultsFileTemplate().format(cls)
-          val (rec, prec, ap) = VocEval.eval(filename, annopath, imagesetfile, cls,
+          val filename = getVocResultsFileTemplate.format(cls)
+          val (_, _, ap) = VocEval.eval(filename, annopath, imagesetfile, cls,
             cachedir, ovthresh = 0.5, use_07_metric = use_07_metric)
           aps :+= ap
           println(s"AP for $cls = ${"%.4f".format(ap)}")
@@ -230,11 +216,10 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
     aps.foreach(ap => println(s"${"%.3f".format(ap)}"))
     println(s"${"%.3f".format(aps.sum / aps.length)}")
     println("~~~~~~~~")
-    def cleanup = {
-      new File(cachedir).listFiles().foreach(f => f.delete())
-    }
-    cleanup
+    cleanup(cachedir)
   }
+
+  def cleanup(cachedir: String) = new File(cachedir).listFiles().foreach(f => f.delete())
 
   def evaluateDetections(allBoxes: Array[Array[DenseMatrix[Float]]],
     outputDir: String): Unit = {

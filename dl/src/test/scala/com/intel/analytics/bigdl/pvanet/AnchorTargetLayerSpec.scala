@@ -19,7 +19,7 @@ package com.intel.analytics.bigdl.pvanet
 
 import breeze.linalg.{DenseMatrix, convert, sum}
 import breeze.numerics.abs
-import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, ImdbFactory, PascolVocDataSource}
+import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, ObjectDataSource}
 import com.intel.analytics.bigdl.pvanet.layers.AnchorTargetLayer
 import com.intel.analytics.bigdl.pvanet.model.{Phase, VggParam}
 import org.scalatest.{FlatSpec, Matchers}
@@ -103,10 +103,8 @@ class AnchorTargetLayerSpec extends FlatSpec with Matchers {
     expected.zip(indsInside).foreach(x => assert(abs(x._1 - x._2) < 1e-6))
   }
 
-
-  val pascal = ImdbFactory.getImdb("voc_2007_testcode")
-  val trainDataSource = new PascolVocDataSource(imageSet = "testcode", param = param)
-  val imageScaler = new ImageScalerAndMeanSubstractor(trainDataSource, param = param)
+  val trainDataSource = new ObjectDataSource("voc_2007_testcode", "", false, param)
+  val imageScaler = new ImageScalerAndMeanSubstractor(param)
   val sc = trainDataSource -> imageScaler
   var data = sc.next()
   while (data.imagePath.substring(data.imagePath.indexOf("VOCdevkit"))

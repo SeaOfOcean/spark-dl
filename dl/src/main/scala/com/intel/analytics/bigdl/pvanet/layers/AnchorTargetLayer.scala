@@ -18,10 +18,9 @@
 package com.intel.analytics.bigdl.pvanet.layers
 
 import breeze.linalg.{*, DenseMatrix, DenseVector, convert}
-import com.intel.analytics.bigdl.pvanet.datasets.Roidb.ImageWithRoi
+import com.intel.analytics.bigdl.pvanet.datasets.ImageWithRoi
 import com.intel.analytics.bigdl.pvanet.model.FasterRcnnParam
 import com.intel.analytics.bigdl.pvanet.utils._
-import com.intel.analytics.bigdl.utils.Table
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random

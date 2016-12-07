@@ -23,24 +23,20 @@ import javax.imageio.ImageIO
 
 import breeze.linalg.{DenseMatrix, DenseVector}
 import com.intel.analytics.bigdl.dataset.{LocalDataSource, Transformer}
-import com.intel.analytics.bigdl.pvanet.datasets.Roidb.ImageWithRoi
 import com.intel.analytics.bigdl.pvanet.layers.AnchorTarget
 import com.intel.analytics.bigdl.pvanet.model.FasterRcnnParam
-import com.intel.analytics.bigdl.pvanet.utils.FileUtil
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 
 import scala.util.Random
 
 
-class PascolVocDataSource(year: String = "2007", imageSet: String,
-  devkitPath: String = FileUtil.DATA_DIR + "/VOCdevkit",
-  looped: Boolean = true, param: FasterRcnnParam)
+class ObjectDataSource(val imdb: Imdb, looped: Boolean = true)
   extends LocalDataSource[ImageWithRoi] {
+  def this(name: String, devkitPath: String, looped: Boolean, param: FasterRcnnParam) {
+    this(Imdb.getImdb(name, devkitPath, param), looped)
+  }
 
-  val imdb: Imdb = new PascalVoc(year, imageSet, devkitPath)
-
-  val data: Array[ImageWithRoi] = Roidb.prepareRoidb(imdb).roidb()
-
+  val data: Array[ImageWithRoi] = imdb.getRoidb
   // permutation of the data index
   var perm: Array[Int] = data.indices.toArray
 
@@ -78,7 +74,7 @@ class PascolVocDataSource(year: String = "2007", imageSet: String,
       })
       newInds
     }
-    if (param.ASPECT_GROUPING) {
+    if (imdb.param.ASPECT_GROUPING) {
       val widths = data.map(r => r.oriWidth)
       val heights = data.map(r => r.oriHeight)
       perm = shuffleWithAspectGrouping(widths, heights)
@@ -100,14 +96,9 @@ class PascolVocDataSource(year: String = "2007", imageSet: String,
 
 }
 
-class ImageScalerAndMeanSubstractor(dataSource: PascolVocDataSource, isShuffle: Boolean = true,
-  param: FasterRcnnParam)
+class ImageScalerAndMeanSubstractor(param: FasterRcnnParam)
   extends Transformer[ImageWithRoi, ImageWithRoi] {
   def byte2Float(x: Byte): Float = x & 0xff
-
-  if (dataSource != null && isShuffle) {
-    dataSource.shuffle()
-  }
 
   def apply(data: ImageWithRoi): ImageWithRoi = {
     val scaleTo = param.SCALES(Random.nextInt(param.SCALES.length))
@@ -172,8 +163,7 @@ class ImageScalerAndMeanSubstractor(dataSource: PascolVocDataSource, isShuffle: 
   }
 }
 
-class AnchorToTensor(batchSize: Int = 1, height: Int, width: Int)
-  extends Transformer[ImageWithRoi, (Tensor[Float], Tensor[Float])] {
+class AnchorToTensor(batchSize: Int = 1, height: Int, width: Int) {
   private val labelTensor: Tensor[Float] = Tensor[Float]()
   private val roiLabelTensor: Tensor[Float] = Tensor[Float]()
 
@@ -201,21 +191,6 @@ class AnchorToTensor(batchSize: Int = 1, height: Int, width: Int)
     roiLabelTensor.set(Storage[Float](roiLabelData),
       storageOffset = 1, sizes = Array(roiLabelData.length))
     (labelTensor, roiLabelTensor)
-  }
-
-  override def transform(prev: Iterator[ImageWithRoi]): Iterator[(Tensor[Float], Tensor[Float])] = {
-    new Iterator[(Tensor[Float], Tensor[Float])] {
-      override def hasNext: Boolean = prev.hasNext
-
-      override def next(): (Tensor[Float], Tensor[Float]) = {
-        if (prev.hasNext) {
-          val imgWithRoi = prev.next()
-          apply(imgWithRoi.anchorTarget.get)
-        } else {
-          null
-        }
-      }
-    }
   }
 }
 

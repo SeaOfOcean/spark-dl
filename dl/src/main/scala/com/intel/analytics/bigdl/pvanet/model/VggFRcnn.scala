@@ -130,7 +130,7 @@ class VggFRcnn[T: ClassTag](phase: Phase = TEST)(implicit ev: TensorNumeric[T])
     model
   }
 
-  override val model: Model = VGG16
+  override val modelType: Model = VGG16
   override val param: FasterRcnnParam = new VggParam(phase)
 
   override def criterion4: ParallelCriterion[T] = {

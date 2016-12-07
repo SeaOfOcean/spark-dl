@@ -18,8 +18,7 @@
 package com.intel.analytics.bigdl.pvanet.tools
 
 import breeze.linalg.DenseMatrix
-import com.intel.analytics.bigdl.pvanet.datasets.ImageScalerAndMeanSubstractor
-import com.intel.analytics.bigdl.pvanet.datasets.Roidb.ImageWithRoi
+import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, ImageWithRoi}
 import com.intel.analytics.bigdl.pvanet.model._
 import com.intel.analytics.bigdl.pvanet.utils.{Bbox, MatrixUtil, Nms}
 import com.intel.analytics.bigdl.utils.Timer
@@ -36,17 +35,19 @@ object Demo {
     "sheep", "sofa", "train", "tvmonitor"
   )
 
-  case class PascolVocLocalParam(folder: String = "/home/xianyan/objectRelated/Pedestrain_1",
-    net: String = "vgg")
+  case class PascolVocLocalParam(folder: String = "/home/xianyan/objectRelated/VOCdevkit",
+    net: String = "VGG16", nThread: Int = 4)
 
-  private val parser = new OptionParser[PascolVocLocalParam]("Object Detection Local Example") {
+  private val parser = new OptionParser[PascolVocLocalParam]("Spark-DL PascolVoc Local Example") {
     head("Spark-DL PascolVoc Local Example")
-    opt[String]('f', "demo image folder")
-      .text("where you put the demo image data")
+    opt[String]('f', "folder")
+      .text("where you put the PascolVoc data")
       .action((x, c) => c.copy(folder = x))
     opt[String]('n', "net")
-      .text("net type : vgg | pvanet")
+      .text("net type : VGG16 | PVANET")
       .action((x, c) => c.copy(net = x.toLowerCase))
+    opt[String]('t', "mkl thread number")
+      .action((x, c) => c.copy(nThread = x.toInt))
   }
 
 
@@ -60,7 +61,7 @@ object Demo {
       case "pvanet" => net = PvanetFRcnn.model()
     }
 
-    val imageScaler = new ImageScalerAndMeanSubstractor(null, param = net.param)
+    val imageScaler = new ImageScalerAndMeanSubstractor(net.param)
 
     imgNames.foreach(imaName => {
       val img = ImageWithRoi()

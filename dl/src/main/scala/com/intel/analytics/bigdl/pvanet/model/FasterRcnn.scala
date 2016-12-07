@@ -31,11 +31,11 @@ import scala.reflect.ClassTag
 abstract class FasterRcnn[T: ClassTag](var phase: Phase)
   (implicit ev: TensorNumeric[T]) {
 
-  val model: Model
+  val modelType: Model
   val param: FasterRcnnParam
   var caffeReader: CaffeReader[T] = null
 
-  def modelName: String = model.toString
+  def modelName: String = modelType.toString
 
   def setCaffeReader(caffeReader: CaffeReader[T]): Unit = {
     this.caffeReader = caffeReader

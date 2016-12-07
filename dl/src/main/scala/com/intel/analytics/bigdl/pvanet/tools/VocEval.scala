@@ -249,11 +249,6 @@ object VocEval {
     objects
   }
 
-  def main(args: Array[String]): Unit = {
-    val dataset = new PascalVoc(year = "2007", imageSet = "testcode")
-    dataset.eval()
-  }
-
 }
 
 case class Object(name: String, pose: String, truncated: Int, difficult: Boolean, bbox: Array[Int]

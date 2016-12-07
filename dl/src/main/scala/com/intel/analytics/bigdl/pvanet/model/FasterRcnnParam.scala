@@ -37,8 +37,7 @@ abstract class FasterRcnnParam(phase: Phase = Phase.TEST) {
   val anchorRatios: Array[Float]
   val anchorNum: Int
   val featStride = 16
-
-  val numClasses = 21
+  var numClasses: Int = 21
 
   // Pixel mean values (BGR order) as a (1, 1, 3) array
   // We use the same pixel mean for all networks even though it"s not exactly what

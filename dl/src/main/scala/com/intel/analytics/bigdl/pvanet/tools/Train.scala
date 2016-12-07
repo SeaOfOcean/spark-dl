@@ -19,8 +19,9 @@ package com.intel.analytics.bigdl.pvanet.tools
 
 import com.intel.analytics.bigdl.optim.SGD.{EpochStep, LearningRateSchedule}
 import com.intel.analytics.bigdl.optim.{OptimMethod, SGD, Trigger}
-import com.intel.analytics.bigdl.pvanet.datasets.PascolVocDataSource
-import com.intel.analytics.bigdl.pvanet.model.{FasterRcnn, PvanetFRcnn, VggFRcnn}
+import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, ObjectDataSource}
+import com.intel.analytics.bigdl.pvanet.model.{FasterRcnn, Model, PvanetFRcnn, VggFRcnn}
+import com.intel.analytics.bigdl.pvanet.model.Model._
 import com.intel.analytics.bigdl.utils.T
 import scopt.OptionParser
 
@@ -28,7 +29,7 @@ object Train {
 
   case class PascolVocLocalParam(
     folder: String = "/home/xianyan/objectRelated/VOCdevkit",
-    net: String = "pvanet",
+    net: Model = VGG16,
     nThread: Int = 4,
     cache: String = ".")
 
@@ -39,7 +40,7 @@ object Train {
       .action((x, c) => c.copy(folder = x))
     opt[String]('n', "net")
       .text("net type : vgg16 | pvanet")
-      .action((x, c) => c.copy(net = x.toLowerCase))
+      .action((x, c) => c.copy(net = Model.withName(x)))
     opt[String]('t', "mkl thread number")
       .action((x, c) => c.copy(nThread = x.toInt))
   }
@@ -58,24 +59,24 @@ object Train {
   )
 
   private val configs = Map(
-    "vgg16" -> Config(
+    VGG16 -> Config(
       new SGD[Float](),
       momentum = 0.9,
       weightDecay = 0.0005,
       testTrigger = Trigger.severalIteration(10000),
       cacheTrigger = Trigger.severalIteration(10000),
       endWhen = Trigger.maxIteration(450000),
-      learningRate = 0.01,
-      learningRateSchedule = SGD.Step(100000, 0.1)),
-    "pvanet" -> Config(
+      learningRate = 0.001,
+      learningRateSchedule = SGD.Step(50000, 0.1)),
+    PVANET -> Config(
       new SGD[Float](),
       momentum = 0.9,
       weightDecay = 0.0002,
       testTrigger = Trigger.severalIteration(4000),
       cacheTrigger = Trigger.severalIteration(40000),
       endWhen = Trigger.maxIteration(2400000),
-      learningRate = 0.01,
-      learningRateSchedule = SGD.Poly(0.5, 2400000)))
+      learningRate = 0.001,
+      learningRateSchedule = SGD.Step(50000, 0.1)))
 
   def main(args: Array[String]) {
     import com.intel.analytics.bigdl.mkl.MKL
@@ -83,31 +84,32 @@ object Train {
 
     var model: FasterRcnn[Float] = null
     param.net match {
-      case "vgg16" =>
+      case VGG16 =>
         model = VggFRcnn.model()
-      case "pvanet" =>
+      case PVANET =>
         model = PvanetFRcnn.model()
     }
     MKL.setNumThreads(param.nThread)
-    val dataSource = new PascolVocDataSource("2007", "train", param.folder,
+    val dataSource = new ObjectDataSource("voc_2007_train", param.folder,
+      true, model.param)
+    val valSource = new ObjectDataSource("voc_2007_val", param.folder,
       false, model.param)
-    val valSource = new PascolVocDataSource("2007", "val", param.folder,
-      false, model.param)
+    val config = configs(model.modelType)
+    val imgScaler = new ImageScalerAndMeanSubstractor(model.param)
     val optimizer = new FasterRcnnOptimizer(
-      data = dataSource,
+      data = dataSource -> imgScaler,
       validationData = valSource,
       net = model,
       optimMethod = new SGD[Float](),
       state = T(
-        "learningRate" -> 0.01,
+        "learningRate" -> 0.001,
         "weightDecay" -> 0.0005,
-        "momentum" -> 0.9,
+        "momentum" -> config.momentum,
         "dampening" -> 0.0,
         "learningRateSchedule" -> EpochStep(25, 0.5)
       ),
       endWhen = Trigger.maxEpoch(90))
 
-    val config = configs(model.modelName)
     optimizer.setCache(param.cache + "/" + param.net, config.cacheTrigger)
     optimizer.setValidationTrigger(config.testTrigger)
     optimizer.overWriteCache()

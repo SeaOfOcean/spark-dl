@@ -264,8 +264,8 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: Phase = TEST)
     model
   }
 
-  override val model: Model = PVANET
-  override val modelName: String = model.toString
+  override val modelType: Model = PVANET
+  override val modelName: String = modelType.toString
   override val param: FasterRcnnParam = new PvanetParam(phase)
 
   override def criterion4: ParallelCriterion[T] = {

@@ -17,24 +17,21 @@
 
 package com.intel.analytics.bigdl.pvanet.tools
 
+import com.intel.analytics.bigdl.dataset.LocalDataSource
 import com.intel.analytics.bigdl.nn.Module
 import com.intel.analytics.bigdl.optim.{OptimMethod, Trigger}
-import com.intel.analytics.bigdl.pvanet.datasets.Roidb.ImageWithRoi
-import com.intel.analytics.bigdl.pvanet.datasets.{AnchorToTensor, ImageToTensor, PascolVocDataSource}
+import com.intel.analytics.bigdl.pvanet.datasets.{AnchorToTensor, ImageToTensor, ImageWithRoi, ObjectDataSource}
 import com.intel.analytics.bigdl.pvanet.layers.AnchorTargetLayer
 import com.intel.analytics.bigdl.pvanet.model.{FasterRcnn, Phase}
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.Table
 
-import scala.collection.mutable.ArrayBuffer
-
-class FasterRcnnOptimizer(data: PascolVocDataSource,
-  validationData: PascolVocDataSource,
+class FasterRcnnOptimizer(data: LocalDataSource[ImageWithRoi],
+  validationData: ObjectDataSource,
   net: FasterRcnn[Float],
   optimMethod: OptimMethod[Float],
   state: Table,
   endWhen: Trigger) {
-
 
   // todo: extends
   protected var cacheTrigger: Option[Trigger] = None
@@ -159,7 +156,7 @@ class FasterRcnnOptimizer(data: PascolVocDataSource,
 
   private def validate(wallClockTime: Long): Unit = {
     validationTrigger.foreach(trigger => {
-      if (trigger(state) && validationMethods.length > 0) {
+      if (trigger(state)) {
         println(s"[Wall Clock ${wallClockTime / 1e9}s] Validate model...")
         net.setPhase(Phase.TEST)
         validationData.reset()
