@@ -17,12 +17,12 @@
 
 package com.intel.analytics.bigdl.pvanet.caffe
 
-import java.io.{File, FileInputStream, InputStream, InputStreamReader}
+import java.io._
 
 import caffe.Caffe
 import caffe.Caffe.{LayerParameter, NetParameter}
 import com.google.protobuf.{CodedInputStream, TextFormat}
-import com.intel.analytics.bigdl.nn._
+import com.intel.analytics.bigdl.nn.{SpatialFullConvolutionMap, _}
 import com.intel.analytics.bigdl.pvanet.utils.FileUtil
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
@@ -37,6 +37,8 @@ object ModuleType extends Enumeration {
 
 class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: String)
   (implicit ev: TensorNumeric[T]) {
+  val isOverwrite = true
+
   private def cachePath(name: String): String = {
     val folder = FileUtil.cachePath + s"/$netName"
     if (!FileUtil.existFile(folder)) {
@@ -49,10 +51,20 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: Stri
 
   var name2layer = Map[String, LayerParameter]()
 
+  def loadModuleFromFile[M](name: String): Option[M] = {
+    try {
+      if (FileUtil.existFile(cachePath(name))) return Some(DlFile.load[M](cachePath(name)))
+    } catch {
+      case ex: Exception => None
+    }
+    None
+  }
 
   def mapScale(name: String): (CMul[T], CAdd[T]) = {
-    if (FileUtil.existFile(cachePath(name))) {
-      return DlFile.load[(CMul[T], CAdd[T])](cachePath(name))
+    val module = loadModuleFromFile[(CMul[T], CAdd[T])](name)
+    module match {
+      case Some(m) => return m
+      case _ =>
     }
     if (name2layer.isEmpty) {
       loadCaffe(defName, modelName)
@@ -69,7 +81,7 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: Stri
       cadd = new CAdd[T](bias.size())
       cadd.bias.copy(bias)
     }
-    DlFile.save((cmul, cadd), cachePath(layer.getName), true)
+    DlFile.save((cmul, cadd), cachePath(layer.getName), isOverwrite)
     println(s"$name: size(${weight.size().mkString(",")})")
     cmul.setName(name)
     cadd.setName(name)
@@ -78,8 +90,10 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: Stri
 
 
   def mapDeconvolution(name: String): SpatialFullConvolutionMap[T] = {
-    if (FileUtil.existFile(cachePath(name))) {
-      return DlFile.load[SpatialFullConvolutionMap[T]](cachePath(name))
+    val mod = loadModuleFromFile[SpatialFullConvolutionMap[T]](name)
+    mod match {
+      case Some(m) => return m
+      case _ =>
     }
     if (name2layer.isEmpty) {
       loadCaffe(defName, modelName)
@@ -130,15 +144,17 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: Stri
     val (weight, bias) = loadModule(name2layer(name), name, hasBias)
     module.weight.copy(weight)
     if (hasBias) module.bias.copy(bias)
-    DlFile.save(module, cachePath(layer.getName), true)
+    DlFile.save(module, cachePath(layer.getName), isOverwrite)
     module.setName(name)
     println(s"$name: ($nInputPlane, $nOutputPlane, $kW, $kH, $dW, $dH, $padW, $padH)")
     module
   }
 
   def mapInnerProduct(name: String): Linear[T] = {
-    if (FileUtil.existFile(cachePath(name))) {
-      return DlFile.load[Linear[T]](cachePath(name))
+    val mod = loadModuleFromFile[Linear[T]](name)
+    mod match {
+      case Some(m) => return m
+      case _ =>
     }
     if (name2layer.isEmpty) {
       loadCaffe(defName, modelName)
@@ -154,13 +170,15 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: Stri
     module.weight.copy(weight)
     module.bias.copy(bias)
     module.setName(name)
-    DlFile.save(module, cachePath(layer.getName), true)
+    DlFile.save(module, cachePath(layer.getName), isOverwrite)
     module
   }
 
   def mapConvolution(name: String): SpatialConvolution[T] = {
-    if (FileUtil.existFile(cachePath(name))) {
-      return DlFile.load[SpatialConvolution[T]](cachePath(name))
+    val mod = loadModuleFromFile[SpatialConvolution[T]](name)
+    mod match {
+      case Some(m) => return m
+      case _ =>
     }
     if (name2layer.isEmpty) {
       loadCaffe(defName, modelName)
@@ -215,7 +233,7 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String, netName: Stri
     module.weight.copy(weight)
     module.bias.copy(bias)
     module.setName(name)
-    DlFile.save(module, cachePath(layer.getName), true)
+    DlFile.save(module, cachePath(layer.getName), isOverwrite)
     println(s"$name: ($nInputPlane, $nOutputPlane, $kW, $kH, $dW, $dH, $padW, $padH)")
     module
   }
