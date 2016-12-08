@@ -113,7 +113,7 @@ object Test {
     val input = new Table
     input.insert(ImageToTensor(d))
     input.insert(d.imInfo.get)
-    val result = net.getTestModel().forward(input)
+    val result = net.createTestModel().forward(input)
 
     val scores = result(1).asInstanceOf[Table](1).asInstanceOf[Tensor[Float]]
     val boxDeltas = result(1).asInstanceOf[Table](2).asInstanceOf[Tensor[Float]]
@@ -161,7 +161,7 @@ object Test {
         model = PvanetFRcnn.model()
     }
     MKL.setNumThreads(param.nThread)
-    val testDataSource = new ObjectDataSource("voc_2007_testcode",
+    val testDataSource = new ObjectDataSource("voc_2007_testcode4",
       FileUtil.DATA_DIR + "/VOCdevkit", false, model.param)
     testNet(model, testDataSource)
   }

@@ -25,56 +25,44 @@ import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import scala.reflect.ClassTag
 
 
-class Reshape2[@specialized(Float, Double) T: ClassTag](
-  size: Array[Int], var batchMode: Option[Boolean] = None)(
+class ReshapeInfer[@specialized(Float, Double) T: ClassTag](
+  size: Array[Int], var batchMode: Boolean = false)(
   implicit ev: TensorNumeric[T]) extends TensorModule[T] {
-  val batchSize = new Array[Int](size.length + 1)
-  var nElement: Int = 1
-  for (i <- 1 to size.length) {
-    batchSize(i) = size(i - 1)
-    nElement *= size(i - 1)
-  }
+  val inferedSizes = if (batchMode) new Array[Int](size.length + 1) else new Array[Int](size.length)
 
   override def updateOutput(input: Tensor[T]): Tensor[T] = {
     if (size.contains(-1)) {
-      var inferIndex = -1
-      var count = 1
       assert(sum(size.map(x => if (x == ev.fromType(-1)) 1 else 0)) == 1,
         "at most a single (1) value of -1 may be specified")
-      (size zip Stream.from(1)).foreach(x => {
-        if (x._1 == 0) {
-          batchSize(x._2) = input.size(x._2)
-          size(x._2 - 1) = input.size(x._2)
-          count *= input.size(x._2)
-        }
-        else if (x._1 == -1) inferIndex = x._2
-        else {
-          batchSize(x._2) = x._1
-          size(x._2 - 1) = x._1
-          count *= x._1
-        }
-      })
-      batchSize(inferIndex) = input.nElement() / count
-      size(inferIndex - 1) = batchSize(inferIndex)
-      nElement = input.nElement()
+    }
+    var inferIndex = -1
+    var count = 1
+    val startIndex = if (batchMode) 1 else 0
+    (size zip Stream.from(startIndex)).foreach(x => {
+      if (x._1 == 0) {
+        inferedSizes(x._2) = input.size(x._2 + 1 - startIndex)
+        count *= inferedSizes(x._2)
+      }
+      else if (x._1 == -1) inferIndex = x._2
+      else {
+        inferedSizes(x._2) = x._1
+        count *= x._1
+      }
+    })
+    require(count <= input.nElement())
+    if (inferIndex != -1) {
+      inferedSizes(inferIndex) = input.nElement() / count
+      if (batchMode) inferedSizes(inferIndex) = inferedSizes(inferIndex) / input.size(1)
     }
 
-    if ((batchMode.nonEmpty && batchMode.get == false) ||
-      (input.nElement() == nElement && batchMode.isEmpty && input.size(1) != 1)) {
-      require(input.nElement() == nElement, "element number must match Reshape size")
-      if (input.isContiguous()) output =
-        input.view(size)
-      else output = input.contiguous().view(size)
+    if (batchMode) {
+      inferedSizes(0) = input.size(1)
     }
-    else {
-      require(input.nElement() == nElement * input.size(1),
-        "element number must match Reshape size")
-      batchSize(0) = input.size(1)
-      if (input.isContiguous()) {
-        output = input.view(batchSize)
-      } else {
-        output = input.contiguous().view(batchSize)
-      }
+
+    if (input.isContiguous()) {
+      output = input.view(inferedSizes)
+    } else {
+      output = input.contiguous().view(inferedSizes)
     }
     output
   }
@@ -94,41 +82,40 @@ class Reshape2[@specialized(Float, Double) T: ClassTag](
       return false
     }
 
-    if (!obj.isInstanceOf[Reshape2[T]]) {
+    if (!obj.isInstanceOf[ReshapeInfer[T]]) {
       return false
     }
-    val other = obj.asInstanceOf[Reshape2[T]]
+    val other = obj.asInstanceOf[ReshapeInfer[T]]
     if (this.eq(other)) {
       return true
     }
 
     var i = 0
-    while (i < batchSize.length) {
-      if (batchSize(i) != other.batchSize(i)) {
+    while (i < inferedSizes.length) {
+      if (inferedSizes(i) != other.inferedSizes(i)) {
         return false
       }
       i += 1
     }
-    nElement == other.nElement &&
-      batchMode == other.batchMode
+    batchMode == other.batchMode
   }
 
   override def hashCode(): Int = {
     val seed = 37
     var hash = super.hashCode()
     var i = 0
-    while (i < batchSize.length) {
-      hash = hash * seed + batchSize(i).hashCode()
+    while (i < inferedSizes.length) {
+      hash = hash * seed + inferedSizes(i).hashCode()
       i += 1
     }
-    hash = hash * seed + nElement.hashCode()
     hash = hash * seed + batchMode.hashCode()
 
     hash
   }
 
   override def toString(): String = {
-    s"nn.Reshape(${size.mkString("x")})"
+    s"nn.Reshape(${
+      size.mkString("x")
+    })"
   }
 }
-

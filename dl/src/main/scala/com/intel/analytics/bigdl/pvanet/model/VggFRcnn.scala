@@ -78,11 +78,11 @@ class VggFRcnn[T: ClassTag](phase: PhaseType = TEST)(implicit ev: TensorNumeric[
     val clsSeq = new Stt()
     clsSeq.add(conv((512, 18, 1, 1, 0), "rpn_cls_score"))
     phase match {
-      case TRAIN => clsSeq.add(new Reshape2[T](Array(0, 2, -1, 0), Some(false)))
+      case TRAIN => clsSeq.add(new ReshapeInfer[T](Array(0, 2, -1, 0)))
       case TEST =>
-        clsSeq.add(new Reshape2[T](Array(0, 2, -1, 0), Some(false)))
+        clsSeq.add(new ReshapeInfer[T](Array(0, 2, -1, 0)))
           .add(new SoftMax[T]())
-          .add(new Reshape2[T](Array(1, 2 * param.anchorNum, -1, 0), Some(false)))
+          .add(new ReshapeInfer[T](Array(1, 2 * param.anchorNum, -1, 0)))
     }
     clsAndReg.add(clsSeq)
       .add(conv((512, 36, 1, 1, 0), "rpn_bbox_pred"))
@@ -103,7 +103,7 @@ class VggFRcnn[T: ClassTag](phase: PhaseType = TEST)(implicit ev: TensorNumeric[
   def fastRcnn(): Module[Table, Table, T] = {
     val model = new STT()
       .add(new RoiPooling[T](7, 7, ev.fromType(0.0625f)))
-      .add(new Reshape2[T](Array(-1, 25088), Some(false)))
+      .add(new ReshapeInfer[T](Array(-1, 25088)))
       .add(linear((25088, 4096), "fc6"))
       .add(new ReLU[T]())
       .add(linear((4096, 4096), "fc7"))
@@ -194,7 +194,7 @@ class VggFRcnn[T: ClassTag](phase: PhaseType = TEST)(implicit ev: TensorNumeric[
         .add(new STt()
           .add(selectTensor(1, 1, 1))
           .add(new SoftMax[T]())
-          .add(new Reshape2[T](Array(1, 2 * param.anchorNum, -1, 0), Some(false)))
+          .add(new ReshapeInfer[T](Array(1, 2 * param.anchorNum, -1, 0)))
           .setName("rpn_cls_softmax_reshape"))
         .add(selectTensor(1, 1, 2).setName("rpn_reg"))
         .add(selectTensor1(2).setName("im_info")))

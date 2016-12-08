@@ -19,7 +19,7 @@ package com.intel.analytics.bigdl.pvanet.model
 
 import com.intel.analytics.bigdl.nn._
 import com.intel.analytics.bigdl.pvanet.caffe.CaffeReader
-import com.intel.analytics.bigdl.pvanet.layers.{Reshape2, RoiPooling, SmoothL1Criterion2, SoftmaxWithCriterion}
+import com.intel.analytics.bigdl.pvanet.layers.{ReshapeInfer, RoiPooling, SmoothL1Criterion2, SoftmaxWithCriterion}
 import com.intel.analytics.bigdl.pvanet.model.Model._
 import com.intel.analytics.bigdl.pvanet.model.Phase._
 import com.intel.analytics.bigdl.tensor.Tensor
@@ -230,11 +230,11 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: PhaseType = TE
     clsAndReg.add(conv((384, 100, 1, 1, 0), "rpn_bbox_pred"))
     val clsSeq = new Stt()
     phase match {
-      case TRAIN => clsSeq.add(new Reshape2[T](Array(0, 2, -1, 0), Some(false)))
+      case TRAIN => clsSeq.add(new ReshapeInfer[T](Array(0, 2, -1, 0)))
       case TEST =>
-        clsSeq.add(new Reshape2[T](Array(0, 2, -1, 0), Some(false)))
+        clsSeq.add(new ReshapeInfer[T](Array(0, 2, -1, 0)))
           .add(new SoftMax[T]())
-          .add(new Reshape2[T](Array(1, 2 * param.anchorNum, -1, 0), Some(false)))
+          .add(new ReshapeInfer[T](Array(1, 2 * param.anchorNum, -1, 0)))
     }
     clsAndReg.add(clsSeq)
       .add(conv((384, 50, 1, 1, 0), "rpn_cls_score"))
@@ -245,7 +245,7 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: PhaseType = TE
   def fastRcnn(): Module[Table, Table, T] = {
     val model = new STT()
     model.add(new RoiPooling[T](6, 6, ev.fromType(0.0625)))
-    model.add(new Reshape2[T](Array(-1, 18432), Some(false)))
+    model.add(new ReshapeInfer[T](Array(-1, 18432)))
 
     model.add(linear((18432, 4096), "fc6"))
     model.add(new ReLU[T]())
