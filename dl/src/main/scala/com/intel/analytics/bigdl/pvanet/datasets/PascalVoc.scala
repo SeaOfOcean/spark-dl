@@ -48,7 +48,7 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
   )
   val classToInd = (classes zip (Stream from 1)).toMap
   val imageExt = ".jpg"
-  override val imageIndex = loadImageSetIndex()
+  imageIndex = loadImageSetIndex()
 
   val compId = "comp4"
   val salt = UUID.randomUUID().toString
@@ -91,7 +91,7 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
    * Load image and bounding boxes info from XML file in the PASCAL VOC
    * format.
    */
-  def loadPascalAnnotation(index: String): ImageWithRoi = {
+  def loadPascalAnnotation(index: String): Roidb = {
     val xml = XML.loadFile(dataPath + "/Annotations/" + index + ".xml")
     var objs = xml \\ "object"
 
@@ -118,7 +118,7 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
       boxes(ix - 1, 3) = y2
       gt_classes.setValue(ix, cls)
     }
-    ImageWithRoi(boxes, gt_classes, param.USE_FLIPPED)
+    Roidb(imagePathFromIndex(index), boxes, gt_classes, flipped = false)
   }
 
 
@@ -127,12 +127,12 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
    *
    * @return the database of ground-truth regions of interest.
    */
-  def getGroundTruth: Array[ImageWithRoi] = {
+  def getGroundTruth: Array[Roidb] = {
     val cache_file = FileUtil.cachePath + "/" + name + "_gt_roidb.pkl"
     if (FileUtil.existFile(cache_file)) {
       println("%s gt roidb loaded from %s".format(name, cache_file))
       try {
-        DlFile.load[Array[ImageWithRoi]](cache_file)
+        DlFile.load[Array[Roidb]](cache_file)
       } catch {
         case e: Exception =>
           val gtRoidb = imageIndex.map(index => loadPascalAnnotation(index))

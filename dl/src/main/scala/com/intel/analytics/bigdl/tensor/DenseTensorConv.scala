@@ -58,9 +58,9 @@ object DenseTensorConv {
   def fullConv2Dptr[@specialized(Float, Double) T](output: Storage[T], _outputOffset: Int,
     alpha: T, input: Storage[T], _inputOffset: Int,
     nInputRows: Int, nInputCols: Int, kernel: Storage[T], _kernelOffset: Int,
-    nKernelRows: Int, nKernelCols: Int, srow: Int, scol: Int)(
+    nKernelRows: Int, nKernelCols: Int, srow: Int, scol: Int, padH: Int, padW: Int)(
     implicit ev: TensorNumeric[T]): Unit = {
-    val nOuputCol = (nInputCols - 1) * scol + nKernelCols
+    val nOuputCol = (nInputCols - 1) * scol + nKernelCols - 2 * padW
     var inputOffset = _inputOffset
     var yy = 0
     while (yy < nInputRows) {
@@ -173,7 +173,7 @@ object DenseTensorConv {
           nInputCols, kernel, _kernelOffset, nKernelRows, nKernelCols, srow, scol)
       } else {
         fullConv2Dptr(output, _outputOffset, alpha, input, _inputOffset, nInputRows,
-          nInputCols, kernel, _kernelOffset, nKernelRows, nKernelCols, srow, scol)
+          nInputCols, kernel, _kernelOffset, nKernelRows, nKernelCols, srow, scol, 0, 0)
       }
     } else {
       if (xc == 'X') {

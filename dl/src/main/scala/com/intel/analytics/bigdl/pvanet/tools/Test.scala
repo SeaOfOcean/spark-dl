@@ -43,12 +43,13 @@ object Test {
     val imDetectTimer = new Timer
     val miscTimer = new Timer
 
-    for (i <- 0 until dataSource.total().toInt) {
-      val d = imageScaler.apply(dataSource.next())
+    for (i <- 0 until imdb.numImages) {
+      val d = dataSource.next()
+      val imgWithRoi = imageScaler.apply(d)
       println(s"process ${d.imagePath} ...............")
 
       imDetectTimer.tic()
-      val (scores: DenseMatrix[Float], boxes: DenseMatrix[Float]) = imDetect(net, d)
+      val (scores: DenseMatrix[Float], boxes: DenseMatrix[Float]) = imDetect(net, imgWithRoi)
       imDetectTimer.toc()
 
       miscTimer.tic()
@@ -128,10 +129,11 @@ object Test {
     (scores.toBreezeMatrix(), predBoxes)
   }
 
-  def visDetection(d: ImageWithRoi, clsname: String, clsDets: DenseMatrix[Float],
+  def visDetection(d: Roidb, clsname: String, clsDets: DenseMatrix[Float],
     thresh: Float = 0.3f): Unit = {
     Draw.vis(d.imagePath, clsname, clsDets,
-      FileUtil.demoPath + s"/${clsname}_" + d.imagePath.substring(d.imagePath.lastIndexOf("/") + 1))
+      FileUtil.demoPath + s"/${clsname}_"
+        + d.imagePath.substring(d.imagePath.lastIndexOf("/") + 1))
   }
 
   case class PascolVocLocalParam(folder: String = "/home/xianyan/objectRelated/VOCdevkit",

@@ -31,12 +31,16 @@ import scala.util.Random
 
 
 class ObjectDataSource(val imdb: Imdb, looped: Boolean = true)
-  extends LocalDataSource[ImageWithRoi] {
+  extends LocalDataSource[Roidb] {
   def this(name: String, devkitPath: String, looped: Boolean, param: FasterRcnnParam) {
-    this(Imdb.getImdb(name, devkitPath, param), looped)
+    this(Imdb.getImdb(name, Some(devkitPath), param), looped)
   }
 
-  val data: Array[ImageWithRoi] = imdb.getRoidb
+  def this(name: String, looped: Boolean, param: FasterRcnnParam) {
+    this(Imdb.getImdb(name, None, param), looped)
+  }
+
+  val data: Array[Roidb] = imdb.getRoidb
   // permutation of the data index
   var perm: Array[Int] = data.indices.toArray
 
@@ -75,8 +79,8 @@ class ObjectDataSource(val imdb: Imdb, looped: Boolean = true)
       newInds
     }
     if (imdb.param.ASPECT_GROUPING) {
-      val widths = data.map(r => r.oriWidth)
-      val heights = data.map(r => r.oriHeight)
+      val widths = imdb.sizes.map(x => x(0))
+      val heights = imdb.sizes.map(x => x(1))
       perm = shuffleWithAspectGrouping(widths, heights)
     } else {
       perm = Random.shuffle(Array.range(0, data.length).toSeq).toArray
@@ -84,27 +88,25 @@ class ObjectDataSource(val imdb: Imdb, looped: Boolean = true)
   }
 
 
-  override def next(): ImageWithRoi = {
+  override def next(): Roidb = {
     val r = if (looped) offset % data.length else offset
     offset += 1
     data(perm(r))
   }
 
-  def next(i: Int): ImageWithRoi = {
+  def next(i: Int): Roidb = {
     data(i)
   }
 
 }
 
 class ImageScalerAndMeanSubstractor(param: FasterRcnnParam)
-  extends Transformer[ImageWithRoi, ImageWithRoi] {
+  extends Transformer[Roidb, ImageWithRoi] {
   def byte2Float(x: Byte): Float = x & 0xff
 
-  def apply(data: ImageWithRoi): ImageWithRoi = {
+  def apply(data: Roidb): ImageWithRoi = {
     val scaleTo = param.SCALES(Random.nextInt(param.SCALES.length))
     val img = ImageIO.read(new java.io.File(data.imagePath))
-    data.oriWidth = img.getWidth
-    data.oriHeight = img.getHeight
     val imSizeMin = Math.min(img.getWidth, img.getHeight)
     val imSizeMax = Math.max(img.getWidth, img.getHeight)
     var im_scale = scaleTo.toFloat / imSizeMin.toFloat
@@ -118,14 +120,14 @@ class ImageScalerAndMeanSubstractor(param: FasterRcnnParam)
     val im_scale_y = (Math.floor(img.getWidth * im_scale / param.SCALE_MULTIPLE_OF) *
       param.SCALE_MULTIPLE_OF / img.getWidth).toFloat
 
-    val scaledImage: java.awt.Image =
+    val scaledImage1: java.awt.Image =
       img.getScaledInstance((im_scale_y * img.getWidth).toInt,
         (im_scale_x * img.getHeight()).toInt, java.awt.Image.SCALE_SMOOTH)
 
     val imageBuff: BufferedImage =
       new BufferedImage((im_scale_y * img.getWidth).toInt, (im_scale_x * img.getHeight()).toInt,
         BufferedImage.TYPE_3BYTE_BGR)
-    imageBuff.getGraphics.drawImage(scaledImage, 0, 0, new Color(0, 0, 0), null)
+    imageBuff.getGraphics.drawImage(scaledImage1, 0, 0, new Color(0, 0, 0), null)
     val pixels: Array[Float] = imageBuff.getRaster.getDataBuffer
       .asInstanceOf[DataBufferByte].getData.map(x => byte2Float(x))
     require(pixels.length % 3 == 0)
@@ -134,13 +136,15 @@ class ImageScalerAndMeanSubstractor(param: FasterRcnnParam)
       (pixels(x._2) - param.PIXEL_MEANS.head.head(x._2 % 3)).toFloat
     )
 
-    data.scaledImage = new RGBImageOD(meanPixels, imageBuff.getWidth, imageBuff.getHeight)
+    val scaledImage = new RGBImageOD(meanPixels, imageBuff.getWidth, imageBuff.getHeight)
     val imScales = Array(im_scale_x, im_scale_y, im_scale_x, im_scale_y)
-    data.imInfo = Some(Tensor(Storage(
+    val imInfo = Some(Tensor(Storage(
       Array(imageBuff.getHeight(), imageBuff.getWidth, im_scale_x))))
 
-    if (data.gt_classes != null) {
-      val gt_inds = data.gt_classes.storage().array().zipWithIndex
+    var gtBoxes: Option[Tensor[Float]] = None
+
+    if (data.gtClasses != null) {
+      val gt_inds = data.gtClasses.storage().array().zipWithIndex
         .filter(x => x._1 != 0).map(x => x._2)
       val gt_boxes = Tensor[Float](gt_inds.length, 5)
       gt_inds.zipWithIndex.foreach(ind => {
@@ -149,23 +153,22 @@ class ImageScalerAndMeanSubstractor(param: FasterRcnnParam)
         gt_boxes.setValue(ind._2 + 1, 2, scaled(1))
         gt_boxes.setValue(ind._2 + 1, 3, scaled(2))
         gt_boxes.setValue(ind._2 + 1, 4, scaled(3))
-        gt_boxes.setValue(ind._2 + 1, 5, data.gt_classes.valueAt(ind._1 + 1))
+        gt_boxes.setValue(ind._2 + 1, 5, data.gtClasses.valueAt(ind._1 + 1))
       })
-      data.gtBoxes = Some(gt_boxes)
+      gtBoxes = Some(gt_boxes)
     }
-
-    data
+    ImageWithRoi(img.getWidth, img.getHeight, gtBoxes, scaledImage, imInfo)
   }
 
-  override def transform(prev: Iterator[ImageWithRoi]): Iterator[ImageWithRoi] = {
+  override def transform(prev: Iterator[Roidb]): Iterator[ImageWithRoi] = {
     // generate a serious of random scales
     prev.map(data => apply(data))
   }
 }
 
 class AnchorToTensor(batchSize: Int = 1, height: Int, width: Int) {
-  private val labelTensor: Tensor[Float] = Tensor[Float]()
-  private val roiLabelTensor: Tensor[Float] = Tensor[Float]()
+//  private val labelTensor: Tensor[Float] = Tensor[Float]()
+//  private val roiLabelTensor: Tensor[Float] = Tensor[Float]()
 
   // todo: buffer for roiLabelData and labelData
   def apply(anchorTarget: AnchorTarget): (Tensor[Float], Tensor[Float]) = {
@@ -187,12 +190,10 @@ class AnchorToTensor(batchSize: Int = 1, height: Int, width: Int) {
         k += 1
       }
     }
-    labelTensor.set(Storage[Float](labelData),
-      storageOffset = 1, sizes = Array(batchSize, 1,
-        labelData.length/ width / batchSize, width))
-    roiLabelTensor.set(Storage[Float](roiLabelData),
-      storageOffset = 1, sizes = Array(batchSize, 12,
-        roiLabelData.length / 12 / width / batchSize, width))
+    val labelTensor = Tensor(Storage[Float](labelData)).resize(Array(batchSize, 1,
+      labelData.length / width / batchSize, width))
+    val roiLabelTensor = Tensor(Storage[Float](roiLabelData)).resize(Array(batchSize, 12,
+      roiLabelData.length / 12 / width / batchSize, width))
     (labelTensor, roiLabelTensor)
   }
 }

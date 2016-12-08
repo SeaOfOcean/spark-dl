@@ -18,7 +18,7 @@
 package com.intel.analytics.bigdl.pvanet.tools
 
 import breeze.linalg.DenseMatrix
-import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, ImageWithRoi}
+import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, Roidb}
 import com.intel.analytics.bigdl.pvanet.model._
 import com.intel.analytics.bigdl.pvanet.utils.{Bbox, MatrixUtil, Nms}
 import com.intel.analytics.bigdl.utils.Timer
@@ -64,8 +64,7 @@ object Demo {
     val imageScaler = new ImageScalerAndMeanSubstractor(net.param)
 
     imgNames.foreach(imaName => {
-      val img = ImageWithRoi()
-      img.imagePath = param.folder + "/" + imaName
+      val img = Roidb(param.folder + "/" + imaName)
       println(s"process ${img.imagePath} ...")
       val scaledImage = imageScaler.apply(img)
       val timer = new Timer
@@ -99,7 +98,7 @@ object Demo {
           clsDets
         }
         val clsDets = getClsDet
-        Test.visDetection(scaledImage, classes(j), clsDets, thresh = CONF_THRESH)
+        Test.visDetection(img, classes(j), clsDets, thresh = CONF_THRESH)
       }
     })
   }
