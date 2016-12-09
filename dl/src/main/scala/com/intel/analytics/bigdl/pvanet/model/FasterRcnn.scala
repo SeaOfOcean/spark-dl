@@ -67,16 +67,17 @@ abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
   def conv(p: (Int, Int, Int, Int, Int), name: String): SpatialConvolution[T] = {
     if (caffeReader != null) {
       val out = caffeReader.mapConvolution(name)
-      assert(out.nInputPlane == p._1)
-      assert(out.nOutputPlane == p._2)
-      assert(out.kernelH == p._3)
-      assert(out.strideH == p._4)
-      assert(out.padH == p._5)
-      out
-    } else {
-      new SpatialConvolution[T](p._1, p._2, p._3, p._3, p._4, p._4,
-        p._5, p._5, initMethod = Xavier).setName(name)
+      if (out != null) {
+        assert(out.nInputPlane == p._1)
+        assert(out.nOutputPlane == p._2)
+        assert(out.kernelH == p._3)
+        assert(out.strideH == p._4)
+        assert(out.padH == p._5)
+        return out
+      }
     }
+    new SpatialConvolution[T](p._1, p._2, p._3, p._3, p._4, p._4,
+      p._5, p._5, initMethod = Xavier).setName(name)
   }
 
   type Scale[T] = (CMul[T], CAdd[T])
@@ -100,31 +101,33 @@ abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
   def linear(p: (Int, Int), name: String): Linear[T] = {
     if (caffeReader != null) {
       val out = caffeReader.mapInnerProduct(name)
-      assert(out.weight.size(1) == p._2 && out.weight.size(2) == p._1)
-      out
-    } else {
-      new Linear[T](p._1, p._2).setName(name)
+      if (out != null) {
+        assert(out.weight.size(1) == p._2 && out.weight.size(2) == p._1)
+        return out
+      }
     }
+    new Linear[T](p._1, p._2).setName(name)
   }
 
   def spatialFullConv(p: (Int, Int, Int, Int, Boolean), name: String)
   : SpatialFullConvolutionMap[T] = {
     if (caffeReader != null) {
       val out = caffeReader.mapDeconvolution(name).setName(name)
-      assert(out.connTable.size(1) == p._1)
-      assert(out.kW == p._2)
-      assert(out.dW == p._3)
-      assert(out.padH == p._4)
-      assert(out.noBias == !p._5)
-      out
-    } else {
-      new SpatialFullConvolutionMap[T](SpatialConvolutionMap.oneToOne[T](p._1),
-        p._2, p._2, p._3, p._3, p._4, p._4, p._5).setName(name)
+      if (out != null) {
+        assert(out.connTable.size(1) == p._1)
+        assert(out.kW == p._2)
+        assert(out.dW == p._3)
+        assert(out.padH == p._4)
+        assert(out.noBias == !p._5)
+        return out
+      }
     }
+    new SpatialFullConvolutionMap[T](SpatialConvolutionMap.oneToOne[T](p._1),
+      p._2, p._2, p._3, p._3, p._4, p._4, p._5).setName(name)
   }
 
-  var testModel: Option[STT] = None
-  var trainModel: Option[STT] = None
+  private var testModel: Option[STT] = None
+  private var trainModel: Option[STT] = None
 
   def getTestModel(): MTT = {
     testModel match {
@@ -144,12 +147,37 @@ abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
 
   def criterion4: ParallelCriterion[T]
 
-  def featureAndRpnNet(): StT
+  protected def createFeatureAndRpnNet(): StT
 
   // pool is the parameter of RoiPooling
   val pool: Int
+  private[this] var _featureAndRpnNet: StT = null
 
-  def fastRcnn(): STT = {
+  def featureAndRpnNet: StT = {
+    if (_featureAndRpnNet == null) {
+      _featureAndRpnNet = createFeatureAndRpnNet()
+    }
+    _featureAndRpnNet
+  }
+
+  def featureAndRpnNet_=(value: StT): Unit = {
+    _featureAndRpnNet = value
+  }
+
+  private[this] var _fastRcnn: STT = null
+
+  def fastRcnn: STT = {
+    if (_fastRcnn == null) {
+      _fastRcnn = createFastRcnn()
+    }
+    _fastRcnn
+  }
+
+  def fastRcnn_=(value: STT): Unit = {
+    _fastRcnn = value
+  }
+
+  protected def createFastRcnn(): STT = {
     val model = new STT()
       .add(new RoiPooling[T](pool, pool, ev.fromType(0.0625f)))
       .add(new ReshapeInfer[T](Array(-1, 512 * pool * pool)))
@@ -168,11 +196,31 @@ abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
     model
   }
 
-  def rpn(): StT
+
+  def copyFromCaffe(caffeReader: CaffeReader[T]): FasterRcnn[T] = {
+    val mod = caffeReader.loadModuleFromFile[(StT, STT)](modelName)
+    mod match {
+      case Some((featureAndRpn, fastRcnn)) =>
+        featureAndRpnNet_=(featureAndRpn)
+        fastRcnn_=(fastRcnn)
+      case _ =>
+        setCaffeReader(caffeReader)
+        getModel
+        caffeReader.writeToFile((featureAndRpnNet, fastRcnn), modelName)
+    }
+    this
+  }
+
+  def createRpn(): StT
 
   protected def createTestModel(): STT
 
   protected def createTrainModel(): STT
+
+  def getModel: MTT = {
+    if (isTest) getTestModel()
+    else getTrainModel()
+  }
 
   type STT = Sequential[Table, Table, T]
   type STt = Sequential[Table, Tensor[T], T]
@@ -217,12 +265,12 @@ object FasterRcnn {
   (modelType: ModelType, phase: PhaseType = TEST, pretrained: Any = None)
     (implicit ev: TensorNumeric[T]): FasterRcnn[T] = {
 
-    def getModel(modelType: ModelType): FasterRcnn[T] = {
+    def getFasterRcnn(modelType: ModelType): FasterRcnn[T] = {
       modelType match {
         case VGG16 =>
-          new VggFRcnn[T]()
+          new VggFRcnn[T](phase)
         case PVANET =>
-          new PvanetFRcnn[T]()
+          new PvanetFRcnn[T](phase)
         case _ =>
           throw new Exception("unsupport network")
       }
@@ -234,10 +282,9 @@ object FasterRcnn {
         File.load[FasterRcnn[T]](mp)
       case (dp: String, mp: String) =>
         // caffe pretrained model
-        val fm = getModel(modelType)
-        fm.setCaffeReader(new CaffeReader[T](dp, mp, modelType.toString))
+        val fm = getFasterRcnn(modelType).copyFromCaffe(new CaffeReader[T](dp, mp))
         fm
-      case _ => getModel(modelType)
+      case _ => getFasterRcnn(modelType)
     }
   }
 }

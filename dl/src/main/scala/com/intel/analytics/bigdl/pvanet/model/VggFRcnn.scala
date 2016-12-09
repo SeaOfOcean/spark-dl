@@ -18,7 +18,6 @@
 package com.intel.analytics.bigdl.pvanet.model
 
 import com.intel.analytics.bigdl.nn._
-import com.intel.analytics.bigdl.pvanet.caffe.CaffeReader
 import com.intel.analytics.bigdl.pvanet.layers._
 import com.intel.analytics.bigdl.pvanet.model.Model._
 import com.intel.analytics.bigdl.pvanet.model.Phase._
@@ -29,7 +28,7 @@ import scala.reflect.ClassTag
 class VggFRcnn[T: ClassTag](phase: PhaseType = TEST)(implicit ev: TensorNumeric[T])
   extends FasterRcnn[T](phase) {
 
-  def vgg16: Stt = {
+  def createVgg16(): Stt = {
     val vggNet = new Stt()
     vggNet.add(conv((3, 64, 3, 1, 1), "conv1_1"))
     vggNet.add(new ReLU[T](true))
@@ -68,7 +67,7 @@ class VggFRcnn[T: ClassTag](phase: PhaseType = TEST)(implicit ev: TensorNumeric[
     vggNet
   }
 
-  def rpn(): StT = {
+  def createRpn(): StT = {
     val rpnModel = new StT()
     rpnModel.add(conv((512, 512, 3, 1, 1), "rpn_conv/3x3"))
     rpnModel.add(new ReLU[T](true))
@@ -88,11 +87,11 @@ class VggFRcnn[T: ClassTag](phase: PhaseType = TEST)(implicit ev: TensorNumeric[
     rpnModel
   }
 
-  def featureAndRpnNet(): StT = {
+  def createFeatureAndRpnNet(): StT = {
     val compose = new StT()
-    compose.add(vgg16)
+    compose.add(createVgg16)
     val vggRpnModel = new Ct()
-    vggRpnModel.add(rpn())
+    vggRpnModel.add(createRpn())
     vggRpnModel.add(new Identity[T]())
     compose.add(vggRpnModel)
     compose
@@ -118,7 +117,7 @@ class VggFRcnn[T: ClassTag](phase: PhaseType = TEST)(implicit ev: TensorNumeric[
   def createTestModel(): STT = {
     val model = new STT()
     val model1 = new ParallelTable[T]()
-    model1.add(featureAndRpnNet())
+    model1.add(featureAndRpnNet)
     model1.add(new Identity[T]())
     model.add(model1)
     // connect rpn and fast-rcnn
@@ -137,7 +136,7 @@ class VggFRcnn[T: ClassTag](phase: PhaseType = TEST)(implicit ev: TensorNumeric[
     middle.add(left)
     model.add(middle)
     // get the fast rcnn results and rois
-    model.add(new CT().add(fastRcnn()).add(selectTensor(2)))
+    model.add(new CT().add(fastRcnn).add(selectTensor(2)))
     model
   }
 
@@ -146,7 +145,7 @@ class VggFRcnn[T: ClassTag](phase: PhaseType = TEST)(implicit ev: TensorNumeric[
     val model = new STT()
 
     val rpnFeatureWithInfoGt = new ParallelTable[T]()
-    rpnFeatureWithInfoGt.add(featureAndRpnNet())
+    rpnFeatureWithInfoGt.add(featureAndRpnNet)
     // im_info
     rpnFeatureWithInfoGt.add(new Identity[T]())
     // gt_boxes
@@ -195,7 +194,7 @@ class VggFRcnn[T: ClassTag](phase: PhaseType = TEST)(implicit ev: TensorNumeric[
           .add(selectTensor(2, 1).setName("rois")))
         .add(selectTable(2, 2).setName("other targets info")))
     fastRcnnLossModel.add(new ParallelTable[T]()
-      .add(fastRcnn())
+      .add(fastRcnn)
       .add(new Identity[T]()))
     // make each res a tensor
     model.add(new Ct()

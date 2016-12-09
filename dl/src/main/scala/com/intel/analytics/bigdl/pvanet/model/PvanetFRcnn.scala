@@ -200,7 +200,7 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: PhaseType = TE
     pvanet
   }
 
-  override def featureAndRpnNet(): StT = {
+  override def createFeatureAndRpnNet(): StT = {
     val compose = new StT()
     compose.add(getPvanet)
 
@@ -214,13 +214,13 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: PhaseType = TE
     compose.add(convTable)
     val rpnAndFeature = new CT()
     rpnAndFeature.add(new STT()
-      .add(new SelectTable[Tensor[T], T](1)).add(rpn()))
+      .add(new SelectTable[Tensor[T], T](1)).add(createRpn()))
     rpnAndFeature.add(new JoinTable[T](2, 4))
     compose.add(rpnAndFeature)
     compose
   }
 
-  def rpn(): StT = {
+  def createRpn(): StT = {
     val rpnModel = new StT()
     rpnModel.add(conv((128, 384, 3, 1, 1), "rpn_conv1"))
     rpnModel.add(new ReLU[T]())

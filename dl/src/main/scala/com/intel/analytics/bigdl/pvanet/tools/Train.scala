@@ -48,7 +48,7 @@ object Train {
   val model2caffePath = Map(
     VGG16 -> ("/home/xianyan/objectRelated/faster_rcnn_models/VGG16/" +
       "faster_rcnn_alt_opt/rpn_test.pt",
-      "dl/data/imagenet_models/VGG16_faster_rcnn_final.caffemodel"),
+      "dl/data/imagenet_models/VGG16.v2.caffemodel"),
     PVANET -> ("/home/xianyan/objectRelated/pvanet/full/test.pt",
       "/home/xianyan/objectRelated/pvanet/full/test.model"))
 
