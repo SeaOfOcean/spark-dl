@@ -19,6 +19,7 @@ package com.intel.analytics.bigdl.pvanet.tools
 
 import breeze.linalg.DenseMatrix
 import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, Roidb}
+import com.intel.analytics.bigdl.pvanet.model.Model.ModelType
 import com.intel.analytics.bigdl.pvanet.model._
 import com.intel.analytics.bigdl.pvanet.utils.{Bbox, MatrixUtil, Nms}
 import com.intel.analytics.bigdl.utils.Timer
@@ -35,8 +36,8 @@ object Demo {
     "sheep", "sofa", "train", "tvmonitor"
   )
 
-  case class PascolVocLocalParam(folder: String = "/home/xianyan/objectRelated/VOCdevkit",
-    net: String = "VGG16", nThread: Int = 4)
+  case class PascolVocLocalParam(folder: String = "/home/xianyan/objectRelated/Pedestrain_1",
+    net: ModelType = Model.VGG16, nThread: Int = 4)
 
   private val parser = new OptionParser[PascolVocLocalParam]("Spark-DL PascolVoc Local Example") {
     head("Spark-DL PascolVoc Local Example")
@@ -45,7 +46,7 @@ object Demo {
       .action((x, c) => c.copy(folder = x))
     opt[String]('n', "net")
       .text("net type : VGG16 | PVANET")
-      .action((x, c) => c.copy(net = x.toLowerCase))
+      .action((x, c) => c.copy(net = Model.withName(x)))
     opt[String]('t', "mkl thread number")
       .action((x, c) => c.copy(nThread = x.toInt))
   }
@@ -57,9 +58,11 @@ object Demo {
       "50.jpg", "60.jpg", "70.jpg", "80.jpg", "90.jpg", "100.jpg")
     var net: FasterRcnn[Float] = null
     param.net match {
-      case "vgg" => net = VggFRcnn.model()
-      case "pvanet" => net = PvanetFRcnn.model()
+      case Model.VGG16 => net = VggFRcnn.model()
+      case Model.PVANET => net = PvanetFRcnn.model()
     }
+
+    val model = net.getTestModel()
 
     val imageScaler = new ImageScalerAndMeanSubstractor(net.param)
 
@@ -70,7 +73,7 @@ object Demo {
       val timer = new Timer
       timer.tic()
       val (scores: DenseMatrix[Float], boxes: DenseMatrix[Float])
-      = Test.imDetect(net, scaledImage)
+      = Test.imDetect(model, scaledImage)
       timer.toc()
       println(s"Detection took ${"%.3f".format(timer.totalTime / 1e9)}s " +
         s"for ${boxes.rows} object proposals")

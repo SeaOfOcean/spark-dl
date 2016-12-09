@@ -147,9 +147,9 @@ abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
 
   def rpn(): Module[Tensor[T], Table, T]
 
-  def createTestModel(): Module[Table, Table, T]
+  protected def createTestModel(): Module[Table, Table, T]
 
-  def createTrainModel(): Module[Table, Table, T]
+  protected def createTrainModel(): Module[Table, Table, T]
 
   type STT = Sequential[Table, Table, T]
   type STt = Sequential[Table, Tensor[T], T]

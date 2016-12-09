@@ -18,6 +18,7 @@
 package com.intel.analytics.bigdl.pvanet.tools
 
 import breeze.linalg.DenseMatrix
+import com.intel.analytics.bigdl.nn.Module
 import com.intel.analytics.bigdl.pvanet.datasets._
 import com.intel.analytics.bigdl.pvanet.model.Model._
 import com.intel.analytics.bigdl.pvanet.model.{FasterRcnn, Model, PvanetFRcnn, VggFRcnn}
@@ -30,6 +31,7 @@ object Test {
   def testNet(net: FasterRcnn[Float], dataSource: ObjectDataSource,
     maxPerImage: Int = 100, thresh: Double = 0.05, vis: Boolean = false): Unit = {
     val imdb = dataSource.imdb
+    val model = net.getTestModel()
     val allBoxes: Array[Array[DenseMatrix[Float]]] = {
       val out = new Array[Array[DenseMatrix[Float]]](imdb.numClasses)
       Range(0, imdb.numClasses).foreach(x => {
@@ -49,7 +51,7 @@ object Test {
       println(s"process ${d.imagePath} ...............")
 
       imDetectTimer.tic()
-      val (scores: DenseMatrix[Float], boxes: DenseMatrix[Float]) = imDetect(net, imgWithRoi)
+      val (scores: DenseMatrix[Float], boxes: DenseMatrix[Float]) = imDetect(model, imgWithRoi)
       imDetectTimer.toc()
 
       miscTimer.tic()
@@ -109,12 +111,12 @@ object Test {
     imdb.evaluateDetections(allBoxes, outputDir)
   }
 
-  def imDetect(net: FasterRcnn[Float], d: ImageWithRoi):
+  def imDetect(model: Module[Table, Table, Float], d: ImageWithRoi):
   (DenseMatrix[Float], DenseMatrix[Float]) = {
     val input = new Table
     input.insert(ImageToTensor(d))
     input.insert(d.imInfo.get)
-    val result = net.createTestModel().forward(input)
+    val result = model.forward(input)
 
     val scores = result(1).asInstanceOf[Table](1).asInstanceOf[Tensor[Float]]
     val boxDeltas = result(1).asInstanceOf[Table](2).asInstanceOf[Tensor[Float]]
@@ -163,7 +165,7 @@ object Test {
         model = PvanetFRcnn.model()
     }
     MKL.setNumThreads(param.nThread)
-    val testDataSource = new ObjectDataSource("voc_2007_testcode4",
+    val testDataSource = new ObjectDataSource("voc_2007_testcode",
       FileUtil.DATA_DIR + "/VOCdevkit", false, model.param)
     testNet(model, testDataSource)
   }
