@@ -18,10 +18,10 @@
 package com.intel.analytics.bigdl.pvanet.tools
 
 import com.intel.analytics.bigdl.dataset.LocalDataSource
-import com.intel.analytics.bigdl.nn.{Module, ParallelCriterion}
+import com.intel.analytics.bigdl.nn.Module
 import com.intel.analytics.bigdl.optim.{OptimMethod, Trigger}
 import com.intel.analytics.bigdl.pvanet.datasets.{AnchorToTensor, ImageToTensor, ImageWithRoi, ObjectDataSource}
-import com.intel.analytics.bigdl.pvanet.layers.AnchorTargetLayer
+import com.intel.analytics.bigdl.pvanet.layers.{AnchorTargetLayer, ParallelCriterion}
 import com.intel.analytics.bigdl.pvanet.model.FasterRcnn
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.Table
@@ -77,22 +77,22 @@ class FasterRcnnOptimizer(data: LocalDataSource[ImageWithRoi],
    * @param output (rpn_cls, rpn_reg, cls, reg, rois)
    * @return
    */
-  def getAnchorTarget(target: Table, d: ImageWithRoi, output: Table): Unit = {
+  def addAnchorTarget(targets: Table, d: ImageWithRoi, output: Table): Unit = {
     val sizes = output(2).asInstanceOf[Tensor[Float]].size()
     val height = sizes(sizes.length - 2)
     val width = sizes(sizes.length - 1)
     val anchorTargetLayer = new AnchorTargetLayer(net.param)
     val anchors = anchorTargetLayer.generateAnchors(d, height, width)
     val anchorTensors = new AnchorToTensor(1, height, width).apply(anchors)
-    target.insert(anchorTensors._1)
-    target.insert(anchorTensors._2)
+    targets.insert(anchorTensors._1)
+    targets.insert(anchorTensors._2)
   }
 
-  def getProposalTarget(target: Table, d: ImageWithRoi, output: Table): Unit = {
+  def addProposalTarget(targets: Table, d: ImageWithRoi, output: Table): Unit = {
     println(output.length())
     val pTargets = output(5).asInstanceOf[Table]
-    target.insert(pTargets(1))
-    target.insert(pTargets(2))
+    targets.insert(pTargets(1))
+    targets.insert(pTargets(2))
   }
 
   val imageToTensor = new ImageToTensor(batchSize = 1)
@@ -118,10 +118,15 @@ class FasterRcnnOptimizer(data: LocalDataSource[ImageWithRoi],
       // (rpn_cls, rpn_reg, cls, reg, proposalTargets)
       val output = model.forward(input)
       val target = new Table
-      getAnchorTarget(target, d, output)
-      getProposalTarget(target, d, output)
+      addAnchorTarget(target, d, output)
+      addProposalTarget(target, d, output)
 
       val loss = criterion.forward(output, target)
+      println(s"loss: $loss")
+      println(s"  rpn cls loss: ${criterion.outputs(1)}")
+      println(s"  rpn bbox loss: ${criterion.outputs(2)}")
+      println(s"  cls loss: ${criterion.outputs(3)}")
+      println(s"  bbox loss: ${criterion.outputs(4)}")
       val gradOutput = criterion.backward(output, target)
       model.backward(input, gradOutput)
       optimMethod.optimize(_ => (loss, grad), weights, state)
