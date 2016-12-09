@@ -17,6 +17,7 @@
 
 package com.intel.analytics.bigdl.pvanet.datasets
 
+import java.io.FileInputStream
 import javax.imageio.ImageIO
 
 import breeze.linalg.DenseMatrix
@@ -30,7 +31,22 @@ abstract class Imdb(val param: FasterRcnnParam) {
   val classes: Array[String]
   var imageIndex: Array[String] = _
   var roidb: Array[Roidb] = _
-  var sizes: Array[Array[Int]] = _
+  private var sizes: Array[Array[Int]] = _
+
+  def getWidth(i: Int) = {
+    if (sizes == null) getImageSizes
+    widths(i)
+  }
+
+  def widths: Array[Int] = {
+    if (sizes == null) getImageSizes
+    sizes(0)
+  }
+
+  def heights: Array[Int] = {
+    if (sizes == null) getImageSizes
+    sizes(1)
+  }
 
   /**
    * A roidb is a list of dictionaries, each with the following keys:
@@ -98,30 +114,33 @@ abstract class Imdb(val param: FasterRcnnParam) {
     if (sizes != null) return sizes
     val cache_file = FileUtil.cachePath + "/" + name + "_image_sizes.pkl"
     if (FileUtil.existFile(cache_file)) {
-      return File.load[Array[Array[Int]]](cache_file)
+      sizes = File.load[Array[Array[Int]]](cache_file)
+    } else {
+      sizes = Array.ofDim[Int](2, numImages)
+      for (i <- 0 until numImages) {
+        val (width, height) = getImageSize(imagePathAt(i))
+        sizes(0)(i) = width
+        sizes(1)(i) = height
+      }
+      File.save(sizes, cache_file)
     }
-    sizes = Array.ofDim[Int](numImages, 2)
-    for (i <- 0 until numImages) {
-      val bimg = ImageIO.read(new java.io.File(imagePathAt(i)))
-      sizes(i)(0) = bimg.getWidth()
-      sizes(i)(1) = bimg.getHeight()
-    }
-    File.save(sizes, cache_file)
     sizes
   }
 
-  def getImageSize(path: String): Array[Int] = {
-    val bimg = ImageIO.read(new java.io.File(path))
-    Array[Int](bimg.getWidth(), bimg.getHeight())
-  }
-
-  def getImageSize(i: Int): Array[Int] = {
-    if (sizes == null) getImageSizes
-    sizes(i)
-  }
-
-  private def getWidth(i: Int): Int = {
-    getImageSizes(i)(0)
+  def getImageSize(path: String): (Int, Int) = {
+    var width = 0
+    var height = 0
+    val in = ImageIO.createImageInputStream(new FileInputStream(path))
+    val readers = ImageIO.getImageReaders(in)
+    if (readers.hasNext()) {
+      val reader = readers.next()
+      reader.setInput(in)
+      width = reader.getWidth(0)
+      height = reader.getHeight(0)
+      reader.dispose()
+    }
+    in.close()
+    (width, height)
   }
 }
 

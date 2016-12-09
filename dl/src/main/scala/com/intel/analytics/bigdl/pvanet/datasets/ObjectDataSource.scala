@@ -79,9 +79,7 @@ class ObjectDataSource(val imdb: Imdb, looped: Boolean = true)
       newInds
     }
     if (imdb.param.ASPECT_GROUPING) {
-      val widths = imdb.sizes.map(x => x(0))
-      val heights = imdb.sizes.map(x => x(1))
-      perm = shuffleWithAspectGrouping(widths, heights)
+      perm = shuffleWithAspectGrouping(imdb.widths, imdb.heights)
     } else {
       perm = Random.shuffle(Array.range(0, data.length).toSeq).toArray
     }
