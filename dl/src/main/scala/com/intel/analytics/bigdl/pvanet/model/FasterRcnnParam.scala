@@ -74,8 +74,7 @@ abstract class FasterRcnnParam(phase: PhaseType = Phase.TEST) {
   val BG_THRESH_LO = 0.1
 
   // Use horizontally-flipped images during training?
-  // todo: change tmp
-  val USE_FLIPPED = false
+  val USE_FLIPPED = if (phase == Phase.TEST) false else true
 
   // Overlap required between a ROI and ground-truth box in order for that ROI to
   // be used as a bounding-box regression training example
@@ -98,7 +97,7 @@ abstract class FasterRcnnParam(phase: PhaseType = Phase.TEST) {
   val BBOX_INSIDE_WEIGHTS = Array(1.0f, 1.0f, 1.0f, 1.0f)
   // Normalize the targets using "precomputed" (or made up) means and stdevs
   // (BBOX_NORMALIZE_TARGETS must also be true)
-  var BBOX_NORMALIZE_TARGETS_PRECOMPUTED = false
+  var BBOX_NORMALIZE_TARGETS_PRECOMPUTED = true
   val BBOX_NORMALIZE_MEANS = Array(0.0f, 0.0f, 0.0f, 0.0f)
   val BBOX_NORMALIZE_STDS = Array(0.1f, 0.1f, 0.2f, 0.2f)
 

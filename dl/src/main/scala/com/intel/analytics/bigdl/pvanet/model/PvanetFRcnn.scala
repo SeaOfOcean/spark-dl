@@ -19,12 +19,11 @@ package com.intel.analytics.bigdl.pvanet.model
 
 import com.intel.analytics.bigdl.nn._
 import com.intel.analytics.bigdl.pvanet.caffe.CaffeReader
-import com.intel.analytics.bigdl.pvanet.layers.{ReshapeInfer, RoiPooling, SmoothL1Criterion2, SoftmaxWithCriterion}
+import com.intel.analytics.bigdl.pvanet.layers.{ReshapeInfer, SmoothL1Criterion2, SoftmaxWithCriterion}
 import com.intel.analytics.bigdl.pvanet.model.Model._
 import com.intel.analytics.bigdl.pvanet.model.Phase._
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
-import com.intel.analytics.bigdl.utils.Table
 
 import scala.reflect.ClassTag
 
@@ -138,7 +137,7 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: PhaseType = TE
   }
 
 
-  private def getPvanet: Module[Tensor[T], Tensor[T], T] = {
+  private def getPvanet: Stt = {
     if (pvanet != null) return pvanet
     pvanet = new Stt()
     pvanet.add(conv((3, 16, 7, 2, 3), "conv1_1/conv"))
@@ -202,7 +201,7 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: PhaseType = TE
     pvanet
   }
 
-  override def featureAndRpnNet(): Module[Tensor[T], Table, T] = {
+  override def featureAndRpnNet(): StT = {
     val compose = new StT()
     compose.add(getPvanet)
 
@@ -222,7 +221,7 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: PhaseType = TE
     compose
   }
 
-  def rpn(): Module[Tensor[T], Table, T] = {
+  def rpn(): StT = {
     val rpnModel = new StT()
     rpnModel.add(conv((128, 384, 3, 1, 1), "rpn_conv1"))
     rpnModel.add(new ReLU[T]())
@@ -242,38 +241,17 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: PhaseType = TE
     rpnModel
   }
 
-  def fastRcnn(): Module[Table, Table, T] = {
-    val model = new STT()
-    model.add(new RoiPooling[T](6, 6, ev.fromType(0.0625)))
-    model.add(new ReshapeInfer[T](Array(-1, 18432)))
-
-    model.add(linear((18432, 4096), "fc6"))
-    model.add(new ReLU[T]())
-    model.add(linear((4096, 4096), "fc7"))
-    model.add(new ReLU[T]())
-
-    val clsReg = new CT()
-
-    val cls = new Stt()
-    cls.add(linear((4096, 21), "cls_score"))
-    cls.add(new SoftMax[T]())
-    clsReg.add(cls)
-    clsReg.add(linear((4096, 84), "bbox_pred"))
-
-    model.add(clsReg)
-    model
-  }
-
+  override val pool: Int = 6
   override val modelType: ModelType = PVANET
   override val modelName: String = modelType.toString
   override val param: FasterRcnnParam = new PvanetParam(phase)
 
-  override def criterion4: ParallelCriterion[T] = {
+  override def criterion4: PC = {
     val rpn_loss_bbox = new SmoothL1Criterion2[T](ev.fromType(3.0), 1)
     val rpn_loss_cls = new SoftmaxWithCriterion[T](ignoreLabel = Some(-1))
     val loss_bbox = new SmoothL1Criterion2[T](ev.fromType(1.0), 1)
     val loss_cls = new SoftmaxWithCriterion[T](ignoreLabel = Some(-1))
-    val pc = new ParallelCriterion[T]()
+    val pc = new PC()
     pc.add(rpn_loss_cls, 1)
     pc.add(rpn_loss_bbox, 1)
     pc.add(loss_cls, 1)
@@ -281,9 +259,9 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: PhaseType = TE
     pc
   }
 
-  override def createTestModel(): Module[Table, Table, T] = ???
+  override def createTestModel(): STT = ???
 
-  override def createTrainModel(): Module[Table, Table, T] = ???
+  override def createTrainModel(): STT = ???
 }
 
 object PvanetFRcnn {

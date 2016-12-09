@@ -19,19 +19,17 @@ package com.intel.analytics.bigdl.pvanet.model
 
 import com.intel.analytics.bigdl.nn._
 import com.intel.analytics.bigdl.pvanet.caffe.CaffeReader
-import com.intel.analytics.bigdl.pvanet.layers.{ParallelCriterion => _, _}
+import com.intel.analytics.bigdl.pvanet.layers._
 import com.intel.analytics.bigdl.pvanet.model.Model._
 import com.intel.analytics.bigdl.pvanet.model.Phase._
-import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
-import com.intel.analytics.bigdl.utils.Table
 
 import scala.reflect.ClassTag
 
 class VggFRcnn[T: ClassTag](phase: PhaseType = TEST)(implicit ev: TensorNumeric[T])
   extends FasterRcnn[T](phase) {
 
-  def vgg16: Module[Tensor[T], Tensor[T], T] = {
+  def vgg16: Stt = {
     val vggNet = new Stt()
     vggNet.add(conv((3, 64, 3, 1, 1), "conv1_1"))
     vggNet.add(new ReLU[T](true))
@@ -70,7 +68,7 @@ class VggFRcnn[T: ClassTag](phase: PhaseType = TEST)(implicit ev: TensorNumeric[
     vggNet
   }
 
-  def rpn(): Module[Tensor[T], Table, T] = {
+  def rpn(): StT = {
     val rpnModel = new StT()
     rpnModel.add(conv((512, 512, 3, 1, 1), "rpn_conv/3x3"))
     rpnModel.add(new ReLU[T](true))
@@ -90,7 +88,7 @@ class VggFRcnn[T: ClassTag](phase: PhaseType = TEST)(implicit ev: TensorNumeric[
     rpnModel
   }
 
-  def featureAndRpnNet(): Module[Tensor[T], Table, T] = {
+  def featureAndRpnNet(): StT = {
     val compose = new StT()
     compose.add(vgg16)
     val vggRpnModel = new Ct()
@@ -100,34 +98,16 @@ class VggFRcnn[T: ClassTag](phase: PhaseType = TEST)(implicit ev: TensorNumeric[
     compose
   }
 
-  def fastRcnn(): Module[Table, Table, T] = {
-    val model = new STT()
-      .add(new RoiPooling[T](7, 7, ev.fromType(0.0625f)))
-      .add(new ReshapeInfer[T](Array(-1, 25088)))
-      .add(linear((25088, 4096), "fc6"))
-      .add(new ReLU[T]())
-      .add(linear((4096, 4096), "fc7"))
-      .add(new ReLU[T]())
-
-    val clsReg = new CT()
-      .add(new Stt()
-        .add(linear((4096, 21), "cls_score"))
-        .add(new SoftMax[T]()))
-      .add(linear((4096, 84), "bbox_pred"))
-
-    model.add(clsReg)
-    model
-  }
-
+  override val pool: Int = 7
   override val modelType: ModelType = VGG16
   override val param: FasterRcnnParam = new VggParam(phase)
 
-  override def criterion4: ParallelCriterion[T] = {
+  override def criterion4: PC = {
     val rpn_loss_bbox = new SmoothL1Criterion2[T](ev.fromType(3.0), 1)
     val rpn_loss_cls = new SoftmaxWithCriterion[T](ignoreLabel = Some(-1))
     val loss_bbox = new SmoothL1Criterion2[T](ev.fromType(1.0), 1)
     val loss_cls = new SoftmaxWithCriterion[T]()
-    val pc = new ParallelCriterion[T]()
+    val pc = new PC()
     pc.add(rpn_loss_cls, 1.0f)
     pc.add(rpn_loss_bbox, 1.0f)
     pc.add(loss_cls, 1.0f)
@@ -135,7 +115,7 @@ class VggFRcnn[T: ClassTag](phase: PhaseType = TEST)(implicit ev: TensorNumeric[
     pc
   }
 
-  def createTestModel(): Module[Table, Table, T] = {
+  def createTestModel(): STT = {
     val model = new STT()
     val model1 = new ParallelTable[T]()
     model1.add(featureAndRpnNet())
@@ -162,7 +142,7 @@ class VggFRcnn[T: ClassTag](phase: PhaseType = TEST)(implicit ev: TensorNumeric[
   }
 
 
-  def createTrainModel(): Module[Table, Table, T] = {
+  def createTrainModel(): STT = {
     val model = new STT()
 
     val rpnFeatureWithInfoGt = new ParallelTable[T]()

@@ -19,9 +19,9 @@ package com.intel.analytics.bigdl.pvanet.model
 
 import com.intel.analytics.bigdl.nn._
 import com.intel.analytics.bigdl.pvanet.caffe.CaffeReader
+import com.intel.analytics.bigdl.pvanet.layers.{ParallelCriterion, ReshapeInfer, RoiPooling}
 import com.intel.analytics.bigdl.pvanet.model.Model._
 import com.intel.analytics.bigdl.pvanet.model.Phase._
-import com.intel.analytics.bigdl.pvanet.layers.ParallelCriterion
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.utils.Table
@@ -47,9 +47,11 @@ abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
 
   def isTrain: Boolean = phase == TRAIN
 
+  def isTest: Boolean = phase == TEST
+
   private def setPhase(phase: PhaseType): Unit = this.phase = phase
 
-  def copyParamToTest(model: Module[Table, Table, T]) = {
+  def copyParamToTest(model: Module[_, _, T]) = {
     val name2model = Utils.getParamModules[T](model)
     evaluate
     val testModel = getTestModel()
@@ -121,10 +123,10 @@ abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
     }
   }
 
-  var testModel: Option[Module[Table, Table, T]] = None
-  var trainModel: Option[Module[Table, Table, T]] = None
+  var testModel: Option[STT] = None
+  var trainModel: Option[STT] = None
 
-  def getTestModel(): Module[Table, Table, T] = {
+  def getTestModel(): MTT = {
     testModel match {
       case None => testModel = Some(createTestModel())
       case _ =>
@@ -132,7 +134,7 @@ abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
     testModel.get
   }
 
-  def getTrainModel(): Module[Table, Table, T] = {
+  def getTrainModel(): MTT = {
     trainModel match {
       case None => trainModel = Some(createTrainModel())
       case _ =>
@@ -142,15 +144,35 @@ abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
 
   def criterion4: ParallelCriterion[T]
 
-  def featureAndRpnNet(): Module[Tensor[T], Table, T]
+  def featureAndRpnNet(): StT
 
-  def fastRcnn(): Module[Table, Table, T]
+  // pool is the parameter of RoiPooling
+  val pool: Int
 
-  def rpn(): Module[Tensor[T], Table, T]
+  def fastRcnn(): STT = {
+    val model = new STT()
+      .add(new RoiPooling[T](pool, pool, ev.fromType(0.0625f)))
+      .add(new ReshapeInfer[T](Array(-1, 512 * pool * pool)))
+      .add(linear((512 * pool * pool, 4096), "fc6"))
+      .add(new ReLU[T]())
+      .add(linear((4096, 4096), "fc7"))
+      .add(new ReLU[T]())
 
-  protected def createTestModel(): Module[Table, Table, T]
+    val cls = new Stt().add(linear((4096, 21), "cls_score"))
+    if (isTest) cls.add(new SoftMax[T]())
+    val clsReg = new CT()
+      .add(cls)
+      .add(linear((4096, 84), "bbox_pred"))
 
-  protected def createTrainModel(): Module[Table, Table, T]
+    model.add(clsReg)
+    model
+  }
+
+  def rpn(): StT
+
+  protected def createTestModel(): STT
+
+  protected def createTrainModel(): STT
 
   type STT = Sequential[Table, Table, T]
   type STt = Sequential[Table, Tensor[T], T]
@@ -158,6 +180,8 @@ abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
   type Stt = Sequential[Tensor[T], Tensor[T], T]
   type CT = ConcatTable[Table, T]
   type Ct = ConcatTable[Tensor[T], T]
+  type PC = ParallelCriterion[T]
+  type MTT = Module[Table, Table, T]
 
   /**
    * select tensor from nested tables
