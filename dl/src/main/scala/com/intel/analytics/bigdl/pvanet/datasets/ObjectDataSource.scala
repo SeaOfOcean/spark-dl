@@ -30,14 +30,15 @@ import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import scala.util.Random
 
 
-class ObjectDataSource(val imdb: Imdb, looped: Boolean = true)
+class ObjectDataSource(val imdb: Imdb, param: FasterRcnnParam, looped: Boolean = true)
   extends LocalDataSource[Roidb] {
+
   def this(name: String, devkitPath: String, looped: Boolean, param: FasterRcnnParam) {
-    this(Imdb.getImdb(name, Some(devkitPath), param), looped)
+    this(Imdb.getImdb(name, param, Some(devkitPath)), param, looped)
   }
 
   def this(name: String, looped: Boolean, param: FasterRcnnParam) {
-    this(Imdb.getImdb(name, None, param), looped)
+    this(Imdb.getImdb(name, param), param, looped)
   }
 
   val data: Array[Roidb] = imdb.getRoidb
@@ -95,7 +96,6 @@ class ObjectDataSource(val imdb: Imdb, looped: Boolean = true)
   def next(i: Int): Roidb = {
     data(i)
   }
-
 }
 
 class ImageScalerAndMeanSubstractor(param: FasterRcnnParam)

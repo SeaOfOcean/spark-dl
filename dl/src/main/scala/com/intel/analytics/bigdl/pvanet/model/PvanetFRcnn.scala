@@ -18,7 +18,6 @@
 package com.intel.analytics.bigdl.pvanet.model
 
 import com.intel.analytics.bigdl.nn._
-import com.intel.analytics.bigdl.pvanet.caffe.CaffeReader
 import com.intel.analytics.bigdl.pvanet.layers.{ReshapeInfer, SmoothL1Criterion2, SoftmaxWithCriterion}
 import com.intel.analytics.bigdl.pvanet.model.Model._
 import com.intel.analytics.bigdl.pvanet.model.Phase._
@@ -262,17 +261,4 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: PhaseType = TE
   override def createTestModel(): STT = ???
 
   override def createTrainModel(): STT = ???
-}
-
-object PvanetFRcnn {
-  val defName = "/home/xianyan/objectRelated/pvanet/full/test.pt"
-  val modelName = "/home/xianyan/objectRelated/pvanet/full/test.model"
-  val caffeReader: CaffeReader[Float] = new CaffeReader(defName, modelName, "pvanet")
-  var modelWithCaffeWeight: FasterRcnn[Float] = _
-
-  def model(phase: PhaseType = TEST): FasterRcnn[Float] = {
-    if (modelWithCaffeWeight == null) modelWithCaffeWeight = new PvanetFRcnn[Float](phase)
-    modelWithCaffeWeight.setCaffeReader(caffeReader)
-    modelWithCaffeWeight
-  }
 }

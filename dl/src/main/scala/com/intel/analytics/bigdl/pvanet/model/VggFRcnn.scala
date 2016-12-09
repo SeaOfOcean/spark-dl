@@ -208,26 +208,3 @@ class VggFRcnn[T: ClassTag](phase: PhaseType = TEST)(implicit ev: TensorNumeric[
   }
 }
 
-object VggFRcnn {
-  private val defName = "/home/xianyan/objectRelated/faster_rcnn_models/VGG16/" +
-    "faster_rcnn_alt_opt/rpn_test.pt"
-  private val modelName = "/home/xianyan/objectRelated/faster_rcnn_models/" +
-    "VGG16_faster_rcnn_final.caffemodel"
-
-  private val caffeReader: CaffeReader[Float] = new CaffeReader[Float](defName, modelName, "vgg16")
-
-  private var modelWithCaffeWeight: FasterRcnn[Float] = _
-
-  def model(phase: PhaseType = TEST): FasterRcnn[Float] = {
-    if (modelWithCaffeWeight == null) modelWithCaffeWeight = new VggFRcnn[Float](phase)
-    modelWithCaffeWeight.setCaffeReader(caffeReader)
-    modelWithCaffeWeight
-  }
-
-  def main(args: Array[String]): Unit = {
-    val vgg = model()
-    vgg.featureAndRpnNet()
-    vgg.fastRcnn()
-  }
-}
-

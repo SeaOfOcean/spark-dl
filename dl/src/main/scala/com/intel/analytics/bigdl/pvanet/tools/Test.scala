@@ -21,7 +21,7 @@ import breeze.linalg.DenseMatrix
 import com.intel.analytics.bigdl.nn.Module
 import com.intel.analytics.bigdl.pvanet.datasets._
 import com.intel.analytics.bigdl.pvanet.model.Model._
-import com.intel.analytics.bigdl.pvanet.model.{FasterRcnn, Model, PvanetFRcnn, VggFRcnn}
+import com.intel.analytics.bigdl.pvanet.model.{FasterRcnn, Model, Phase}
 import com.intel.analytics.bigdl.pvanet.utils._
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.{Table, Timer}
@@ -138,8 +138,18 @@ object Test {
         + d.imagePath.substring(d.imagePath.lastIndexOf("/") + 1))
   }
 
-  case class PascolVocLocalParam(folder: String = "/home/xianyan/objectRelated/VOCdevkit",
-    net: ModelType = VGG16, nThread: Int = 4)
+  val model2caffePath = Map(
+    VGG16 -> ("/home/xianyan/objectRelated/faster_rcnn_models/VGG16/" +
+      "faster_rcnn_alt_opt/rpn_test.pt",
+      "/home/xianyan/objectRelated/faster_rcnn_models/" +
+        "VGG16_faster_rcnn_final.caffemodel"),
+    PVANET -> ("/home/xianyan/objectRelated/pvanet/full/test.pt",
+      "/home/xianyan/objectRelated/pvanet/full/test.model"))
+
+  case class PascolVocLocalParam(
+    folder: String = "/home/xianyan/objectRelated/VOCdevkit",
+    net: ModelType = VGG16,
+    nThread: Int = 4)
 
   private val parser = new OptionParser[PascolVocLocalParam]("Spark-DL PascolVoc Local Example") {
     head("Spark-DL PascolVoc Local Example")
@@ -157,15 +167,9 @@ object Test {
     import com.intel.analytics.bigdl.mkl.MKL
     val param = parser.parse(args, PascolVocLocalParam()).get
 
-    var model: FasterRcnn[Float] = null
-    param.net match {
-      case VGG16 =>
-        model = VggFRcnn.model()
-      case PVANET =>
-        model = PvanetFRcnn.model()
-    }
+    val model = FasterRcnn[Float](param.net, Phase.TEST, model2caffePath(param.net))
     MKL.setNumThreads(param.nThread)
-    val testDataSource = new ObjectDataSource("voc_2007_testcode",
+    val testDataSource = new ObjectDataSource("voc_2007_testcode4",
       FileUtil.DATA_DIR + "/VOCdevkit", false, model.param)
     testNet(model, testDataSource)
   }

@@ -58,6 +58,9 @@ abstract class Imdb(val param: FasterRcnnParam) {
   def getRoidb: Array[Roidb] = {
     if (roidb != null && roidb.length > 0) return roidb
     roidb = loadRoidb
+    if (param.USE_FLIPPED) {
+      appendFlippedImages()
+    }
     roidb
   }
 
@@ -82,7 +85,7 @@ abstract class Imdb(val param: FasterRcnnParam) {
         boxes(r, 0) = getWidth(i) - oldx2(i) - 1
         boxes(r, 2) = getWidth(i) - oldx1(i) - 1
       })
-      roidb :+ Roidb(roi.imagePath, boxes, roi.gtClasses, isFlip)
+      roidb :+ Roidb(roi.imagePath, boxes, roi.gtOverlaps, roi.gtClasses, isFlip)
     }
     val newImageIndex = new Array[String](imageIndex.length * 2)
     imageIndex.copyToArray(newImageIndex, 0)
@@ -136,7 +139,12 @@ case class Roidb(
   imagePath: String,
   boxes: DenseMatrix[Float] = null,
   gtClasses: Tensor[Float] = null,
-  flipped: Boolean = false)
+  gtOverlaps: Tensor[Float] = null,
+  flipped: Boolean = false) {
+  var maxClasses = None: Option[Tensor[Float]]
+  var maxOverlaps = None: Option[Tensor[Float]]
+  var bboxTargets = None: Option[Tensor[Float]]
+}
 
 case class ImageWithRoi(
   oriWidth: Int,
@@ -151,7 +159,7 @@ object Imdb {
    * Get an imdb (image database) by name
    *
    */
-  def getImdb(name: String, devkitPath: Option[String] = None, param: FasterRcnnParam): Imdb = {
+  def getImdb(name: String, param: FasterRcnnParam, devkitPath: Option[String] = None): Imdb = {
     val items = name.split("_")
     if (items.length != 3) throw new Exception("dataset name error")
     if (items(0) == "voc") {

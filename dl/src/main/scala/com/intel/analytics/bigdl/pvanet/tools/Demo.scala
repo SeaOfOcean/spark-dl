@@ -19,7 +19,7 @@ package com.intel.analytics.bigdl.pvanet.tools
 
 import breeze.linalg.DenseMatrix
 import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, Roidb}
-import com.intel.analytics.bigdl.pvanet.model.Model.ModelType
+import com.intel.analytics.bigdl.pvanet.model.Model._
 import com.intel.analytics.bigdl.pvanet.model._
 import com.intel.analytics.bigdl.pvanet.utils.{Bbox, MatrixUtil, Nms}
 import com.intel.analytics.bigdl.utils.Timer
@@ -50,17 +50,19 @@ object Demo {
     opt[String]('t', "mkl thread number")
       .action((x, c) => c.copy(nThread = x.toInt))
   }
-
+  val model2caffePath = Map(
+    VGG16 -> ("/home/xianyan/objectRelated/faster_rcnn_models/VGG16/" +
+      "faster_rcnn_alt_opt/rpn_test.pt",
+      "/home/xianyan/objectRelated/faster_rcnn_models/" +
+        "VGG16_faster_rcnn_final.caffemodel"),
+    PVANET -> ("/home/xianyan/objectRelated/pvanet/full/test.pt",
+      "/home/xianyan/objectRelated/pvanet/full/test.model"))
 
   def main(args: Array[String]): Unit = {
     val param = parser.parse(args, PascolVocLocalParam()).get
     val imgNames = Array("1.jpg", "20.jpg", "30.jpg", "40.jpg",
       "50.jpg", "60.jpg", "70.jpg", "80.jpg", "90.jpg", "100.jpg")
-    var net: FasterRcnn[Float] = null
-    param.net match {
-      case Model.VGG16 => net = VggFRcnn.model()
-      case Model.PVANET => net = PvanetFRcnn.model()
-    }
+    val net = FasterRcnn[Float](param.net, pretrained = model2caffePath(param.net))
 
     val model = net.getTestModel()
 

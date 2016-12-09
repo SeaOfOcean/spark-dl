@@ -45,23 +45,24 @@ object Train {
       .action((x, c) => c.copy(nThread = x.toInt))
   }
 
+  val model2caffePath = Map(
+    VGG16 -> ("/home/xianyan/objectRelated/faster_rcnn_models/VGG16/" +
+      "faster_rcnn_alt_opt/rpn_test.pt",
+      "dl/data/imagenet_models/VGG16_faster_rcnn_final.caffemodel"),
+    PVANET -> ("/home/xianyan/objectRelated/pvanet/full/test.pt",
+      "/home/xianyan/objectRelated/pvanet/full/test.model"))
+
   var param: PascolVocLocalParam = null
 
   def main(args: Array[String]) {
     import com.intel.analytics.bigdl.mkl.MKL
     param = parser.parse(args, PascolVocLocalParam()).get
 
-    var model: FasterRcnn[Float] = null
-    param.net match {
-      case VGG16 =>
-        model = VggFRcnn.model(Phase.TRAIN)
-      case PVANET =>
-        model = PvanetFRcnn.model(Phase.TRAIN)
-    }
+    val model = FasterRcnn[Float](param.net, Phase.TRAIN, model2caffePath(param.net))
     MKL.setNumThreads(param.nThread)
-    val dataSource = new ObjectDataSource("voc_2007_train", param.folder,
+    val dataSource = new ObjectDataSource("voc_2007_testcode1", param.folder,
       true, model.param)
-    val valSource = new ObjectDataSource("voc_2007_val", param.folder,
+    val valSource = new ObjectDataSource("voc_2007_testcode1", param.folder,
       false, model.param)
     val config = model.param.optimizeConfig
     val imgScaler = new ImageScalerAndMeanSubstractor(model.param)

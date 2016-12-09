@@ -24,7 +24,7 @@ import com.intel.analytics.bigdl.pvanet.model.Model._
 import com.intel.analytics.bigdl.pvanet.model.Phase._
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
-import com.intel.analytics.bigdl.utils.Table
+import com.intel.analytics.bigdl.utils.{File, Table}
 
 import scala.reflect.ClassTag
 
@@ -209,5 +209,35 @@ abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
 
   def selectTable1(depth: Int): SelectTable[Table, T] = {
     new SelectTable[Table, T](depth)
+  }
+}
+
+object FasterRcnn {
+  def apply[@specialized(Float, Double) T: ClassTag]
+  (modelType: ModelType, phase: PhaseType = TEST, pretrained: Any = None)
+    (implicit ev: TensorNumeric[T]): FasterRcnn[T] = {
+
+    def getModel(modelType: ModelType): FasterRcnn[T] = {
+      modelType match {
+        case VGG16 =>
+          new VggFRcnn[T]()
+        case PVANET =>
+          new PvanetFRcnn[T]()
+        case _ =>
+          throw new Exception("unsupport network")
+      }
+    }
+
+    pretrained match {
+      case mp: String =>
+        // big dl faster rcnn models
+        File.load[FasterRcnn[T]](mp)
+      case (dp: String, mp: String) =>
+        // caffe pretrained model
+        val fm = getModel(modelType)
+        fm.setCaffeReader(new CaffeReader[T](dp, mp, modelType.toString))
+        fm
+      case _ => getModel(modelType)
+    }
   }
 }
