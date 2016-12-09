@@ -33,7 +33,7 @@ abstract class Imdb(val param: FasterRcnnParam) {
   var roidb: Array[Roidb] = _
   private var sizes: Array[Array[Int]] = _
 
-  def getWidth(i: Int) = {
+  private def getWidth(i: Int) = {
     if (sizes == null) getImageSizes
     widths(i)
   }
@@ -57,19 +57,19 @@ abstract class Imdb(val param: FasterRcnnParam) {
    */
   def getRoidb: Array[Roidb] = {
     if (roidb != null && roidb.length > 0) return roidb
-    prepareRoidb()
+    roidb = loadRoidb
     roidb
   }
 
-  def getGroundTruth: Array[Roidb]
-
+  protected def loadRoidb: Array[Roidb]
 
   def numClasses: Int = classes.length
 
-
   def numImages: Int = imageIndex.length
 
-  def imagePathAt(i: Int): String
+  protected def imagePathAt(i: Int): String
+
+  def imagePathFromIndex(index: String): String
 
   def appendFlippedImages(): Unit = {
     val isFlip = true
@@ -92,25 +92,7 @@ abstract class Imdb(val param: FasterRcnnParam) {
 
   def evaluateDetections(allBoxes: Array[Array[DenseMatrix[Float]]], outputDir: String): Unit
 
-  /**
-   * Enrich the imdb"s roidb by adding some derived quantities that
-   * are useful for training. This function precomputes the maximum
-   * overlap, taken over ground-truth boxes, between each ROI and
-   * each ground-truth box. The class with maximum overlap is also
-   * recorded.
-   *
-   */
-  def prepareRoidb() = {
-//    val sizes = getImageSizes
-    if (roidb == null || roidb.length == 0) roidb = getGroundTruth
-//    for (i <- 0 until numImages) {
-//      roidb(i).imagePath = imagePathAt(i)
-//      roidb(i).oriWidth = sizes(i)(0)
-//      roidb(i).oriHeight = sizes(i)(1)
-//    }
-  }
-
-  def getImageSizes: Array[Array[Int]] = {
+  private def getImageSizes: Array[Array[Int]] = {
     if (sizes != null) return sizes
     val cache_file = FileUtil.cachePath + "/" + name + "_image_sizes.pkl"
     if (FileUtil.existFile(cache_file)) {
@@ -127,12 +109,18 @@ abstract class Imdb(val param: FasterRcnnParam) {
     sizes
   }
 
+  /**
+   * load image width and height without loading the entire image
+   *
+   * @param path image path
+   * @return (width, height) tuple
+   */
   def getImageSize(path: String): (Int, Int) = {
     var width = 0
     var height = 0
     val in = ImageIO.createImageInputStream(new FileInputStream(path))
     val readers = ImageIO.getImageReaders(in)
-    if (readers.hasNext()) {
+    if (readers.hasNext) {
       val reader = readers.next()
       reader.setInput(in)
       width = reader.getWidth(0)

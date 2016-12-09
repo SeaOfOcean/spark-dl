@@ -127,7 +127,7 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
    *
    * @return the database of ground-truth regions of interest.
    */
-  def getGroundTruth: Array[Roidb] = {
+  def loadRoidb: Array[Roidb] = {
     val cache_file = FileUtil.cachePath + "/" + name + "_gt_roidb.pkl"
     if (FileUtil.existFile(cache_file)) {
       println("%s gt roidb loaded from %s".format(name, cache_file))
