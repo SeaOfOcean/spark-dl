@@ -33,7 +33,6 @@ class Proposal[@specialized(Float, Double) T: ClassTag](param: FasterRcnnParam)
    * Outputs object detection proposals by applying estimated bounding-box
    * transformations to a set of regular boxes (called "anchors").
    */
-  val at = new AnchorTargetLayer(param)
 
   // rois blob: holds R regions of interest, each is a 5-tuple
   // (n, x1, y1, x2, y2) specifying an image batch index n and a
@@ -43,6 +42,8 @@ class Proposal[@specialized(Float, Double) T: ClassTag](param: FasterRcnnParam)
   // scores blob: holds scores for R regions of interest
   //  if len(top) > 1:
   //    top[ 1].reshape(1, 1, 1, 1)
+
+  val basicAnchors = Anchor.generateAnchors(param.anchorRatios, param.anchorScales)
 
   /**
    *
@@ -67,7 +68,7 @@ class Proposal[@specialized(Float, Double) T: ClassTag](param: FasterRcnnParam)
     // apply NMS with threshold 0.7 to remaining proposals
     // take after_nms_topN proposals after NMS
     // return the top proposals (-> RoIs top, scores top)
-    val data = input(1).asInstanceOf[Tensor[Float]]
+    val data = input(1).asInstanceOf[Tensor[Float]].clone()
     assert(data.size(1) == 1, "Only single item batches are supported")
 
     val pre_nms_topN = param.RPN_PRE_NMS_TOP_N
@@ -82,7 +83,7 @@ class Proposal[@specialized(Float, Double) T: ClassTag](param: FasterRcnnParam)
     var scoresTensor = data.narrow(1, param.anchorNum + 1, param.anchorNum)
     scoresTensor.resize(1, param.anchorNum, dataSize(2), dataSize(3))
     // bbox_deltas: (1, 4A, H, W)
-    var bboxDeltas = input(2).asInstanceOf[Tensor[Float]]
+    var bboxDeltas = input(2).asInstanceOf[Tensor[Float]].clone()
 
     // Transpose and reshape predicted bbox transformations to get them
     // into the same order as the anchors:
@@ -111,16 +112,16 @@ class Proposal[@specialized(Float, Double) T: ClassTag](param: FasterRcnnParam)
 
     scoresTensor = transposeAndReshape(scoresTensor, 1)
 
-    val imInfo = input(3).asInstanceOf[Tensor[Float]]
+    val imInfo = input(3).asInstanceOf[Tensor[Float]].clone()
 
     // 1. Generate proposals from bbox deltas and shifted anchors
     val height = dataSize(2)
     val width = dataSize(3)
 
     // Enumerate all shifts
-    val shifts = at.generateShifts(width = width, height = height, featStride = param.featStride)
+    val shifts = Anchor.generateShifts(width, height, param.featStride)
 
-    val anchors: DenseMatrix[Float] = at.getAllAnchors(shifts)
+    val anchors: DenseMatrix[Float] = Anchor.getAllAnchors(shifts, basicAnchors)
 
     // Convert anchors into proposals via bbox transformations
     var proposals = Bbox.bboxTransformInv(anchors, bboxDeltas.toBreezeMatrix())
@@ -165,8 +166,13 @@ class Proposal[@specialized(Float, Double) T: ClassTag](param: FasterRcnnParam)
         rpn_rois.setValue(i, j, mat(i - 1, j - 1))
       }
     }
-    output.insert(rpn_rois)
-    output.insert(Tensor(Storage(scores.toArray)))
+    if (output.length == 0) {
+      output.insert(rpn_rois)
+      output.insert(Tensor(Storage(scores.toArray)))
+    } else {
+      output.update(1, rpn_rois)
+      output.update(2, Tensor(Storage(scores.toArray)))
+    }
     output
   }
 

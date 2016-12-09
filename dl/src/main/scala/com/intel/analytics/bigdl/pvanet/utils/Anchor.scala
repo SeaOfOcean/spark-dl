@@ -17,7 +17,7 @@
 
 package com.intel.analytics.bigdl.pvanet.utils
 
-import breeze.linalg.DenseMatrix
+import breeze.linalg.{*, DenseMatrix, DenseVector}
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 
 
@@ -27,9 +27,8 @@ object Anchor {
    * scales wrt a reference (0, 0, 15, 15) window.
    *
    */
-  def generateAnchors(baseSize: Float = 16,
-    ratios: Array[Float],
-    scales: Array[Float]): DenseMatrix[Float] = {
+  def generateAnchors(ratios: Array[Float], scales: Array[Float],
+    baseSize: Float = 16): DenseMatrix[Float] = {
     val baseAnchor = Tensor(Storage(Array(1 - 1, 1 - 1, baseSize - 1, baseSize - 1)))
     val ratioAnchors = ratioEnum(baseAnchor, Tensor(Storage(ratios)))
     val anchors = new DenseMatrix[Float](scales.length * ratioAnchors.size(1), 4)
@@ -87,9 +86,9 @@ object Anchor {
     // w, h, x_ctr, y_ctr
     val out = whctrs(anchor)
     val size = out(0) * out(1)
-    var sizeRatios = ratios.clone().apply1(x => size / x)
+    val sizeRatios = ratios.clone().apply1(x => size / x)
     val ws = sizeRatios.apply1(x => Math.sqrt(x).round)
-    var hs = Tensor[Float](ws.nElement())
+    val hs = Tensor[Float](ws.nElement())
     for (i <- 1 to ws.nElement()) {
       hs.setValue(i, Math.round(ws.valueAt(i) * ratios.valueAt(i)))
     }
@@ -107,4 +106,26 @@ object Anchor {
     mkanchors(ws, hs, out(2), out(3))
   }
 
+  def generateShifts(width: Int, height: Int, featStride: Float): DenseMatrix[Float] = {
+    val shiftX = DenseVector.range(0, width).map(x => x * featStride)
+    val shiftY = DenseVector.range(0, height).map(x => x * featStride)
+    MatrixUtil.meshgrid(shiftX, shiftY) match {
+      case (x1Mesh, x2Mesh) =>
+        return DenseMatrix.vertcat(x1Mesh.t.toDenseVector.toDenseMatrix,
+          x2Mesh.t.toDenseVector.toDenseMatrix,
+          x1Mesh.t.toDenseVector.toDenseMatrix,
+          x2Mesh.t.toDenseVector.toDenseMatrix).t
+    }
+    new DenseMatrix(0, 0)
+  }
+
+  def getAllAnchors(shifts: DenseMatrix[Float],
+    anchors: DenseMatrix[Float]): DenseMatrix[Float] = {
+    val allAnchors = new DenseMatrix[Float](shifts.rows * anchors.rows, 4)
+    for (s <- 0 until shifts.rows) {
+      allAnchors(s * anchors.rows until (s + 1) * anchors.rows, 0 until 4) :=
+        (anchors.t(::, *) + shifts.t(::, s)).t
+    }
+    allAnchors
+  }
 }

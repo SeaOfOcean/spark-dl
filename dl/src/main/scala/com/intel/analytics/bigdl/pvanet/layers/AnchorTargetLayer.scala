@@ -17,7 +17,7 @@
 
 package com.intel.analytics.bigdl.pvanet.layers
 
-import breeze.linalg.{*, DenseMatrix, DenseVector, convert}
+import breeze.linalg.{DenseMatrix, DenseVector, convert}
 import com.intel.analytics.bigdl.pvanet.datasets.ImageWithRoi
 import com.intel.analytics.bigdl.pvanet.model.FasterRcnnParam
 import com.intel.analytics.bigdl.pvanet.utils._
@@ -34,7 +34,7 @@ case class AnchorTarget(labels: DenseVector[Int],
 }
 
 class AnchorTargetLayer(param: FasterRcnnParam) {
-  val anchors = Anchor.generateAnchors(ratios = param.anchorRatios, scales = param.anchorScales)
+  val basicAnchors = Anchor.generateAnchors(param.anchorRatios, param.anchorScales)
   val allowedBorder = 0
 
   // debug info
@@ -43,18 +43,6 @@ class AnchorTargetLayer(param: FasterRcnnParam) {
   var bgSum = 0
   var count = 0
 
-  def generateShifts(width: Int, height: Int, featStride: Float): DenseMatrix[Float] = {
-    val shiftX = DenseVector.range(0, width).map(x => x * featStride)
-    val shiftY = DenseVector.range(0, height).map(x => x * featStride)
-    MatrixUtil.meshgrid(shiftX, shiftY) match {
-      case (x1Mesh, x2Mesh) =>
-        return DenseMatrix.vertcat(x1Mesh.t.toDenseVector.toDenseMatrix,
-          x2Mesh.t.toDenseVector.toDenseMatrix,
-          x1Mesh.t.toDenseVector.toDenseMatrix,
-          x2Mesh.t.toDenseVector.toDenseMatrix).t
-    }
-    new DenseMatrix(0, 0)
-  }
 
   /**
    * Compute bounding-box regression targets for an image.
@@ -93,9 +81,9 @@ class AnchorTargetLayer(param: FasterRcnnParam) {
 
   def generateAnchors(data: ImageWithRoi, height: Int, width: Int): AnchorTarget = {
     // 1. Generate proposals from bbox deltas and shifted anchors
-    val shifts = generateShifts(width, height, param.featStride)
+    val shifts = Anchor.generateShifts(width, height, param.featStride)
     val totalAnchors = shifts.rows * param.anchorNum
-    val allAnchors: DenseMatrix[Float] = getAllAnchors(shifts, anchors)
+    val allAnchors: DenseMatrix[Float] = Anchor.getAllAnchors(shifts, basicAnchors)
     val indsInside: ArrayBuffer[Int] = getIndsInside(data.scaledImage.width(),
       data.scaledImage.height(), allAnchors, allowedBorder)
 
@@ -223,15 +211,6 @@ class AnchorTargetLayer(param: FasterRcnnParam) {
     indsInside
   }
 
-  def getAllAnchors(shifts: DenseMatrix[Float],
-    anchors: DenseMatrix[Float] = anchors): DenseMatrix[Float] = {
-    val allAnchors = new DenseMatrix[Float](shifts.rows * anchors.rows, 4)
-    for (s <- 0 until shifts.rows) {
-      allAnchors(s * anchors.rows until (s + 1) * anchors.rows, 0 until 4) :=
-        (anchors.t(::, *) + shifts.t(::, s)).t
-    }
-    allAnchors
-  }
 
 
   /**

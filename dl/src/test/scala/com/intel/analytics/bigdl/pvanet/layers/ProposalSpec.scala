@@ -21,41 +21,53 @@ import breeze.linalg.DenseMatrix
 import breeze.numerics.abs
 import com.intel.analytics.bigdl.pvanet.TestUtil._
 import com.intel.analytics.bigdl.pvanet.model.{Phase, VggParam}
-import com.intel.analytics.bigdl.tensor.Tensor
+import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import com.intel.analytics.bigdl.utils.Table
 import org.scalatest.{FlatSpec, Matchers}
 
 class ProposalSpec extends FlatSpec with Matchers {
   val param = new VggParam(Phase.TRAIN)
+  val classLoader = getClass().getClassLoader()
+  val input = new Table
+  input.insert(loadDataFromFile(
+    classLoader.getResource("pvanet/data1.dat").getFile, Array(1, 18, 30, 40)))
+  input.insert(loadDataFromFile(
+    classLoader.getResource("pvanet/data2.dat").getFile, Array(1, 36, 30, 40)))
+  input.insert(Tensor(Storage(Array(100f, 200f, 6.0f))))
+
+  val expected1 = DenseMatrix((0.0, 0.0, 0.0, 199.0, 99.0),
+    (0.0, 0.0, 2.69759297, 127.94831848, 99.0),
+    (0.0, 71.59012604, 0.0, 199.0, 99.0),
+    (0.0, 47.27521133, 0.0, 152.9140625, 99.0))
+  val expected2 = Array(
+    0.99929377,
+    0.99398681,
+    0.9928103,
+    0.78120455)
+  val proposal = new Proposal[Float](param)
   "testUpdateOutput" should "be correct" in {
-    val classLoader = getClass().getClassLoader()
-    val proposal = new Proposal[Float](param)
-    val input = new Table
-    input.insert(loadDataFromFile(
-      classLoader.getResource("pvanet/data1.dat").getFile, Array(1, 18, 30, 40)))
-    input.insert(loadDataFromFile(
-      classLoader.getResource("pvanet/data2.dat").getFile, Array(1, 36, 30, 40)))
-    input.insert(Array(100f, 200f, 6.0f))
     val out = proposal.forward(input)
     assert(out.length() == 2)
     val out1 = out(1).asInstanceOf[Tensor[Float]]
     val out2 = out(2).asInstanceOf[Tensor[Float]]
-    val expected1 = DenseMatrix((0.0, 0.0, 0.0, 199.0, 99.0),
-      (0.0, 0.0, 2.69759297, 127.94831848, 99.0),
-      (0.0, 71.59012604, 0.0, 199.0, 99.0),
-      (0.0, 47.27521133, 0.0, 152.9140625, 99.0))
-    val expected2 = Array(
-      0.99929377,
-      0.99398681,
-      0.9928103,
-      0.78120455)
-
     for (i <- 0 until expected1.rows) {
       for (j <- 0 until expected1.cols) {
         assert(abs(expected1(i, j) - out1.valueAt(i + 1, j + 1)) < 1e-4)
       }
     }
+    expected2.zipWithIndex.foreach(x => assert(abs(out2.valueAt(x._2 + 1) - x._1) < 1e-4))
+  }
 
+  "testUpdateOutput twice" should "be correct" in {
+    val out = proposal.forward(input)
+    assert(out.length() == 2)
+    val out1 = out(1).asInstanceOf[Tensor[Float]]
+    val out2 = out(2).asInstanceOf[Tensor[Float]]
+    for (i <- 0 until expected1.rows) {
+      for (j <- 0 until expected1.cols) {
+        assert(abs(expected1(i, j) - out1.valueAt(i + 1, j + 1)) < 1e-4)
+      }
+    }
     expected2.zipWithIndex.foreach(x => assert(abs(out2.valueAt(x._2 + 1) - x._1) < 1e-4))
   }
 }

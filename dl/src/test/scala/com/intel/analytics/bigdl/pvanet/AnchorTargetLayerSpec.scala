@@ -22,6 +22,7 @@ import breeze.numerics.abs
 import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, ObjectDataSource}
 import com.intel.analytics.bigdl.pvanet.layers.AnchorTargetLayer
 import com.intel.analytics.bigdl.pvanet.model.{Phase, VggParam}
+import com.intel.analytics.bigdl.pvanet.utils.Anchor
 import org.scalatest.{FlatSpec, Matchers}
 
 class AnchorTargetLayerSpec extends FlatSpec with Matchers {
@@ -30,7 +31,7 @@ class AnchorTargetLayerSpec extends FlatSpec with Matchers {
   val anchorTargetLayer = new AnchorTargetLayer(param)
   val width = 133
   val height = 100
-  val shifts = anchorTargetLayer.generateShifts(width, height, 16)
+  val shifts = Anchor.generateShifts(width, height, 16)
   "generateShifts" should "work properly" in {
     assert(shifts.rows == 13300)
     assert(shifts.cols == 4)
@@ -45,8 +46,8 @@ class AnchorTargetLayerSpec extends FlatSpec with Matchers {
       }
     }
   }
-  val anchors = anchorTargetLayer.anchors
-  val allAnchors = anchorTargetLayer.getAllAnchors(shifts, anchors)
+  val anchors = anchorTargetLayer.basicAnchors
+  val allAnchors = Anchor.getAllAnchors(shifts, anchors)
   checkAllAnchors
 
   def checkAllAnchors: Unit = {
