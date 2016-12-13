@@ -37,6 +37,8 @@ class ProposalTarget[@specialized(Float, Double) T: ClassTag]
 (param: FasterRcnnParam)
   (implicit ev: TensorNumeric[T]) extends Module[Table, Table, T] {
 
+  @transient val target = new Table
+
   /**
    * Compute bounding-box regression targets for an image.
    *
@@ -172,18 +174,24 @@ class ProposalTarget[@specialized(Float, Double) T: ClassTag]
       all_rois, gt_boxes, fg_rois_per_image,
       rois_per_image, param.numClasses)
 
-    // sampled rois (0, x1, y1, x2, y2) (1,5)
-    output.insert(matrix2tensor(rois))
+    if (output.length() == 0) {
+      // sampled rois (0, x1, y1, x2, y2) (1,5)
+      output.insert(matrix2tensor(rois))
+      // labels (1,1)
+      target.insert(Tensor(Storage(labels)))
+      // bbox_targets (1, numClasses * 4) + bbox_inside_weights (1, numClasses * 4)
+      // + bbox_outside_weights (1, numClasses * 4)
 
-    val target = new Table
-    // labels (1,1)
-    target.insert(Tensor(Storage(labels)))
-    // bbox_targets (1, numClasses * 4) + bbox_inside_weights (1, numClasses * 4)
-    // + bbox_outside_weights (1, numClasses * 4)
+      target.insert(matrix2tensor(bbox_targets, bbox_inside_weights,
+        bbox_inside_weights.map(x => if (x > 0) 1f else 0f)))
+      output.insert(target)
+    } else {
+      output.update(1, matrix2tensor(rois))
+      target.update(1, Tensor(Storage(labels)))
+      target.update(2, matrix2tensor(bbox_targets, bbox_inside_weights,
+        bbox_inside_weights.map(x => if (x > 0) 1f else 0f)))
+    }
 
-    target.insert(matrix2tensor(bbox_targets, bbox_inside_weights,
-      bbox_inside_weights.map(x => if (x > 0) 1f else 0f)))
-    output.insert(target)
     output
   }
 
