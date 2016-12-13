@@ -64,6 +64,11 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)
   }
 
   def mapScale(name: String): (CMul[T], CAdd[T]) = {
+    val module = loadModuleFromFile[(CMul[T], CAdd[T])](name)
+    module match {
+      case Some(m) => return m
+      case _ =>
+    }
     if (name2layer.isEmpty) {
       loadCaffe(defName, modelName)
     }
@@ -80,6 +85,7 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)
       cadd = new CAdd[T](bias.size())
       cadd.bias.copy(bias)
     }
+    writeToFile((cmul, cadd), layer.getName)
     println(s"$name: size(${weight.size().mkString(",")})")
     cmul.setName(name)
     cadd.setName(name)
@@ -87,6 +93,11 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)
   }
 
   def mapDeconvolution(name: String): SpatialFullConvolutionMap[T] = {
+    val mod = loadModuleFromFile[SpatialFullConvolutionMap[T]](name)
+    mod match {
+      case Some(m) => return m
+      case _ =>
+    }
     if (name2layer.isEmpty) {
       loadCaffe(defName, modelName)
     }
@@ -137,6 +148,7 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)
     val (weight, bias) = loadModule(layer, name, hasBias)
     module.weight.copy(weight)
     if (hasBias) module.bias.copy(bias)
+    writeToFile(module, layer.getName)
     module.setName(name)
     println(s"$name: ($nInputPlane, $nOutputPlane, $kW, $kH, $dW, $dH, $padW, $padH)")
     module
@@ -222,6 +234,11 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)
   }
 
   def mapInnerProduct(name: String): Linear[T] = {
+    val mod = loadModuleFromFile[Linear[T]](name)
+    mod match {
+      case Some(m) => return m
+      case _ =>
+    }
     if (name2layer.isEmpty) {
       loadCaffe(defName, modelName)
     }
@@ -237,10 +254,16 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)
     module.weight.copy(weight)
     module.bias.copy(bias)
     module.setName(name)
+    writeToFile(module, layer.getName)
     module
   }
 
-  def mapConvolution(name: String): SpatialConvolution[T] = {
+  def mapConvolution(name: String, isBack: Boolean = true): SpatialConvolution[T] = {
+    val mod = loadModuleFromFile[SpatialConvolution[T]](name)
+    mod match {
+      case Some(m) => return m
+      case _ =>
+    }
     if (name2layer.isEmpty) {
       loadCaffe(defName, modelName)
     }
@@ -290,11 +313,13 @@ class CaffeReader[T: ClassTag](defName: String, modelName: String)
       println("nn supports no groups!")
       return null
     }
-    val module = new SpatialConvolution[T](nInputPlane, nOutputPlane, kW, kH, dW, dH, padW, padH)
+    val module = new SpatialConvolution[T](nInputPlane, nOutputPlane, kW, kH, dW, dH, padW, padH,
+      propagateBack = isBack)
     val (weight, bias) = loadModule(layer, name)
     module.weight.copy(weight)
     module.bias.copy(bias)
     module.setName(name)
+    writeToFile(module, layer.getName)
     println(s"$name: ($nInputPlane, $nOutputPlane, $kW, $kH, $dW, $dH, $padW, $padH)")
     module
   }
