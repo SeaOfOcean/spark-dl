@@ -18,7 +18,6 @@
 package com.intel.analytics.bigdl.torch
 
 import com.intel.analytics.bigdl.nn.{Sequential, SpatialFullConvolution}
-import com.intel.analytics.bigdl.pvanet.utils.FileUtil
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.RandomGenerator._
 import com.intel.analytics.bigdl.utils.{T, Table}
@@ -37,24 +36,23 @@ class SpatialFullConvolutionSpec extends FlatSpec with BeforeAndAfter with Match
     val seed = 100
     RNG.setSeed(seed)
 
-    val nInputPlane = 384
-    val nOutputPlane = 384
-    val kW = 4
-    val kH = 4
-    val dW = 2
-    val dH = 2
-    val padW = 1
-    val padH = 1
+    val nInputPlane = 3
+    val nOutputPlane = 6
+    val kW = 3
+    val kH = 3
+    val dW = 1
+    val dH = 1
+    val padW = 2
+    val padH = 2
     val layer = new SpatialFullConvolution[Tensor[Double], Double](nInputPlane, nOutputPlane,
       kW, kH, dW, dH, padW, padH)
 
     Random.setSeed(seed)
-    //    val input = Tensor[Double](3, 3, 6, 6).apply1(e => Random.nextDouble())
-    val input = FileUtil.loadFeaturesD("conv5_4")
+    val input = Tensor[Double](3, 3, 6, 6).apply1(e => Random.nextDouble())
     val output = layer.updateOutput(input)
 
     val code = "torch.manualSeed(" + seed + ")\n" +
-      "layer = nn.SpatialFullConvolution(384, 384, 4, 4, 2, 2, 1, 1)\n" +
+      "layer = nn.SpatialFullConvolution(3, 6, 3, 3, 1, 1, 2, 2)\n" +
       "weight = layer.weight\n" +
       "bias = layer.bias \n" +
       "output = layer:forward(input) "
@@ -69,22 +67,9 @@ class SpatialFullConvolutionSpec extends FlatSpec with BeforeAndAfter with Match
     val weight = layer.weight
     val bias = layer.bias
 
-    val expected = FileUtil.loadFeaturesD("upsample")
-    println("load upsample done .....")
-
-    for(i<- 0 to 9) {
-      println(expected.storage().array()(i) + " : " + luaOutput.storage().array()(i))
-    }
-//    (expected.storage().array() zip luaOutput.storage().array()).foreach(x => assert(Math.abs(x._1 - x._2) < 1e-4))
-//    println("torch pass")
-//    (expected.storage().array() zip output.storage().array()).foreach(x => assert(Math.abs(x._1 - x._2) < 1e-4))
-//    println("dllib pass")
-//    expected should be(luaOutput)
-//    weight should be(luaWeight)
-//    bias should be(luaBias)
-//    output should be(luaOutput)
-
-    (output.storage().array() zip luaOutput.storage().array()).foreach(x => assert(Math.abs(x._1 - x._2) < 1e-4))
+    weight should be(luaWeight)
+    bias should be(luaBias)
+    output should be(luaOutput)
   }
 
   "A SpatialFullConvolution on rectangle input" should "generate correct output" in {
@@ -131,22 +116,22 @@ class SpatialFullConvolutionSpec extends FlatSpec with BeforeAndAfter with Match
     val seed = 100
     RNG.setSeed(seed)
 
-    val nInputPlane = 384
-    val nOutputPlane = 384
-    val kW = 4
-    val kH = 4
-    val dW = 2
-    val dH = 2
-    val padW = 1
-    val padH = 1
+    val nInputPlane = 3
+    val nOutputPlane = 6
+    val kW = 3
+    val kH = 3
+    val dW = 1
+    val dH = 1
+    val padW = 2
+    val padH = 2
     val layer = new SpatialFullConvolution[Tensor[Double], Double](nInputPlane, nOutputPlane,
       kW, kH, dW, dH, padW, padH)
-    val model = new Sequential[Tensor[Double], Tensor[Double], Double]()
+    val model = new Sequential[Double]()
     model.add(layer)
 
     Random.setSeed(3)
-    val input = FileUtil.loadFeaturesD("conv5_4")
-    val output = model.updateOutput(input)
+    val input = Tensor[Double](3, 3, 6, 6).apply1(e => Random.nextDouble())
+    val output = model.updateOutput(input).toTensor[Double]
 
     val gradOutput = Tensor[Double]().resizeAs(output).apply1(e => Random.nextDouble())
 
@@ -184,8 +169,8 @@ class SpatialFullConvolutionSpec extends FlatSpec with BeforeAndAfter with Match
     bias should be(luaBias)
     output should be(luaOutput)
     gradInput should be(luaGradInput)
-    luaGradBias should be(layer.gradBias)
-    luaGradWeight should be(layer.gradWeight)
+    luaGradBias should be (layer.gradBias)
+    luaGradWeight should be (layer.gradWeight)
   }
 
   "A SpatialFullConvolution" should "generate correct output and grad with 3D input" in {
@@ -202,12 +187,12 @@ class SpatialFullConvolutionSpec extends FlatSpec with BeforeAndAfter with Match
     val padH = 1
     val layer = new SpatialFullConvolution[Tensor[Double], Double](nInputPlane, nOutputPlane,
       kW, kH, dW, dH, padW, padH)
-    val model = new Sequential[Tensor[Double], Tensor[Double], Double]()
+    val model = new Sequential[Double]()
     model.add(layer)
 
     Random.setSeed(3)
     val input = Tensor[Double](3, 6, 6).apply1(e => Random.nextDouble())
-    val output = model.updateOutput(input)
+    val output = model.updateOutput(input).toTensor[Double]
 
     val gradOutput = Tensor[Double]().resizeAs(output).apply1(e => Random.nextDouble())
 
@@ -245,8 +230,8 @@ class SpatialFullConvolutionSpec extends FlatSpec with BeforeAndAfter with Match
     bias should be(luaBias)
     output should be(luaOutput)
     gradInput should be(luaGradInput)
-    luaGradBias should be(layer.gradBias)
-    luaGradWeight should be(layer.gradWeight)
+    luaGradBias should be (layer.gradBias)
+    luaGradWeight should be (layer.gradWeight)
   }
 
   "A SpatialFullConvolution noBias" should "generate correct output and grad with 3D input" in {
@@ -263,12 +248,12 @@ class SpatialFullConvolutionSpec extends FlatSpec with BeforeAndAfter with Match
     val padH = 1
     val layer = new SpatialFullConvolution[Tensor[Double], Double](nInputPlane, nOutputPlane,
       kW, kH, dW, dH, padW, padH, 0, 0, true)
-    val model = new Sequential[Tensor[Double], Tensor[Double], Double]()
+    val model = new Sequential[Double]()
     model.add(layer)
 
     Random.setSeed(3)
     val input = Tensor[Double](3, 6, 6).apply1(e => Random.nextDouble())
-    val output = model.updateOutput(input)
+    val output = model.updateOutput(input).toTensor[Double]
 
     val gradOutput = Tensor[Double]().resizeAs(output).apply1(e => Random.nextDouble())
 
@@ -304,7 +289,7 @@ class SpatialFullConvolutionSpec extends FlatSpec with BeforeAndAfter with Match
     weight should be(luaWeight)
     output should be(luaOutput)
     gradInput should be(luaGradInput)
-    luaGradWeight should be(layer.gradWeight)
+    luaGradWeight should be (layer.gradWeight)
   }
 
   "A SpatialFullConvolution" should "generate correct output and grad with table input" in {
@@ -369,7 +354,7 @@ class SpatialFullConvolutionSpec extends FlatSpec with BeforeAndAfter with Match
     bias should be(luaBias)
     output should be(luaOutput)
     gradInput should be(luaGradInput)
-    luaGradBias should be(layer.gradBias)
-    luaGradWeight should be(layer.gradWeight)
+    luaGradBias should be (layer.gradBias)
+    luaGradWeight should be (layer.gradWeight)
   }
 }
