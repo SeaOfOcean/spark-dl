@@ -21,28 +21,26 @@ import breeze.linalg.{DenseMatrix, DenseVector, convert}
 import com.intel.analytics.bigdl.pvanet.datasets.ImageWithRoi
 import com.intel.analytics.bigdl.pvanet.model.FasterRcnnParam
 import com.intel.analytics.bigdl.pvanet.utils._
+import com.intel.analytics.bigdl.tensor.Tensor
+import com.intel.analytics.bigdl.utils.Table
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
 
-case class AnchorTarget(labels: DenseVector[Int],
-  bboxTargets: DenseMatrix[Float],
-  bboxInsideWeights: DenseMatrix[Float],
-  bboxOutsideWeights: DenseMatrix[Float]) {
+case class BboxTarget(labels: Tensor[Float],
+  private val bboxTargets: Tensor[Float],
+  private val bboxInsideWeights: Tensor[Float],
+  private val bboxOutsideWeights: Tensor[Float]) {
 
+  val targetsTable: Table = new Table()
+  targetsTable.insert(bboxTargets)
+  targetsTable.insert(bboxInsideWeights)
+  targetsTable.insert(bboxOutsideWeights)
 }
 
-class AnchorTargetLayer(param: FasterRcnnParam) {
-  val basicAnchors = Anchor.generateAnchors(param.anchorRatios, param.anchorScales)
-  val allowedBorder = 0
-
-  // debug info
-  var counts = 1e-14
-  var fgSum = 0
-  var bgSum = 0
-  var count = 0
-
+object AnchorTarget {
+  var basicAnchors: DenseMatrix[Float] = _
 
   /**
    * Compute bounding-box regression targets for an image.
@@ -79,20 +77,23 @@ class AnchorTargetLayer(param: FasterRcnnParam) {
    * measure GT overlap
    */
 
-  def generateAnchors(data: ImageWithRoi, height: Int, width: Int): AnchorTarget = {
+  def apply(data: ImageWithRoi, height: Int, width: Int, param: FasterRcnnParam): BboxTarget = {
+    if (basicAnchors == null) {
+      basicAnchors = Anchor.generateAnchors(param.anchorRatios, param.anchorScales)
+    }
     // 1. Generate proposals from bbox deltas and shifted anchors
     val shifts = Anchor.generateShifts(width, height, param.featStride)
     val totalAnchors = shifts.rows * param.anchorNum
     val allAnchors: DenseMatrix[Float] = Anchor.getAllAnchors(shifts, basicAnchors)
     val indsInside: ArrayBuffer[Int] = getIndsInside(data.scaledImage.width(),
-      data.scaledImage.height(), allAnchors, allowedBorder)
+      data.scaledImage.height(), allAnchors, 0)
 
 
     // keep only inside anchors
     val insideAnchors: DenseMatrix[Float] = getInsideAnchors(indsInside, allAnchors)
 
     // label: 1 is positive, 0 is negative, -1 is dont care
-    var labels = DenseVector.fill(indsInside.length, -1)
+    val labels = DenseVector.fill[Float](indsInside.length, -1)
 
     // overlaps between the anchors and the gt boxes
     // overlaps (ex, gt)
@@ -187,13 +188,12 @@ class AnchorTargetLayer(param: FasterRcnnParam) {
     labelE0.foreach(x => bboxOutSideWeights(x, ::) := negative_weights.get.toDenseVector.t)
 
     // map up to original set of anchors
-    labels = convert(unmap(convert(
-      DenseMatrix(labels.data.array).t, Float), totalAnchors, indsInside, -1).toDenseVector, Int)
-    bboxTargets = unmap(bboxTargets, totalAnchors, indsInside, 0)
-    bboxInsideWeights = unmap(bboxInsideWeights, totalAnchors, indsInside, 0)
-    bboxOutSideWeights = unmap(bboxOutSideWeights, totalAnchors, indsInside, 0)
+    val labels2 = unmap(Tensor(DenseMatrix(labels.data.array).t), totalAnchors, indsInside, -1)
+    val bboxTargets2 = unmap(Tensor(bboxTargets), totalAnchors, indsInside, 0)
+    val bboxInsideWeights2 = unmap(Tensor(bboxInsideWeights), totalAnchors, indsInside, 0)
+    val bboxOutSideWeights2 = unmap(Tensor(bboxOutSideWeights), totalAnchors, indsInside, 0)
 
-    AnchorTarget(labels, bboxTargets, bboxInsideWeights, bboxOutSideWeights)
+    BboxTarget(labels2, bboxTargets2, bboxInsideWeights2,bboxOutSideWeights2)
 
   }
 
@@ -212,19 +212,16 @@ class AnchorTargetLayer(param: FasterRcnnParam) {
   }
 
 
-
   /**
    * Unmap a subset of item (data) back to the original set of items (of size count)
    */
-  def unmap(data: DenseMatrix[Float],
+  def unmap(data: Tensor[Float],
     count: Int,
     inds: ArrayBuffer[Int],
-    fillValue: Int): DenseMatrix[Float] = {
-    val ret = DenseMatrix.fill[Float](count, data.cols) {
-      fillValue
-    }
-    inds.zipWithIndex.foreach(ind => {
-      ret(ind._1, ::) := data(ind._2, ::)
+    fillValue: Float): Tensor[Float] = {
+    val ret = Tensor[Float](count, data.size(2)).fill(fillValue)
+    inds.zip(Stream.from(1)).foreach(ind => {
+      ret.update(ind._1, data(ind._2))
     })
     ret
   }

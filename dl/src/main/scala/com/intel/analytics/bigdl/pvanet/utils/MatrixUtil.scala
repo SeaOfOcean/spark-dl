@@ -18,6 +18,7 @@
 package com.intel.analytics.bigdl.pvanet.utils
 
 import breeze.linalg.{DenseMatrix, DenseVector, argmax, max}
+import com.intel.analytics.bigdl.tensor.Tensor
 
 object MatrixUtil {
 
@@ -62,6 +63,17 @@ object MatrixUtil {
     }
     (x1Mesh, x2Mesh)
   }
+
+//  def meshgrid(x1: Tensor[Float],
+//    x2: Tensor[Float]): (Tensor[Float], Tensor[Float]) = {
+//    val x1Mesh = Tensor[Float](x2.nElement(), x1.nElement())
+//    (1 to x2.nElement()).foreach(i => x1Mesh.update(i, x1))
+//    val x2Mesh = Tensor[Float](x2.nElement(), x1.nElement())
+//    (1 to x1.nElement()).foreach { i=>
+//      (1 to x2Mesh.size(1)).foreach(x => x2Mesh.setValue(x, i, x2.valueAt(x)))
+//    }
+//    (x1Mesh, x2Mesh)
+//  }
 
   /**
    * return the max value in rows(d=0) or in cols(d=1)

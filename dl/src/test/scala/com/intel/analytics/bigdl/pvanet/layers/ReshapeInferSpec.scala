@@ -162,11 +162,11 @@ class ReshapeInferSpec extends FlatSpec {
     assertIntArrayEqual(o2.size(), Array[Int](2, 9 * 55 * 37))
     val o3 = new ReshapeInfer[Float](Array(1, 2 * 9, -1, 37)).forward(o2)
     assertIntArrayEqual(o3.size(), Array(1, 18, 55, 37))
-    val clsProc = new Sequential[Tensor[Float], Tensor[Float], Float]()
+    val clsProc = new Sequential[Float]()
     clsProc.add(new ReshapeInfer[Float](Array(2, -1)))
     clsProc.add(new SoftMax[Float]())
     clsProc.add(new ReshapeInfer[Float](Array(1, 2 * 9, -1, 37)))
-    val out4 = clsProc.forward(cls).size()
+    val out4 = clsProc.forward(cls).asInstanceOf[Tensor[Float]].size()
     (out4 zip cls.size()).foreach(x => assert(x._1 == x._2))
   }
 

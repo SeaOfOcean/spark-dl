@@ -15,15 +15,16 @@
  * limitations under the License.
  */
 
-package com.intel.analytics.bigdl.pvanet
+package com.intel.analytics.bigdl.pvanet.utils
 
-import breeze.linalg.DenseMatrix
-import com.intel.analytics.bigdl.pvanet.utils.Anchor
+import breeze.linalg.{DenseMatrix, convert}
+import com.intel.analytics.bigdl.pvanet.TestUtil
+import com.intel.analytics.bigdl.pvanet.model.PvanetParam
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import org.scalatest.{FlatSpec, Matchers}
 
-
 class AnchorSpec extends FlatSpec with Matchers {
+
   "mkanchors" should "work properly" in {
     val hs = Tensor(Storage(Array[Float](12, 16, 22)))
     val ws = Tensor(Storage(Array[Float](23, 16, 11)))
@@ -96,5 +97,31 @@ class AnchorSpec extends FlatSpec with Matchers {
       (-376.0, -3064.0, 391.0, 3079.0)
     )
     assert(act2 === expected2)
+  }
+
+  val param =new PvanetParam()
+  val root = "data/middle/"
+  val width = 37
+  val height = 50
+
+
+  val anchors = Anchor.generateAnchors(param.anchorRatios, param.anchorScales)
+
+  "generateAnchors" should "work properly" in {
+    TestUtil.assertMatrixEqualTM(FileUtil.loadFeatures[Float]("anchors", root),
+      convert(anchors, Double), 1e-6)
+  }
+
+  var shifts: DenseMatrix[Float] = Anchor.generateShifts(width, height, 16)
+
+  "generateShifts" should "work properly" in {
+    val expected = FileUtil.loadFeatures[Float]("shifts", root)
+    TestUtil.assertMatrixEqualTM(expected, convert(shifts, Double), 1e-6)
+  }
+
+  val allAnchors = Anchor.getAllAnchors(shifts, anchors)
+  "generateAllAnchors" should "work properly" in {
+    val expected = FileUtil.loadFeatures[Float]("allAnchors", root)
+    TestUtil.assertMatrixEqualTM(expected, convert(allAnchors, Double), 1e-6)
   }
 }

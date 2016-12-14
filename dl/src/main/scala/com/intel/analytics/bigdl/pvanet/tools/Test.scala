@@ -18,7 +18,7 @@
 package com.intel.analytics.bigdl.pvanet.tools
 
 import breeze.linalg.DenseMatrix
-import com.intel.analytics.bigdl.nn.Module
+import com.intel.analytics.bigdl.Module
 import com.intel.analytics.bigdl.pvanet.datasets._
 import com.intel.analytics.bigdl.pvanet.model.Model._
 import com.intel.analytics.bigdl.pvanet.model.{FasterRcnn, Model, Phase}
@@ -31,7 +31,7 @@ object Test {
   def testNet(net: FasterRcnn[Float], dataSource: ObjectDataSource,
     maxPerImage: Int = 100, thresh: Double = 0.05, vis: Boolean = false): Unit = {
     val imdb = dataSource.imdb
-    val model = net.getTestModel()
+    val model = net.getTestModel
     val allBoxes: Array[Array[DenseMatrix[Float]]] = {
       val out = new Array[Array[DenseMatrix[Float]]](imdb.numClasses)
       Range(0, imdb.numClasses).foreach(x => {
@@ -111,12 +111,12 @@ object Test {
     imdb.evaluateDetections(allBoxes, outputDir)
   }
 
-  def imDetect(model: Module[Table, Table, Float], d: ImageWithRoi):
+  def imDetect(model: Module[Float], d: ImageWithRoi):
   (DenseMatrix[Float], DenseMatrix[Float]) = {
     val input = new Table
     input.insert(ImageToTensor(d))
     input.insert(d.imInfo.get)
-    val result = model.forward(input)
+    val result = model.forward(input).asInstanceOf[Table]
 
     val scores = result(1).asInstanceOf[Table](1).asInstanceOf[Tensor[Float]]
     val boxDeltas = result(1).asInstanceOf[Table](2).asInstanceOf[Tensor[Float]]

@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-package com.intel.analytics.bigdl.pvanet
+package com.intel.analytics.bigdl.pvanet.utils
 
 import breeze.linalg.{DenseMatrix, convert}
-import com.intel.analytics.bigdl.pvanet.utils.Nms
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import org.scalatest.FlatSpec
 

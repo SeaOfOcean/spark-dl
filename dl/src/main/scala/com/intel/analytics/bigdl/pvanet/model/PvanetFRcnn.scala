@@ -18,7 +18,7 @@
 package com.intel.analytics.bigdl.pvanet.model
 
 import com.intel.analytics.bigdl.nn._
-import com.intel.analytics.bigdl.pvanet.layers.{ReshapeInfer, SmoothL1Criterion2, SoftmaxWithCriterion}
+import com.intel.analytics.bigdl.pvanet.layers.{ReshapeInfer, RoiPooling, SmoothL1Criterion2, SoftmaxWithCriterion}
 import com.intel.analytics.bigdl.pvanet.model.Model._
 import com.intel.analytics.bigdl.pvanet.model.Phase._
 import com.intel.analytics.bigdl.tensor.Tensor
@@ -30,7 +30,7 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: PhaseType = TE
   (implicit ev: TensorNumeric[T])
   extends FasterRcnn[T](phase) {
 
-  var pvanet: Stt = _
+  var pvanet: Sequential[T] = _
 
   private def concatNeg(name: String): Concat[T] = {
     val concat = new Concat[T](2)
@@ -40,7 +40,7 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: PhaseType = TE
     concat
   }
 
-  private def addScale(module: Stt,
+  private def addScale(module: Sequential[T],
     sizes: Array[Int], name: String): Unit = {
     val sc = scale(sizes, name)
     module.add(sc._1)
@@ -50,8 +50,8 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: PhaseType = TE
 
   private def addConvComponent(compId: Int, index: Int, p: Array[(Int, Int, Int, Int, Int)]) = {
     val label = s"${compId}_$index"
-    val convTable = new Ct
-    val conv_left = new Stt()
+    val convTable = new ConcatTable[T]
+    val conv_left = new Sequential[T]()
     var i = 0
     if (index == 1) {
       conv_left.add(conv(p(i), s"conv$label/1/conv"))
@@ -85,25 +85,25 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: PhaseType = TE
     pvanet.add(new CAddTable[T]().setName(s"conv$label"))
   }
 
-  private def addInception(module: Stt, label: String, index: Int,
+  private def addInception(module: Sequential[T], label: String, index: Int,
     p: Array[(Int, Int, Int, Int, Int)]): Unit = {
-    val left = new Stt()
+    val left = new Sequential[T]()
     val incep = new Concat[T](2)
 
     var i = 0
-    val com1 = new Stt()
+    val com1 = new Sequential[T]()
     com1.add(conv(p(i), s"conv$label/incep/0/conv")).add(new ReLU[T]())
     i += 1
     incep.add(com1)
 
-    val com2 = new Stt()
+    val com2 = new Sequential[T]()
     com2.add(conv(p(i), s"conv$label/incep/1_reduce/conv")).add(new ReLU[T]())
     i += 1
     com2.add(conv(p(i), s"conv$label/incep/1_0/conv")).add(new ReLU[T]())
     i += 1
     incep.add(com2)
 
-    val com3 = new Stt()
+    val com3 = new Sequential[T]()
     com3.add(conv(p(i), s"conv$label/incep/2_reduce/conv")).add(new ReLU[T]())
     i += 1
     com3.add(conv(p(i), s"conv$label/incep/2_0/conv")).add(new ReLU[T]())
@@ -113,7 +113,7 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: PhaseType = TE
     incep.add(com3)
 
     if (index == 1) {
-      val com4 = new Stt()
+      val com4 = new Sequential[T]()
       com4.add(new SpatialMaxPooling[T](3, 3, 2, 2).ceil().setName(s"conv$label/incep/pool"))
       com4.add(conv(p(i), s"conv$label/incep/poolproj/conv")).add(new ReLU[T]())
       i += 1
@@ -123,7 +123,7 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: PhaseType = TE
     left.add(incep)
     left.add(conv(p(i), s"conv$label/out/conv"))
     i += 1
-    val table = new Ct
+    val table = new ConcatTable[T]
     table.add(left)
     if (index == 1) {
       table.add(conv(p(i), s"conv$label/proj"))
@@ -136,9 +136,9 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: PhaseType = TE
   }
 
 
-  private def getPvanet: Stt = {
+  private def getPvanet: Sequential[T] = {
     if (pvanet != null) return pvanet
-    pvanet = new Stt()
+    pvanet = new Sequential[T]()
     pvanet.add(conv((3, 16, 7, 2, 3), "conv1_1/conv"))
 
     pvanet.add(concatNeg("conv1_1"))
@@ -158,9 +158,9 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: PhaseType = TE
       addConvComponent(3, i, Array((128, 48, 1, 1, 0), (48, 48, 3, 1, 1), (96, 128, 1, 1, 0)))
     }
 
-    val inceptions4_5 = new Stt()
+    val inceptions4_5 = new Sequential[T]()
 
-    val inceptions4 = new Stt()
+    val inceptions4 = new Sequential[T]()
     addInception(inceptions4, "4_1", 1, Array((128, 64, 1, 2, 0), (128, 48, 1, 2, 0),
       (48, 128, 3, 1, 1), (128, 24, 1, 2, 0), (24, 48, 3, 1, 1), (48, 48, 3, 1, 1),
       (128, 128, 1, 1, 0), (368, 256, 1, 1, 0), (128, 256, 1, 2, 0)))
@@ -172,8 +172,8 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: PhaseType = TE
     inceptions4_5.add(inceptions4)
 
 
-    val seq5 = new Stt()
-    val inceptions5 = new Stt()
+    val seq5 = new Sequential[T]()
+    val inceptions5 = new Sequential[T]()
     addInception(inceptions5, "5_1", 1, Array((256, 64, 1, 2, 0), (256, 96, 1, 2, 0),
       (96, 192, 3, 1, 1), (256, 32, 1, 2, 0), (32, 64, 3, 1, 1), (64, 64, 3, 1, 1),
       (256, 128, 1, 1, 0), (448, 384, 1, 1, 0), (256, 384, 1, 2, 0)))
@@ -200,33 +200,52 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: PhaseType = TE
     pvanet
   }
 
-  override def createFeatureAndRpnNet(): StT = {
-    val compose = new StT()
+  override def createFeatureAndRpnNet(): Sequential[T] = {
+    val compose = new Sequential[T]()
     compose.add(getPvanet)
 
-    val convTable = new Ct
-    convTable.add(new Stt()
+    val convTable = new ConcatTable[T]
+    convTable.add(new Sequential[T]()
       .add(conv((768, 128, 1, 1, 0), "convf_rpn"))
       .add(new ReLU[T]()))
-    convTable.add(new Stt()
+    convTable.add(new Sequential[T]()
       .add(conv((768, 384, 1, 1, 0), "convf_2"))
       .add(new ReLU[T]()))
     compose.add(convTable)
-    val rpnAndFeature = new CT()
-    rpnAndFeature.add(new STT()
+    val rpnAndFeature = new ConcatTable[T]()
+    rpnAndFeature.add(new Sequential[T]()
       .add(new SelectTable[Tensor[T], T](1)).add(createRpn()))
     rpnAndFeature.add(new JoinTable[T](2, 4))
     compose.add(rpnAndFeature)
     compose
   }
 
-  def createRpn(): StT = {
-    val rpnModel = new StT()
+  protected def createFastRcnn(): Sequential[T] = {
+    val model = new Sequential[T]()
+      .add(new RoiPooling[T](pool, pool, ev.fromType(0.0625f)).setName("pool5"))
+      .add(new ReshapeInfer[T](Array(-1, 512 * pool * pool)))
+      .add(linear((512 * pool * pool, 4096), "fc6"))
+      .add(new ReLU[T]())
+      .add(linear((4096, 4096), "fc7"))
+      .add(new ReLU[T]())
+
+    val cls = new Sequential[T]().add(linear((4096, 21), "cls_score"))
+    if (isTest) cls.add(new SoftMax[T]())
+    val clsReg = new ConcatTable[T]()
+      .add(cls)
+      .add(linear((4096, 84), "bbox_pred"))
+
+    model.add(clsReg)
+    model
+  }
+
+  def createRpn(): Sequential[T] = {
+    val rpnModel = new Sequential[T]()
     rpnModel.add(conv((128, 384, 3, 1, 1), "rpn_conv1"))
     rpnModel.add(new ReLU[T]())
-    val clsAndReg = new CT()
+    val clsAndReg = new ConcatTable[T]()
     clsAndReg.add(conv((384, 100, 1, 1, 0), "rpn_bbox_pred"))
-    val clsSeq = new Stt()
+    val clsSeq = new Sequential[T]()
     phase match {
       case TRAIN => clsSeq.add(new ReshapeInfer[T](Array(0, 2, -1, 0)))
       case TEST =>
@@ -245,12 +264,12 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: PhaseType = TE
   override val modelName: String = modelType.toString
   override val param: FasterRcnnParam = new PvanetParam(phase)
 
-  override def criterion4: PC = {
-    val rpn_loss_bbox = new SmoothL1Criterion2[T](ev.fromType(3.0), 1)
+  override def criterion4: ParallelCriterion[T] = {
+    val rpn_loss_bbox = new SmoothL1Criterion2[T](3.0)
     val rpn_loss_cls = new SoftmaxWithCriterion[T](ignoreLabel = Some(-1))
-    val loss_bbox = new SmoothL1Criterion2[T](ev.fromType(1.0), 1)
+    val loss_bbox = new SmoothL1Criterion2[T](1.0)
     val loss_cls = new SoftmaxWithCriterion[T](ignoreLabel = Some(-1))
-    val pc = new PC()
+    val pc = new ParallelCriterion[T]()
     pc.add(rpn_loss_cls, 1)
     pc.add(rpn_loss_bbox, 1)
     pc.add(loss_cls, 1)
@@ -258,7 +277,7 @@ class PvanetFRcnn[@specialized(Float, Double) T: ClassTag](phase: PhaseType = TE
     pc
   }
 
-  override def createTestModel(): STT = ???
+  override def createTestModel(): Sequential[T] = ???
 
-  override def createTrainModel(): STT = ???
+  override def createTrainModel(): Sequential[T] = ???
 }

@@ -17,7 +17,8 @@
 
 package com.intel.analytics.bigdl.pvanet.layers
 
-import com.intel.analytics.bigdl.nn.{SoftMax, TensorCriterion}
+import com.intel.analytics.bigdl.nn.abstractnn.TensorCriterion
+import com.intel.analytics.bigdl.nn.{SoftMax}
 import com.intel.analytics.bigdl.pvanet.layers.NormMode.NormMode
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
@@ -28,8 +29,6 @@ import scala.reflect.ClassTag
 class SoftmaxWithCriterion[T: ClassTag](weights: Tensor[T] = null,
   ignoreLabel: Option[Int] = None, normalizeMode: NormMode = NormMode.VALID)
   (implicit ev: TensorNumeric[T]) extends TensorCriterion[T] {
-  private val gradInput: Tensor[T] = Tensor[T]()
-
   @transient var softmax: SoftMax[T] = _
 
   @transient var prob: Tensor[T] = _
@@ -43,13 +42,14 @@ class SoftmaxWithCriterion[T: ClassTag](weights: Tensor[T] = null,
   override def updateOutput(input: Tensor[T], target: Tensor[T]): T = {
     // input: batchsize * softmaxAxis * height * width
     // for this example, (1, 2, 90, 4) if we have 1 image batch, 2 classes, 9*10*4 anchors
+    innerNum = 1
     outerNum = input.size()(0)
     for (i <- 2 until input.size().length) {
       innerNum = innerNum * input.size()(i)
     }
     nClasses = input.size()(1)
     if (softmax == null) {
-      softmax = new SoftMax[T]()
+      softmax = new SoftMax()
     }
     prob = softmax.forward(input)
     val probData = prob.storage().array()

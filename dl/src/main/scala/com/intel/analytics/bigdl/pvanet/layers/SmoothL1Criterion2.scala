@@ -17,7 +17,7 @@
 
 package com.intel.analytics.bigdl.pvanet.layers
 
-import com.intel.analytics.bigdl.nn.Criterion
+import com.intel.analytics.bigdl.nn.abstractnn.{AbstractCriterion}
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.utils.Table
@@ -25,8 +25,7 @@ import com.intel.analytics.bigdl.utils.Table
 import scala.reflect.ClassTag
 
 class SmoothL1Criterion2[T: ClassTag](@transient val sigma: Double, @transient val num: Int = 0)
-  (implicit ev: TensorNumeric[T]) extends Criterion[Tensor[T], Table, T] {
-  @transient var gradInput: Tensor[T] = _
+  (implicit ev: TensorNumeric[T]) extends AbstractCriterion[Tensor[T], Table, T] {
   @transient var buffer: Tensor[T] = _
   // diff holds (input - gt) * w_in
   @transient var diff: Tensor[T] = _

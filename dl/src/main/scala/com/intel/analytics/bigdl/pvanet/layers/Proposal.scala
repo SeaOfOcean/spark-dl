@@ -18,7 +18,7 @@
 package com.intel.analytics.bigdl.pvanet.layers
 
 import breeze.linalg.{DenseMatrix, DenseVector, argsort}
-import com.intel.analytics.bigdl.nn.Module
+import com.intel.analytics.bigdl.nn.abstractnn.AbstractModule
 import com.intel.analytics.bigdl.pvanet.model.FasterRcnnParam
 import com.intel.analytics.bigdl.pvanet.utils._
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
@@ -28,7 +28,7 @@ import com.intel.analytics.bigdl.utils.Table
 import scala.reflect.ClassTag
 
 class Proposal[@specialized(Float, Double) T: ClassTag](param: FasterRcnnParam)
-  (implicit ev: TensorNumeric[T]) extends Module[Table, Table, T] {
+  (implicit ev: TensorNumeric[T]) extends AbstractModule[Table, Table, T] {
   /**
    * Outputs object detection proposals by applying estimated bounding-box
    * transformations to a set of regular boxes (called "anchors").
@@ -173,6 +173,7 @@ class Proposal[@specialized(Float, Double) T: ClassTag](param: FasterRcnnParam)
       output.update(1, rpn_rois)
       output.update(2, Tensor(Storage(scores.toArray)))
     }
+//    FileUtil.assertEqual("rpn_rois", rpn_rois)
     output
   }
 

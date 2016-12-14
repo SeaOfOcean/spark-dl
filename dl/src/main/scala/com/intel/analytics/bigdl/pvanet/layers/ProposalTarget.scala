@@ -19,7 +19,7 @@ package com.intel.analytics.bigdl.pvanet.layers
 
 import breeze.linalg.{DenseMatrix, DenseVector, min}
 import breeze.numerics.round
-import com.intel.analytics.bigdl.nn.Module
+import com.intel.analytics.bigdl.nn.abstractnn.AbstractModule
 import com.intel.analytics.bigdl.pvanet.model.FasterRcnnParam
 import com.intel.analytics.bigdl.pvanet.utils.{Bbox, MatrixUtil}
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
@@ -35,7 +35,7 @@ import scala.util.Random
  */
 class ProposalTarget[@specialized(Float, Double) T: ClassTag]
 (param: FasterRcnnParam)
-  (implicit ev: TensorNumeric[T]) extends Module[Table, Table, T] {
+  (implicit ev: TensorNumeric[T]) extends AbstractModule[Table, Table, T] {
 
   @transient val labelTarget = new Table
   @transient val target = new Table

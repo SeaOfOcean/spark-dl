@@ -19,7 +19,8 @@ package com.intel.analytics.bigdl.pvanet.layers
 
 import breeze.linalg.{max, min}
 import breeze.numerics.{ceil, floor, round}
-import com.intel.analytics.bigdl.nn.Module
+import com.intel.analytics.bigdl.nn.abstractnn.AbstractModule
+import com.intel.analytics.bigdl.pvanet.utils.FileUtil
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.utils.Table
@@ -28,18 +29,21 @@ import scala.reflect.ClassTag
 
 class RoiPooling[@specialized(Float, Double) T: ClassTag]
 (val pooled_w: Int, val pooled_h: Int, val spatial_scale: T)
-  (implicit ev: TensorNumeric[T]) extends Module[Table, Tensor[T], T] {
+  (implicit ev: TensorNumeric[T]) extends AbstractModule[Table, Tensor[T], T] {
   @transient var channels = 0
   @transient var height = 0
   @transient var width = 0
-  @transient var argmax: Tensor[T] = null
-  var gradInput1: Tensor[T] = null
+  @transient var argmax: Tensor[T] = _
+  var gradInput1: Tensor[T] = _
 
   override def updateOutput(input: Table): Tensor[T] = {
     assert(input.length() == 2, "there must have two tensors in the table")
 
     val data = input(1).asInstanceOf[Tensor[T]]
-    val rois = input(2).asInstanceOf[Tensor[T]]
+//    val rois = input(2).asInstanceOf[Tensor[T]]
+
+//    FileUtil.assertEqual("rois", rois)
+    val rois = FileUtil.loadFeatures[T]("rois")
     assert(rois.size().length > 1 && rois.size()(1) == 5, "roi input shape should be (R, 5)")
     assert(rois.size()(0) * rois.size()(1) == rois.nElement(), "roi input shape should be (R, 5)")
     channels = data.size()(1)
@@ -52,18 +56,15 @@ class RoiPooling[@specialized(Float, Double) T: ClassTag]
     output = Tensor(numRois, channels, pooled_h, pooled_w)
 
     output.fill(ev.fromType[Double](-Double.MaxValue))
-    var outputData = output.storage().array()
+    val outputData = output.storage().array()
     if (argmax == null) {
       argmax = Tensor[T]()
     }
     argmax.resizeAs(output)
     argmax.fill(ev.fromType(-1))
-    var argmax_data = argmax.storage().array()
+    val argmax_data = argmax.storage().array()
 
     val bottom_data = data.storage().array()
-    val bottom_rois = rois.storage().array()
-
-    //    val topData = output.storage().array()
 
     var topDataIndex = 0
     var argmaxIndex = 0
@@ -148,7 +149,7 @@ class RoiPooling[@specialized(Float, Double) T: ClassTag]
       gradInput1 = Tensor[T]()
       gradInput.insert(gradInput1)
     }
-    var gradInputData = gradInput1.resizeAs(data).fill(ev.fromType(0)).storage().array()
+    val gradInputData = gradInput1.resizeAs(data).fill(ev.fromType(0)).storage().array()
     val gradOutputData = gradOutput.storage().array()
     // Accumulate gradient over all ROIs
     for (roiN <- 0 until numRois) {

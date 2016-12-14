@@ -19,7 +19,9 @@ package com.intel.analytics.bigdl.pvanet.layers
 
 import breeze.numerics.abs
 import com.intel.analytics.bigdl.nn.SmoothL1Criterion
+import com.intel.analytics.bigdl.pvanet.utils.FileUtil
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
+import com.intel.analytics.bigdl.utils.Table
 import org.scalatest.{FlatSpec, Matchers}
 
 class SmoothL1Criterion2Spec extends FlatSpec with Matchers {
@@ -36,7 +38,10 @@ class SmoothL1Criterion2Spec extends FlatSpec with Matchers {
     -0.99247020483016967773, -0.24947847425937652588, 0.098931826651096343994,
     0.29085457324981689453, 1.1305880546569824219)
   val input = Tensor(Storage(inputArr.map(x => x.toFloat)))
-  val target = Tensor(Storage((targetArr ++ inWArr ++ outWArr).map(x => x.toFloat)))
+  val target = new Table
+  target.insert(Tensor(Storage(targetArr.map(x => x.toFloat))))
+  target.insert(Tensor(Storage(inWArr.map(x => x.toFloat))))
+  target.insert(Tensor(Storage(outWArr.map(x => x.toFloat))))
 
   "a smoothl1criterion of object detection with sigma 2.4" should
     "generate correct loss and grad" in {
@@ -53,13 +58,16 @@ class SmoothL1Criterion2Spec extends FlatSpec with Matchers {
 
 
     expectedGrad.map(actualGrad, (v1, v2) => {
-      assert(abs(v1 - v2) < 1e-6);
+      assert(abs(v1 - v2) < 1e-6)
       v1
     })
   }
+
   val input2 = Tensor(Storage(inputArr.map(x => x.toFloat))).resize(1, 2, 2, 2)
-  val target2 = Tensor(Storage((targetArr ++ inWArr ++ outWArr).
-    map(x => x.toFloat))).resize(3, 2, 2, 2)
+  val target2 = new Table
+  target2.insert(Tensor(Storage(targetArr.map(x => x.toFloat))).resize(1, 2, 2, 2))
+  target2.insert(Tensor(Storage(inWArr.map(x => x.toFloat))).resize(1, 2, 2, 2))
+  target2.insert(Tensor(Storage(outWArr.map(x => x.toFloat))).resize(1, 2, 2, 2))
 
   "a smoothl1criterion of object detection with sigma 2.4 and 4 dims" should
     "generate correct loss and grad" in {
@@ -78,25 +86,37 @@ class SmoothL1Criterion2Spec extends FlatSpec with Matchers {
 
 
     expectedGrad.map(actualGrad, (v1, v2) => {
-      assert(abs(v1 - v2) < 1e-6);
+      assert(abs(v1 - v2) < 1e-6)
       v1
     })
   }
 
   "SmoothL1CriterionOD with sigma 1 and without weights" should
     "have the same result as SmoothL1Criterion" in {
-    val targetNoWeight = Tensor(Storage((targetArr).map(x => x.toFloat)))
+    val targetNoWeight = Tensor(Storage(targetArr.map(x => x.toFloat)))
     val smcod = new SmoothL1Criterion2[Float](1f, input.nElement())
     val smc = new SmoothL1Criterion[Float](true)
-    val out1 = smcod.forward(input, targetNoWeight)
+    val out1 = smcod.forward(input, new Table().insert(targetNoWeight))
     val out2 = smc.forward(input, targetNoWeight)
     assert(abs(out1 - out2) < 1e-6)
 
-    val smcodGrad = smcod.backward(input, targetNoWeight)
+    val smcodGrad = smcod.backward(input, new Table().insert(targetNoWeight))
     val smcGrad = smc.backward(input, targetNoWeight)
     smcodGrad.map(smcGrad, (v1, v2) => {
-      assert(abs(v1 - v2) < 1e-6);
+      assert(abs(v1 - v2) < 1e-6)
       v1
     })
+  }
+
+  "a smoothl1criterion of object detection with sigma 3 and real data" should
+    "generate correct loss and grad" in {
+    val input = FileUtil.loadFeatures[Float]("bbox_pred")
+    val targets = FileUtil.loadFeatures[Float]("bbox_targets")
+    val inW = FileUtil.loadFeatures[Float]("bbox_inside_weights")
+    val outW = FileUtil.loadFeatures[Float]("bbox_outside_weights")
+
+    val bboxTarget = BboxTarget(null, targets, inW, outW)
+
+    val criterion = new SmoothL1Criterion2[Float](1.0, 128)
   }
 }

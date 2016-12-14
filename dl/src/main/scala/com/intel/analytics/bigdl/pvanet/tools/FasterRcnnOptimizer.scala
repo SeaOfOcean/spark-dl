@@ -17,19 +17,21 @@
 
 package com.intel.analytics.bigdl.pvanet.tools
 
+import com.intel.analytics.bigdl.Module
 import com.intel.analytics.bigdl.dataset.LocalDataSource
-import com.intel.analytics.bigdl.nn.Module
+import com.intel.analytics.bigdl.nn.ParallelCriterion
 import com.intel.analytics.bigdl.optim.{OptimMethod, Trigger}
-import com.intel.analytics.bigdl.pvanet.datasets.{AnchorToTensor, ImageToTensor, ImageWithRoi, ObjectDataSource}
-import com.intel.analytics.bigdl.pvanet.layers.{AnchorTargetLayer, ParallelCriterion}
+import com.intel.analytics.bigdl.pvanet.datasets.{ImageToTensor, ImageWithRoi, ObjectDataSource}
+import com.intel.analytics.bigdl.pvanet.layers.{AnchorTarget, BboxTarget}
 import com.intel.analytics.bigdl.pvanet.model.FasterRcnn
+import com.intel.analytics.bigdl.pvanet.utils.FileUtil
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.Table
 
 class FasterRcnnOptimizer(data: LocalDataSource[ImageWithRoi],
   validationData: ObjectDataSource,
   net: FasterRcnn[Float],
-  model: Module[Table, Table, Float],
+  model: Module[Float],
   optimMethod: OptimMethod[Float],
   criterion: ParallelCriterion[Float],
   state: Table,
@@ -77,27 +79,41 @@ class FasterRcnnOptimizer(data: LocalDataSource[ImageWithRoi],
    * @param output (rpn_cls, rpn_reg, cls, reg, rois)
    * @return
    */
-  def addAnchorTarget(targets: Table, d: ImageWithRoi, output: Table): Unit = {
+  def generateTarget(d: ImageWithRoi, output: Table): Table = {
+    val targets = new Table
+    // anchor targets
     val sizes = output(2).asInstanceOf[Tensor[Float]].size()
     val height = sizes(sizes.length - 2)
     val width = sizes(sizes.length - 1)
-    val anchorTargetLayer = new AnchorTargetLayer(net.param)
-    val anchors = anchorTargetLayer.generateAnchors(d, height, width)
-    val anchorTensors = new AnchorToTensor(1, height, width).apply(anchors)
-    targets.insert(anchorTensors._1)
-    targets.insert(anchorTensors._2)
-  }
+    val anchorTargets = AnchorTarget(d, height, width, net.param)
+//    targets.insert(anchorTargets.labels)
+//    targets.insert(anchorTargets.targetsTable)
+    val expected1 = BboxTarget(
+      FileUtil.loadFeatures[Float]("rpn_labels"),
+      FileUtil.loadFeatures[Float]("rpn_bbox_targets"),
+      FileUtil.loadFeatures[Float]("rpn_bbox_inside_weights"),
+      FileUtil.loadFeatures[Float]("rpn_bbox_outside_weights"))
+    //require(anchorTargets.labels.equals(expected.labels))
+    targets.insert(expected1.labels)
+    targets.insert(expected1.targetsTable)
 
-  def addProposalTarget(targets: Table, d: ImageWithRoi, output: Table): Unit = {
-    println(output.length())
+
+    // proposal targets
     val pTargets = output(5).asInstanceOf[Table]
+//    val expected2 = BboxTarget(
+//      FileUtil.loadFeatures[Float]("labels"),
+//      FileUtil.loadFeatures[Float]("bbox_targets"),
+//      FileUtil.loadFeatures[Float]("bbox_inside_weights"),
+//      FileUtil.loadFeatures[Float]("bbox_outside_weights"))
+//    targets.insert(expected2.labels)
+//    targets.insert(expected2.targetsTable)
     targets.insert(pTargets(1))
     targets.insert(pTargets(2))
   }
 
   val imageToTensor = new ImageToTensor(batchSize = 1)
 
-  def optimize(): Module[Table, Table, Float] = {
+  def optimize(): Module[Float] = {
     val (weights, grad) = model.getParameters()
     var wallClockTime = 0L
     var count = 0
@@ -110,24 +126,25 @@ class FasterRcnnOptimizer(data: LocalDataSource[ImageWithRoi],
       val start = System.nanoTime()
       val d = data.next()
       val input = new Table
-      input.insert(ImageToTensor(d))
-      input.insert(d.imInfo.get)
-      input.insert(d.gtBoxes.get)
-      val dataFetchTime = System.nanoTime()
+//      input.insert(ImageToTensor(d))
+      input.insert(FileUtil.loadFeatures[Float]("data"))
+      input.insert(FileUtil.loadFeatures[Float]("im_info").resize(3))
+      input.insert(FileUtil.loadFeatures[Float]("gt_boxes"))
+      //      input.insert(d.imInfo.get)
+//      input.insert(d.gtBoxes.get)
+val dataFetchTime = System.nanoTime()
       model.zeroGradParameters()
       // (rpn_cls, rpn_reg, cls, reg, proposalTargets)
       val output = model.forward(input)
-      val target = new Table
-      addAnchorTarget(target, d, output)
-      addProposalTarget(target, d, output)
+      val target = generateTarget(d, output.asInstanceOf[Table])
 
-      val loss = criterion.forward(output, target)
+      val loss = criterion.forward(output.asInstanceOf[Table], target)
       println(s"loss: $loss")
       println(s"  rpn cls loss: ${criterion.outputs(1)}")
       println(s"  rpn bbox loss: ${criterion.outputs(2)}")
       println(s"  cls loss: ${criterion.outputs(3)}")
       println(s"  bbox loss: ${criterion.outputs(4)}")
-      val gradOutput = criterion.backward(output, target)
+      val gradOutput = criterion.backward(output.asInstanceOf[Table], target)
       model.backward(input, gradOutput)
       optimMethod.optimize(_ => (loss, grad), weights, state)
       val end = System.nanoTime()
@@ -168,7 +185,7 @@ class FasterRcnnOptimizer(data: LocalDataSource[ImageWithRoi],
         println(s"[Wall Clock ${wallClockTime / 1e9}s] Validate model...")
         net.evaluate
         validationData.reset()
-        net.copyParamToTest(model)
+//        net.copyParamToTest(model)
         Test.testNet(net, validationData)
         net.train
       }

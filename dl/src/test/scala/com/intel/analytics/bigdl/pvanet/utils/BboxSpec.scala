@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-package com.intel.analytics.bigdl.pvanet
+package com.intel.analytics.bigdl.pvanet.utils
 
 import breeze.linalg.{DenseMatrix, convert}
 import breeze.numerics.abs
-import com.intel.analytics.bigdl.pvanet.utils.Bbox
 import org.scalatest.FlatSpec
 
 class BboxSpec extends FlatSpec {
@@ -135,19 +134,6 @@ class BboxSpec extends FlatSpec {
     for (i <- 0 until res.rows) {
       for (j <- 0 until res.cols) {
         assert(abs(res(i, j) - expectedResults(i, j)) < 1e-6)
-      }
-    }
-
-    val boxes2 = TestUtil.loadDataFromFile(
-      "/home/xianyan/code/intel/pvanet/transform_inv-300_84.txt", Array(300, 84))
-    val expected = TestUtil.loadDataFromFile(
-      "/home/xianyan/code/intel/pvanet/clip-300_84.txt", Array(300, 84)).toBreezeMatrix()
-    val res2 = Bbox.clipBoxes(boxes2.toBreezeMatrix(), 1296, 2304)
-    println(res2.rows, res2.cols, expected.rows, expected.cols)
-    assert(res2.rows == expected.rows && res2.cols == expected.cols)
-    for (i <- 0 until res2.rows) {
-      for (j <- 0 until res2.cols) {
-        assert(abs(res2(i, j) - expected(i, j)) < 1e-6)
       }
     }
   }

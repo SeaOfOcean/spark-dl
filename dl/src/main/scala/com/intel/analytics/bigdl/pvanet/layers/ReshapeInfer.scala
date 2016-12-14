@@ -18,7 +18,7 @@
 package com.intel.analytics.bigdl.pvanet.layers
 
 import breeze.linalg.sum
-import com.intel.analytics.bigdl.nn.TensorModule
+import com.intel.analytics.bigdl.nn.abstractnn.{TensorModule}
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 

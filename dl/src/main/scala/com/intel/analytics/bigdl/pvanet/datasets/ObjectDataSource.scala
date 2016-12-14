@@ -23,7 +23,6 @@ import javax.imageio.ImageIO
 
 import breeze.linalg.DenseVector
 import com.intel.analytics.bigdl.dataset.{LocalDataSource, Transformer}
-import com.intel.analytics.bigdl.pvanet.layers.AnchorTarget
 import com.intel.analytics.bigdl.pvanet.model.FasterRcnnParam
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 
@@ -164,37 +163,49 @@ class ImageScalerAndMeanSubstractor(param: FasterRcnnParam)
   }
 }
 
-class AnchorToTensor(batchSize: Int = 1, height: Int, width: Int) {
+// todo: height and width may be removed
+//class AnchorToTensor(batchSize: Int = 1, height: Int = 0, width: Int = 0) {
 //  private val labelTensor: Tensor[Float] = Tensor[Float]()
 //  private val roiLabelTensor: Tensor[Float] = Tensor[Float]()
 
   // todo: buffer for roiLabelData and labelData
-  def apply(anchorTarget: AnchorTarget): (Tensor[Float], Tensor[Float]) = {
-    var k = 0
+//  def apply(anchorTarget: BboxTarget): (Tensor[Float], Table) = {
+//    var k = 0
+//
+//    val roiLabelData: Array[Float] =
+//      new Array[Float](batchSize * 3 * 4 * anchorTarget.labels.nElement())
+//    val labelData: Array[Float] = new Array[Float](batchSize * anchorTarget.labels.nElement())
+//    val stride = anchorTarget.bboxTargets.size(1) * anchorTarget.bboxTargets.size(2)
+//    for (r <- 0 until anchorTarget.bboxTargets.size(1)) {
+//      labelData(r) = anchorTarget.labels.valueAt(r + 1)
+////        if (anchorTarget.labels(r) != -1) anchorTarget.labels(r) + 1
+////      else anchorTarget.labels(r)
+//
+//      for (c <- 0 until anchorTarget.bboxTargets.size(2)) {
+//        roiLabelData(k) = anchorTarget.bboxTargets.valueAt(r, c)
+//        roiLabelData(k + stride) = anchorTarget.bboxInsideWeights.valueAt(r, c)
+//        roiLabelData(k + stride * 2) = anchorTarget.bboxOutsideWeights.valueAt(r, c)
+//        k += 1
+//      }
+//    }
+//    val labelTensor = Tensor(Storage[Float](labelData)).resize(Array(batchSize, 1,
+//      labelData.length / width / batchSize, width))
+//    val roiLabelTensor = Tensor(Storage[Float](roiLabelData)).resize(Array(batchSize, 12,
+//      roiLabelData.length / 12 / width / batchSize, width))
 
-    val roiLabelData: Array[Float] =
-      new Array[Float](batchSize * 3 * 4 * anchorTarget.labels.length)
-    val labelData: Array[Float] = new Array[Float](batchSize * anchorTarget.labels.length)
-    val stride = anchorTarget.bboxTargets.rows * anchorTarget.bboxTargets.cols
-    for (r <- 0 until anchorTarget.bboxTargets.rows) {
-      labelData(r) = anchorTarget.labels(r)
-//        if (anchorTarget.labels(r) != -1) anchorTarget.labels(r) + 1
-//      else anchorTarget.labels(r)
+    //    val labelTensor = Tensor(Storage[Float](labelData))
+//    val roiLabelTensor
+// = Tensor(Storage[Float](roiLabelData))
+//val table = new Table
+//    table.insert(anchorTarget.bboxTargets)
+//    table.insert( anchorTarget.bboxInsideWeights)
+//    table.insert(anchorTarget.bboxOutsideWeights)
+//    (anchorTarget.labels, table)
+//  }
 
-      for (c <- 0 until anchorTarget.bboxTargets.cols) {
-        roiLabelData(k) = anchorTarget.bboxTargets.valueAt(r, c)
-        roiLabelData(k + stride) = anchorTarget.bboxInsideWeights.valueAt(r, c)
-        roiLabelData(k + stride * 2) = anchorTarget.bboxOutsideWeights.valueAt(r, c)
-        k += 1
-      }
-    }
-    val labelTensor = Tensor(Storage[Float](labelData)).resize(Array(batchSize, 1,
-      labelData.length / width / batchSize, width))
-    val roiLabelTensor = Tensor(Storage[Float](roiLabelData)).resize(Array(batchSize, 12,
-      roiLabelData.length / 12 / width / batchSize, width))
-    (labelTensor, roiLabelTensor)
-  }
-}
+
+
+//}
 
 object ImageToTensor {
   val imgToTensor = new ImageToTensor(1)

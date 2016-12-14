@@ -71,7 +71,7 @@ object Train {
       data = dataSource -> imgScaler,
       validationData = valSource,
       net = model,
-      model = model.getTrainModel(),
+      model = model.getTrainModel,
       criterion = model.criterion4,
       optimMethod = new SGD[Float](),
       state = T(
@@ -81,7 +81,7 @@ object Train {
         "dampening" -> 0.0,
         "learningRateSchedule" -> EpochStep(25, 0.5)
       ),
-      endWhen = Trigger.maxEpoch(90))
+      endWhen = Trigger.maxEpoch(1))
 
     optimizer.setCache(param.cache + "/" + param.net, config.cacheTrigger)
     optimizer.setValidationTrigger(config.testTrigger)

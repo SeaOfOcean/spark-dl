@@ -64,7 +64,7 @@ object Demo {
       "50.jpg", "60.jpg", "70.jpg", "80.jpg", "90.jpg", "100.jpg")
     val net = FasterRcnn[Float](param.net, pretrained = model2caffePath(param.net))
 
-    val model = net.getTestModel()
+    val model = net.getTestModel
 
     val imageScaler = new ImageScalerAndMeanSubstractor(net.param)
 

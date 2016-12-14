@@ -38,7 +38,7 @@ class RoiPoolingSpec extends FlatSpec with Matchers {
     val expected = TestUtil.loadDataFromFile(
       "/home/xianyan/code/intel/pvanet/spark-dl/middle/pool5-300_512_7_7.txt",
       Array(300, 512, 7, 7))
-    (output.storage.array() zip expected.storage.array() zip Stream.from(0)).foreach { x =>
+    (output.storage().array() zip expected.storage().array() zip Stream.from(0)).foreach { x =>
       assert(abs(x._1._1 - x._1._2) < 1e-6)
     }
   }
@@ -114,17 +114,17 @@ class RoiPoolingSpec extends FlatSpec with Matchers {
       1.8852580346394267607, 1.8852580346394267607, 1.8852580346394267607, 9.8723792015232163521,
       9.8723792015232163521, 9.8723792015232163521, 9.8723792015232163521, 9.8723792015232163521,
       9.8723792015232163521)
-    for (i <- 0 until expectedRes.length) {
+    for (i <- expectedRes.indices) {
       assert(abs(res.storage().array()(i) - expectedRes(i)) < 1e-6)
     }
   }
   "updateGradInput" should "work properly " in {
-    var gradOutputData = Array(2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    val gradOutputData = Array(2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-    var gradOutput = Tensor(Storage(gradOutputData.map(x => x.toFloat)))
-    var gradInputData = roiPooling.backward(input, gradOutput)(1).
+    val gradOutput = Tensor(Storage(gradOutputData.map(x => x.toFloat)))
+    val gradInputData = roiPooling.backward(input, gradOutput)(1).
       asInstanceOf[Tensor[Float]].storage().array()
-    var expectedGradInput = Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0,
+    val expectedGradInput = Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -132,7 +132,7 @@ class RoiPoolingSpec extends FlatSpec with Matchers {
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
-    for (i <- 0 until expectedGradInput.length) {
+    for (i <- expectedGradInput.indices) {
       assert(expectedGradInput.length == gradInputData.length)
       assert(abs(expectedGradInput(i) - gradInputData(i)) < 1e-6)
     }
@@ -149,7 +149,7 @@ class RoiPoolingSpec extends FlatSpec with Matchers {
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
-    for (i <- 0 until expectedGradInput2.length) {
+    for (i <- expectedGradInput2.indices) {
       assert(expectedGradInput2.length == gradInputData2.length)
       assert(abs(expectedGradInput2(i) - gradInputData2(i)) < 1e-6)
     }
