@@ -37,6 +37,7 @@ class ProposalTarget[@specialized(Float, Double) T: ClassTag]
 (param: FasterRcnnParam)
   (implicit ev: TensorNumeric[T]) extends Module[Table, Table, T] {
 
+  @transient val labelTarget = new Table
   @transient val target = new Table
 
   /**
@@ -178,20 +179,19 @@ class ProposalTarget[@specialized(Float, Double) T: ClassTag]
       // sampled rois (0, x1, y1, x2, y2) (1,5)
       output.insert(matrix2tensor(rois))
       // labels (1,1)
-      target.insert(Tensor(Storage(labels)))
+      labelTarget.insert(Tensor(Storage(labels)))
       // bbox_targets (1, numClasses * 4) + bbox_inside_weights (1, numClasses * 4)
       // + bbox_outside_weights (1, numClasses * 4)
 
-      target.insert(matrix2tensor(bbox_targets, bbox_inside_weights,
+      labelTarget.insert(matrix2Table(bbox_targets, bbox_inside_weights,
         bbox_inside_weights.map(x => if (x > 0) 1f else 0f)))
-      output.insert(target)
+      output.insert(labelTarget)
     } else {
       output.update(1, matrix2tensor(rois))
-      target.update(1, Tensor(Storage(labels)))
-      target.update(2, matrix2tensor(bbox_targets, bbox_inside_weights,
+      labelTarget.update(1, Tensor(Storage(labels)))
+      labelTarget.update(2, matrix2Table(bbox_targets, bbox_inside_weights,
         bbox_inside_weights.map(x => if (x > 0) 1f else 0f)))
     }
-
     output
   }
 
@@ -206,17 +206,18 @@ class ProposalTarget[@specialized(Float, Double) T: ClassTag]
     out
   }
 
-  def matrix2tensor(mat1: DenseMatrix[Float], mat2: DenseMatrix[Float],
-    mat3: DenseMatrix[Float]): Tensor[Float] = {
-    val out = Tensor[Float]().resize(mat1.rows * 3, mat1.cols)
-    for (i <- 0 until mat1.rows) {
-      for (j <- 0 until mat1.cols) {
-        out.setValue(i + 1, j + 1, mat1(i, j))
-        out.setValue(i + 1 + mat1.rows, j + 1, mat2(i, j))
-        out.setValue(i + 1 + mat1.rows * 2, j + 1, mat3(i, j))
-      }
+  def matrix2Table(mat1: DenseMatrix[Float], mat2: DenseMatrix[Float],
+    mat3: DenseMatrix[Float]): Table = {
+    if (target.length() == 0) {
+      target.insert(matrix2tensor(mat1))
+      target.insert(matrix2tensor(mat2))
+      target.insert(matrix2tensor(mat3))
+    } else {
+      target.update(1, matrix2tensor(mat1))
+      target.update(2, matrix2tensor(mat2))
+      target.update(3, matrix2tensor(mat3))
     }
-    out
+    target
   }
 
   override def updateGradInput(input: Table, gradOutput: Table): Table = {
