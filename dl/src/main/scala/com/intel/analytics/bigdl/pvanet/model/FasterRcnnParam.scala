@@ -35,6 +35,9 @@ object Model extends Enumeration {
 }
 
 abstract class FasterRcnnParam(phase: PhaseType = Phase.TEST) {
+  // For reproducibility
+  val RANDOM_SEED: Long = 3
+
   val anchorScales: Array[Float]
   val anchorRatios: Array[Float]
   val anchorNum: Int

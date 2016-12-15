@@ -19,27 +19,27 @@ package com.intel.analytics.bigdl.pvanet.model
 
 import com.intel.analytics.bigdl._
 import com.intel.analytics.bigdl.nn._
+import com.intel.analytics.bigdl.numeric.NumericFloat
 import com.intel.analytics.bigdl.pvanet.caffe.CaffeReader
 import com.intel.analytics.bigdl.pvanet.model.Model._
 import com.intel.analytics.bigdl.pvanet.model.Phase._
+import com.intel.analytics.bigdl.pvanet.utils.FileUtil
 import com.intel.analytics.bigdl.tensor.Tensor
-import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.utils.RandomGenerator._
-import com.intel.analytics.bigdl.utils.{File, Table}
+import com.intel.analytics.bigdl.utils.{Table, File => DlFile}
 
-import scala.reflect.ClassTag
 import scala.util.Random
 
 
-abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
-  (implicit ev: TensorNumeric[T]) {
+abstract class FasterRcnn(var phase: PhaseType) {
+
   val modelType: ModelType
   val param: FasterRcnnParam
-  var caffeReader: CaffeReader[T] = _
+  var caffeReader: CaffeReader[Float] = _
 
   def modelName: String = modelType.toString
 
-  def setCaffeReader(caffeReader: CaffeReader[T]): Unit = {
+  def setCaffeReader(caffeReader: CaffeReader[Float]): Unit = {
     this.caffeReader = caffeReader
   }
 
@@ -53,12 +53,6 @@ abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
 
   private def setPhase(phase: PhaseType): Unit = this.phase = phase
 
-  def copyParamToTest(model: Module[T]) = {
-    val name2model = Utils.getParamModules[T](model)
-    evaluate
-    Utils.copyParamModules[T](getTestModel, name2model)
-  }
-
   /**
    *
    * @param p    parameter: (nIn: Int, nOut: Int, ker: Int, stride: Int, pad: Int)
@@ -68,7 +62,7 @@ abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
   def conv(p: (Int, Int, Int, Int, Int),
     name: String, isBack: Boolean = true,
     initMethod: InitializationMethod = Xavier,
-    init: (Double, Double) = null): SpatialConvolution[T] = {
+    init: (Double, Double) = null): SpatialConvolution[Float] = {
     if (caffeReader != null) {
       val out = caffeReader.mapConvolution(name, isBack)
       if (out != null) {
@@ -80,13 +74,13 @@ abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
         return out
       }
     }
-    val module = new SpatialConvolution[T](p._1, p._2, p._3, p._3, p._4, p._4,
+    val module: SpatialConvolution[Float] = new SpatialConvolution(p._1, p._2, p._3, p._3, p._4, p._4,
       p._5, p._5, propagateBack = isBack, initMethod = initMethod).setName(name)
     if (init != null) initParameters(module, init)
     module
   }
 
-  type Scale = (CMul[T], CAdd[T])
+  type Scale = (CMul[Float], CAdd[Float])
 
   def scale(size: Array[Int], name: String): Scale = {
     if (caffeReader != null) {
@@ -94,7 +88,7 @@ abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
       (size zip out._1.size).foreach(x => assert(x._1 == x._2))
       out
     } else {
-      (new CMul[T](size), new CAdd[T](size))
+      (new CMul(size), new CAdd(size))
     }
   }
 
@@ -104,7 +98,7 @@ abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
    * @param name name of layer
    * @return
    */
-  def linear(p: (Int, Int), name: String, init: (Double, Double) = null): Linear[T] = {
+  def linear(p: (Int, Int), name: String, init: (Double, Double) = null): Linear[Float] = {
     if (caffeReader != null) {
       val out = caffeReader.mapInnerProduct(name)
       if (out != null) {
@@ -112,13 +106,13 @@ abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
         return out
       }
     }
-    val module = new Linear[T](p._1, p._2).setName(name)
+    val module = new Linear(p._1, p._2).setName(name)
     if (init != null) initParameters(module, init)
     module
   }
 
   def spatialFullConv(p: (Int, Int, Int, Int, Boolean), name: String)
-  : SpatialFullConvolutionMap[T] = {
+  : SpatialFullConvolutionMap[Float] = {
     if (caffeReader != null) {
       val out = caffeReader.mapDeconvolution(name).setName(name)
       if (out != null) {
@@ -130,14 +124,14 @@ abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
         return out
       }
     }
-    new SpatialFullConvolutionMap[T](SpatialConvolutionMap.oneToOne[T](p._1),
+    new SpatialFullConvolutionMap(SpatialConvolutionMap.oneToOne[Float](p._1),
       p._2, p._2, p._3, p._3, p._4, p._4, p._5).setName(name)
   }
 
-  private var testModel: Option[Sequential[T]] = None
-  private var trainModel: Option[Sequential[T]] = None
+  private var testModel: Option[Sequential[Float]] = None
+  private var trainModel: Option[Sequential[Float]] = None
 
-  def getTestModel: Module[T] = {
+  def getTestModel: Module[Float] = {
     testModel match {
       case None => testModel = Some(createTestModel())
       case _ =>
@@ -145,7 +139,7 @@ abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
     testModel.get
   }
 
-  def getTrainModel: Module[T] = {
+  def getTrainModel: Module[Float] = {
     trainModel match {
       case None => trainModel = Some(createTrainModel())
       case _ =>
@@ -153,43 +147,124 @@ abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
     trainModel.get
   }
 
-  def criterion4: ParallelCriterion[T]
+  def criterion4: ParallelCriterion[Float]
 
-  protected def createFeatureAndRpnNet(): Sequential[T]
+  protected def createFeatureAndRpnNet(): Sequential[Float]
 
   // pool is the parameter of RoiPooling
   val pool: Int
-  private[this] var _featureAndRpnNet: Sequential[T] = _
+  private[this] var _featureAndRpnNet: Sequential[Float] = _
 
-  def featureAndRpnNet: Sequential[T] = {
+  def featureAndRpnNet: Sequential[Float] = {
     if (_featureAndRpnNet == null) {
       _featureAndRpnNet = createFeatureAndRpnNet()
     }
     _featureAndRpnNet
   }
 
-  def setFeatureAndRpnNet(value: Sequential[T]): Unit = {
+  def setFeatureAndRpnNet(value: Sequential[Float]): Unit = {
     _featureAndRpnNet = value
   }
 
-  private[this] var _fastRcnn: Sequential[T] = _
+  private[this] var _fastRcnn: Sequential[Float] = _
 
-  def fastRcnn: Sequential[T] = {
+  def fastRcnn: Sequential[Float] = {
     if (_fastRcnn == null) {
       _fastRcnn = createFastRcnn()
     }
     _fastRcnn
   }
 
-  def setFastRcnn(value: Sequential[T]): Unit = {
+  def setFastRcnn(value: Sequential[Float]): Unit = {
     _fastRcnn = value
   }
 
-  protected def createFastRcnn(): Sequential[T]
+  protected def createFastRcnn(): Sequential[Float]
 
+  def createRpn(): Sequential[Float]
 
-  def copyFromCaffe(caffeReader: CaffeReader[T]): FasterRcnn[T] = {
-    val mod = caffeReader.loadModuleFromFile[(Sequential[T], Sequential[T])](modelName)
+  protected def createTestModel(): Sequential[Float]
+
+  protected def createTrainModel(): Sequential[Float]
+
+  def getModel: Module[Float] = {
+    if (isTest) getTestModel
+    else getTrainModel
+  }
+
+  def selectTensorNoBack(depths: Int*): Sequential[Float] = {
+    val module = new Sequential[Float]().setPropagateBack(false)
+    depths.slice(0, depths.length - 1).foreach(depth =>
+      module.add(new SelectTable[Table, Float](depth).setPropagateBack(false)))
+    module.add(new SelectTable[Tensor[Float], Float](depths(depths.length - 1)).setPropagateBack(false))
+  }
+
+  /**
+   * select tensor from nested tables
+   *
+   * @param depths a serious of depth to use when fetching certain tensor
+   * @return a wanted tensor
+   */
+  def selectTensor(depths: Int*): Sequential[Float] = {
+    val module = new Sequential[Float]()
+    depths.slice(0, depths.length - 1).foreach(depth =>
+      module.add(new SelectTable[Table, Float](depth)))
+    module.add(new SelectTable[Tensor[Float], Float](depths(depths.length - 1)))
+  }
+
+  def selectTensor1(depth: Int): SelectTable[Tensor[Float], Float] = {
+    new SelectTable[Tensor[Float], Float](depth)
+  }
+
+  def selectTensor1NoBack(depth: Int): SelectTable[Tensor[Float], Float] = {
+    new SelectTable[Tensor[Float], Float](depth).setPropagateBack(false)
+  }
+
+  def selectTable(depths: Int*): Sequential[Float] = {
+    val module = new Sequential[Float]()
+    depths.slice(0, depths.length).foreach(depth =>
+      module.add(new SelectTable[Table, Float](depth)))
+    module
+  }
+
+  def selectTableNoBack(depths: Int*): Sequential[Float] = {
+    val module = new Sequential[Float]().setPropagateBack(false)
+    depths.slice(0, depths.length).foreach(depth =>
+      module.add(new SelectTable[Table, Float](depth).setPropagateBack(false)))
+    module
+  }
+
+  def selectTable1(depth: Int): SelectTable[Table, Float] = {
+    new SelectTable[Table, Float](depth)
+  }
+
+  def selectTable1NoBack(depth: Int): SelectTable[Table, Float] = {
+    new SelectTable[Table, Float](depth).setPropagateBack(false)
+  }
+
+  def initParameters(module: Module[Float], init: (Double, Double)): Unit = {
+    val params = module.getParameters()
+    params._1.apply1(_ => RNG.normal(0, init._1).toFloat)
+    params._2.apply1(_ => init._2.toFloat)
+  }
+
+  def loadFromCaffeOrCache(dp: String, mp: String): this.type = {
+    val cachedPath = mp.substring(0, mp.lastIndexOf(".")) + ".bigdl"
+    val mod = FileUtil.loadModuleFromFile[(Sequential[Float], Sequential[Float])](cachedPath)
+    mod match {
+      case Some((featureAndRpn, fastRcnn)) =>
+        println(s"load model with caffe weight from cache $cachedPath")
+        setFeatureAndRpnNet(featureAndRpn)
+        setFastRcnn(fastRcnn)
+      case _ =>
+        Module.loadCaffe[Float](getModel, dp, mp, phase == TEST)
+        DlFile.save((featureAndRpnNet, fastRcnn), cachedPath, true)
+    }
+    this
+  }
+
+  def copyFromCaffe(caffeReader: CaffeReader[Float]): this.type = {
+    val mod = caffeReader.loadModuleFromFile[(Sequential[Float], Sequential[Float])](modelName)
     mod match {
       case Some((featureAndRpn, fastRcnn)) =>
         setFeatureAndRpnNet(featureAndRpn)
@@ -202,100 +277,34 @@ abstract class FasterRcnn[T: ClassTag](var phase: PhaseType)
     this
   }
 
-  def createRpn(): Sequential[T]
-
-  protected def createTestModel(): Sequential[T]
-
-  protected def createTrainModel(): Sequential[T]
-
-  def getModel: Module[T] = {
-    if (isTest) getTestModel
-    else getTrainModel
-  }
-
-  def selectTensorNoBack(depths: Int*): Sequential[T] = {
-    val module = new Sequential[T]().setPropagateBack(false)
-    depths.slice(0, depths.length - 1).foreach(depth =>
-      module.add(new SelectTable[Table, T](depth).setPropagateBack(false)))
-    module.add(new SelectTable[Tensor[T], T](depths(depths.length - 1)).setPropagateBack(false))
-  }
-
-  /**
-   * select tensor from nested tables
-   *
-   * @param depths a serious of depth to use when fetching certain tensor
-   * @return a wanted tensor
-   */
-  def selectTensor(depths: Int*): Sequential[T] = {
-    val module = new Sequential[T]()
-    depths.slice(0, depths.length - 1).foreach(depth =>
-      module.add(new SelectTable[Table, T](depth)))
-    module.add(new SelectTable[Tensor[T], T](depths(depths.length - 1)))
-  }
-
-  def selectTensor1(depth: Int): SelectTable[Tensor[T], T] = {
-    new SelectTable[Tensor[T], T](depth)
-  }
-
-  def selectTensor1NoBack(depth: Int): SelectTable[Tensor[T], T] = {
-    new SelectTable[Tensor[T], T](depth).setPropagateBack(false)
-  }
-
-  def selectTable(depths: Int*): Sequential[T] = {
-    val module = new Sequential[T]()
-    depths.slice(0, depths.length).foreach(depth =>
-      module.add(new SelectTable[Table, T](depth)))
-    module
-  }
-
-  def selectTableNoBack(depths: Int*): Sequential[T] = {
-    val module = new Sequential[T]().setPropagateBack(false)
-    depths.slice(0, depths.length).foreach(depth =>
-      module.add(new SelectTable[Table, T](depth).setPropagateBack(false)))
-    module
-  }
-
-  def selectTable1(depth: Int): SelectTable[Table, T] = {
-    new SelectTable[Table, T](depth)
-  }
-
-  def selectTable1NoBack(depth: Int): SelectTable[Table, T] = {
-    new SelectTable[Table, T](depth).setPropagateBack(false)
-  }
-
-  def initParameters(module: Module[T], init: (Double, Double)): Unit = {
-    val params = module.getParameters()
-    val rand = new Random()
-    params._1.apply1(_ => ev.fromType[Double](RNG.normal(0, init._1)))
-    params._2.apply1(_ => ev.fromType[Double](init._2))
-  }
 }
 
 object FasterRcnn {
-  def apply[@specialized(Float, Double) T: ClassTag]
-  (modelType: ModelType, phase: PhaseType = TEST, pretrained: Any = None)
-    (implicit ev: TensorNumeric[T]): FasterRcnn[T] = {
+  def apply(modelType: ModelType, phase: PhaseType = TEST, pretrained: Any = None): FasterRcnn = {
 
-    def getFasterRcnn(modelType: ModelType): FasterRcnn[T] = {
+    def getFasterRcnn(modelType: ModelType): FasterRcnn = {
       modelType match {
         case VGG16 =>
-          new VggFRcnn[T](phase)
+          new VggFRcnn(phase)
         case PVANET =>
-          new PvanetFRcnn[T](phase)
+          new PvanetFRcnn(phase)
         case _ =>
           throw new Exception("unsupport network")
       }
     }
 
-    pretrained match {
+    val fasterRcnnModel = pretrained match {
       case mp: String =>
         // big dl faster rcnn models
-        File.load[FasterRcnn[T]](mp)
+        DlFile.load[FasterRcnn](mp)
       case (dp: String, mp: String) =>
         // caffe pretrained model
-        val fm = getFasterRcnn(modelType).copyFromCaffe(new CaffeReader[T](dp, mp))
-        fm
+        getFasterRcnn(modelType)
+//          .copyFromCaffe(new CaffeReader[Float](dp, mp))
+          .loadFromCaffeOrCache(dp, mp)
       case _ => getFasterRcnn(modelType)
     }
+    Random.setSeed(fasterRcnnModel.param.RANDOM_SEED)
+    fasterRcnnModel
   }
 }
