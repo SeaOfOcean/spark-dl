@@ -32,7 +32,7 @@ class SpatialConvolutionMap[@specialized(Float, Double) T: ClassTag](
   val padW: Int = 0, // The additional zeros added per width to the input planes.
   val padH: Int = 0 // The additional zeros added per height to the input planes.
 
-)(implicit ev: TensorNumeric[T]) extends TensorModule[T]  {
+)(implicit ev: TensorNumeric[T]) extends TensorModule[T] {
   val nInputPlane = ev.toType[Int](connTable.select(2, 1).max())
   val nOutputPlane = ev.toType[Int](connTable.select(2, 2).max())
   val weight: Tensor[T] = Tensor[T](connTable.size(1), kH, kW)
@@ -181,7 +181,7 @@ class SpatialConvolutionMap[@specialized(Float, Double) T: ClassTag](
           1.0, gradOutput.storage().asInstanceOf[Storage[Double]], gradOutput.storageOffset() - 1
             + (o - 1 + m * nOutputPlane) * outputH * outputW,
           outputH, outputW, weight.storage().asInstanceOf[Storage[Double]], weight.storageOffset()
-            - 1 + (k - 1) * weightW * weightH, weightH, weightW, dH, dW)
+            - 1 + (k - 1) * weightW * weightH, weightH, weightW, dH, dW, padH, padW)
         //        print(gradInput)
         //        println()
         k += 1
@@ -273,13 +273,13 @@ class SpatialConvolutionMap[@specialized(Float, Double) T: ClassTag](
 object SpatialConvolutionMap {
 
   def apply[@specialized(Float, Double) T: ClassTag](
-      connTable: Tensor[T],
-      kW: Int,
-      kH: Int,
-      dW: Int = 1,
-      dH: Int = 1,
-      padW: Int = 0,
-      padH: Int = 0)(implicit ev: TensorNumeric[T]) : SpatialConvolutionMap[T] = {
+    connTable: Tensor[T],
+    kW: Int,
+    kH: Int,
+    dW: Int = 1,
+    dH: Int = 1,
+    padW: Int = 0,
+    padH: Int = 0)(implicit ev: TensorNumeric[T]) : SpatialConvolutionMap[T] = {
     new SpatialConvolutionMap[T](connTable, kW, kH, dW, dH, padW, padH)
   }
 
@@ -302,7 +302,7 @@ object SpatialConvolutionMap {
   }
 
   def oneToOne[@specialized(Float, Double) T: ClassTag](nfeat: Int)(
-    implicit ev: TensorNumeric[T]): Unit = {
+    implicit ev: TensorNumeric[T]): Tensor[T] = {
     val ft = Tensor[T](nfeat, 2)
     var i = 1
     while (i <= nfeat) {
@@ -310,6 +310,7 @@ object SpatialConvolutionMap {
       ft(i)(2) = ev.fromType[Int](i)
       i = i + 1
     }
+    ft
   }
 
   def random[@specialized(Float, Double) T: ClassTag](nin: Int, nout: Int, nto: Int)(
