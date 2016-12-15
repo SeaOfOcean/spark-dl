@@ -16,8 +16,9 @@
  */
 package com.intel.analytics.bigdl.nn
 
-import com.intel.analytics.bigdl.nn.abstractnn.Activity
-import com.intel.analytics.bigdl.nn.abstractnn.AbstractModule
+import com.intel.analytics.bigdl._
+import com.intel.analytics.bigdl.nn.abstractnn.{AbstractModule, Activity}
+import com.intel.analytics.bigdl.pvanet.caffe.CaffeLoader
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.utils.File
@@ -25,9 +26,15 @@ import com.intel.analytics.bigdl.utils.File
 import scala.reflect.ClassTag
 
 object Module {
-  def load[A <: Activity: ClassTag, B <: Activity: ClassTag,
-  @specialized(Float, Double) T: ClassTag](path : String) : AbstractModule[A, B, T] = {
+  def load[A <: Activity : ClassTag, B <: Activity : ClassTag,
+  @specialized(Float, Double) T: ClassTag](path: String): AbstractModule[A, B, T] = {
     File.load[AbstractModule[A, B, T]](path)
+  }
+
+  def loadCaffe[@specialized(Float, Double) T: ClassTag](model: Module[T],
+    defPath: String, modelPath: String, matchAll: Boolean = true)(
+    implicit ev: TensorNumeric[T]): Module[T] = {
+    CaffeLoader.load[T](model, defPath, modelPath, matchAll)
   }
 
   def flatten[@specialized(Float, Double) T: ClassTag](parameters: Array[Tensor[T]])(
