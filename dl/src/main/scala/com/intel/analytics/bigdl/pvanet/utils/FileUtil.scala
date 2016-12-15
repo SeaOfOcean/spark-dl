@@ -23,6 +23,7 @@ import breeze.linalg.DenseMatrix
 import com.intel.analytics.bigdl.pvanet.datasets.Imdb
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
+import com.intel.analytics.bigdl.utils.{File => DlFile}
 
 import scala.io.Source
 import scala.reflect.ClassTag
@@ -138,5 +139,14 @@ object FileUtil {
     if (!info.isEmpty) {
       println(s"$info pass")
     }
+  }
+
+  def loadModuleFromFile[M](filename: String): Option[M] = {
+    try {
+      if (existFile(filename)) return Some(DlFile.load[M](filename))
+    } catch {
+      case ex: Exception => None
+    }
+    None
   }
 }

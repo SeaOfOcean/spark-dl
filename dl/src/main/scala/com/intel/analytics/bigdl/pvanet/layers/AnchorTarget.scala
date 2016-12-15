@@ -151,10 +151,10 @@ object AnchorTarget {
       disableInds.foreach(x => labels(x) = -1)
     }
 
-    var bboxTargets = computeTargets(insideAnchors,
+    val bboxTargets = computeTargets(insideAnchors,
       MatrixUtil.selectMatrix(data.gtBoxes.get.toBreezeMatrix(), argmaxOverlaps, 0))
 
-    var bboxInsideWeights = DenseMatrix.zeros[Float](indsInside.length, 4)
+    val bboxInsideWeights = DenseMatrix.zeros[Float](indsInside.length, 4)
     labels.foreachPair((k, v) => {
       if (v == 1) {
         bboxInsideWeights(k, ::) :=
@@ -162,7 +162,7 @@ object AnchorTarget {
       }
     })
 
-    var bboxOutSideWeights = DenseMatrix.zeros[Float](indsInside.length, 4)
+    val bboxOutSideWeights = DenseMatrix.zeros[Float](indsInside.length, 4)
 
     val labelGe0 = labels.findAll(x => x >= 0).toArray
     val labelE1 = labels.findAll(x => x == 1).toArray

@@ -107,9 +107,6 @@ class SmoothL1Criterion2[T: ClassTag](@transient val sigma: Double, @transient v
         insideW.nElement() == bboxTarget.nElement(),
         "the length of bbox target, insideW, outsideW must be equal")
     }
-    if (gradInput == null) {
-      gradInput = Tensor[T]()
-    }
     val data = diff.storage().array()
     for (i <- data.indices) {
       // f'(x) = sigma * sigma * x         if |x| < 1 / sigma / sigma

@@ -40,10 +40,10 @@ class RoiPooling[@specialized(Float, Double) T: ClassTag]
     assert(input.length() == 2, "there must have two tensors in the table")
 
     val data = input(1).asInstanceOf[Tensor[T]]
-//    val rois = input(2).asInstanceOf[Tensor[T]]
+    val rois = input(2).asInstanceOf[Tensor[T]]
 
 //    FileUtil.assertEqual("rois", rois)
-    val rois = FileUtil.loadFeatures[T]("rois")
+//    val rois = FileUtil.loadFeatures[T]("rois")
     assert(rois.size().length > 1 && rois.size()(1) == 5, "roi input shape should be (R, 5)")
     assert(rois.size()(0) * rois.size()(1) == rois.nElement(), "roi input shape should be (R, 5)")
     channels = data.size()(1)

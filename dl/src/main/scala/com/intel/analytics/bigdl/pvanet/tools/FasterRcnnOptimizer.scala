@@ -30,7 +30,7 @@ import com.intel.analytics.bigdl.utils.Table
 
 class FasterRcnnOptimizer(data: LocalDataSource[ImageWithRoi],
   validationData: ObjectDataSource,
-  net: FasterRcnn[Float],
+  net: FasterRcnn,
   model: Module[Float],
   optimMethod: OptimMethod[Float],
   criterion: ParallelCriterion[Float],
@@ -126,12 +126,12 @@ class FasterRcnnOptimizer(data: LocalDataSource[ImageWithRoi],
       val start = System.nanoTime()
       val d = data.next()
       val input = new Table
-//      input.insert(ImageToTensor(d))
-      input.insert(FileUtil.loadFeatures[Float]("data"))
-      input.insert(FileUtil.loadFeatures[Float]("im_info").resize(3))
-      input.insert(FileUtil.loadFeatures[Float]("gt_boxes"))
-      //      input.insert(d.imInfo.get)
-//      input.insert(d.gtBoxes.get)
+      input.insert(ImageToTensor(d))
+      input.insert(d.imInfo.get)
+      input.insert(d.gtBoxes.get)
+      //      input.insert(FileUtil.loadFeatures[Float]("data"))
+//      input.insert(FileUtil.loadFeatures[Float]("im_info").resize(3))
+//      input.insert(FileUtil.loadFeatures[Float]("gt_boxes"))
 val dataFetchTime = System.nanoTime()
       model.zeroGradParameters()
       // (rpn_cls, rpn_reg, cls, reg, proposalTargets)

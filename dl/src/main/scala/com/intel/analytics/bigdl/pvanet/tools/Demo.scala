@@ -62,7 +62,7 @@ object Demo {
     val param = parser.parse(args, PascolVocLocalParam()).get
     val imgNames = Array("1.jpg", "20.jpg", "30.jpg", "40.jpg",
       "50.jpg", "60.jpg", "70.jpg", "80.jpg", "90.jpg", "100.jpg")
-    val net = FasterRcnn[Float](param.net, pretrained = model2caffePath(param.net))
+    val net = FasterRcnn(param.net, pretrained = model2caffePath(param.net))
 
     val model = net.getTestModel
 

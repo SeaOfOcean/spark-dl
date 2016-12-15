@@ -28,7 +28,7 @@ import com.intel.analytics.bigdl.utils.{Table, Timer}
 import scopt.OptionParser
 
 object Test {
-  def testNet(net: FasterRcnn[Float], dataSource: ObjectDataSource,
+  def testNet(net: FasterRcnn, dataSource: ObjectDataSource,
     maxPerImage: Int = 100, thresh: Double = 0.05, vis: Boolean = false): Unit = {
     val imdb = dataSource.imdb
     val model = net.getTestModel
@@ -149,7 +149,7 @@ object Test {
   case class PascolVocLocalParam(
     folder: String = "/home/xianyan/objectRelated/VOCdevkit",
     net: ModelType = VGG16,
-    nThread: Int = 4)
+    nThread: Int = 8)
 
   private val parser = new OptionParser[PascolVocLocalParam]("Spark-DL PascolVoc Local Example") {
     head("Spark-DL PascolVoc Local Example")
@@ -167,9 +167,9 @@ object Test {
     import com.intel.analytics.bigdl.mkl.MKL
     val param = parser.parse(args, PascolVocLocalParam()).get
 
-    val model = FasterRcnn[Float](param.net, Phase.TEST, model2caffePath(param.net))
+    val model = FasterRcnn(param.net, Phase.TEST, model2caffePath(param.net))
     MKL.setNumThreads(param.nThread)
-    val testDataSource = new ObjectDataSource("voc_2007_testcode4",
+    val testDataSource = new ObjectDataSource("voc_2007_testcode",
       FileUtil.DATA_DIR + "/VOCdevkit", false, model.param)
     testNet(model, testDataSource)
   }

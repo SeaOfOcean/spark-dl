@@ -30,7 +30,7 @@ object Train {
   case class PascolVocLocalParam(
     folder: String = "/home/xianyan/objectRelated/VOCdevkit",
     net: ModelType = Model.VGG16,
-    nThread: Int = 4,
+    nThread: Int = 8,
     cache: String = ".")
 
   private val parser = new OptionParser[PascolVocLocalParam]("Spark-DL PascolVoc Local Example") {
@@ -58,21 +58,21 @@ object Train {
     import com.intel.analytics.bigdl.mkl.MKL
     param = parser.parse(args, PascolVocLocalParam()).get
 
-    val model = FasterRcnn[Float](param.net, Phase.TRAIN, model2caffePath(param.net))
+    val fasterRcnnModel = FasterRcnn(param.net, Phase.TRAIN, model2caffePath(param.net))
     MKL.setNumThreads(param.nThread)
     val dataSource = new ObjectDataSource("voc_2007_testcode1", param.folder,
-      true, model.param)
+      true, fasterRcnnModel.param)
     val valSource = new ObjectDataSource("voc_2007_testcode1", param.folder,
-      false, model.param)
-    val config = model.param.optimizeConfig
-    val imgScaler = new ImageScalerAndMeanSubstractor(model.param)
-    model.train
+      false, fasterRcnnModel.param)
+    val config = fasterRcnnModel.param.optimizeConfig
+    val imgScaler = new ImageScalerAndMeanSubstractor(fasterRcnnModel.param)
+    fasterRcnnModel.train
     val optimizer = new FasterRcnnOptimizer(
       data = dataSource -> imgScaler,
       validationData = valSource,
-      net = model,
-      model = model.getTrainModel,
-      criterion = model.criterion4,
+      net = fasterRcnnModel,
+      model = fasterRcnnModel.getTrainModel,
+      criterion = fasterRcnnModel.criterion4,
       optimMethod = new SGD[Float](),
       state = T(
         "learningRate" -> config.learningRate,
@@ -81,7 +81,7 @@ object Train {
         "dampening" -> 0.0,
         "learningRateSchedule" -> EpochStep(25, 0.5)
       ),
-      endWhen = Trigger.maxEpoch(1))
+      endWhen = Trigger.maxIteration(5))
 
     optimizer.setCache(param.cache + "/" + param.net, config.cacheTrigger)
     optimizer.setValidationTrigger(config.testTrigger)

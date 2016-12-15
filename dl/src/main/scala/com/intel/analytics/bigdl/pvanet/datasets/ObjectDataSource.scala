@@ -26,6 +26,7 @@ import com.intel.analytics.bigdl.dataset.{LocalDataSource, Transformer}
 import com.intel.analytics.bigdl.pvanet.model.FasterRcnnParam
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 
+import scala.util
 import scala.util.Random
 
 
@@ -67,12 +68,12 @@ class ObjectDataSource(val imdb: Imdb, param: FasterRcnnParam, looped: Boolean =
     def shuffleWithAspectGrouping(widths: Array[Int], heights: Array[Int]): Array[Int] = {
       val horz = (widths zip heights).map(x => x._1 >= x._2)
       val vert = horz.map(x => !x)
-      val horz_inds = horz.zipWithIndex.filter(x => x._1).map(x => x._2)
-      val vert_inds = vert.zipWithIndex.filter(x => x._1).map(x => x._2)
-      val indsArr = (Random.shuffle(horz_inds.toSeq) ++ Random.shuffle(vert_inds.toSeq)).toArray
-      val row_perm = Random.shuffle(Seq.range(0, indsArr.length / 2))
+      val horzInds = horz.zipWithIndex.filter(x => x._1).map(x => x._2)
+      val vertInds = vert.zipWithIndex.filter(x => x._1).map(x => x._2)
+      val indsArr = (Random.shuffle(horzInds.toSeq) ++ Random.shuffle(vertInds.toSeq)).toArray
+      val rowPerm = Random.shuffle(Seq.range(0, indsArr.length / 2))
       val newInds = new Array[Int](indsArr.length)
-      row_perm.zipWithIndex.foreach(r => {
+      rowPerm.zipWithIndex.foreach(r => {
         newInds(r._1 * 2) = indsArr(r._2 * 2)
         newInds(r._1 * 2 + 1) = indsArr(r._2 * 2 + 1)
       })
@@ -168,7 +169,7 @@ class ImageScalerAndMeanSubstractor(param: FasterRcnnParam)
 //  private val labelTensor: Tensor[Float] = Tensor[Float]()
 //  private val roiLabelTensor: Tensor[Float] = Tensor[Float]()
 
-  // todo: buffer for roiLabelData and labelData
+// todo: buffer for roiLabelData and labelData
 //  def apply(anchorTarget: BboxTarget): (Tensor[Float], Table) = {
 //    var k = 0
 //
@@ -193,7 +194,7 @@ class ImageScalerAndMeanSubstractor(param: FasterRcnnParam)
 //    val roiLabelTensor = Tensor(Storage[Float](roiLabelData)).resize(Array(batchSize, 12,
 //      roiLabelData.length / 12 / width / batchSize, width))
 
-    //    val labelTensor = Tensor(Storage[Float](labelData))
+//    val labelTensor = Tensor(Storage[Float](labelData))
 //    val roiLabelTensor
 // = Tensor(Storage[Float](roiLabelData))
 //val table = new Table
@@ -202,7 +203,6 @@ class ImageScalerAndMeanSubstractor(param: FasterRcnnParam)
 //    table.insert(anchorTarget.bboxOutsideWeights)
 //    (anchorTarget.labels, table)
 //  }
-
 
 
 //}
