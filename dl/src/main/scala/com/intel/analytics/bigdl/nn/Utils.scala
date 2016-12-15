@@ -17,6 +17,7 @@
 
 package com.intel.analytics.bigdl.nn
 
+import com.intel.analytics.bigdl.Module
 import com.intel.analytics.bigdl.nn.abstractnn.Activity
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
@@ -67,9 +68,9 @@ object Utils {
    * @param target
    * @param src
    */
-  def recursiveResizeAs[T : ClassTag](target : Activities, src: Activities)(
-    implicit ev: TensorNumeric[T]): Activities = {
-    var result: Activities = null
+  def recursiveResizeAs[T : ClassTag](target: Activity, src: Activity)(
+    implicit ev: TensorNumeric[T]): Activity = {
+    var result: Activity = null
     if (src.isInstanceOf[Table]) {
       val srcTable = src.toTable
       result = if (null == target) {
@@ -148,7 +149,7 @@ object Utils {
       require(x.toTable.length() == y.toTable.length(), "x, y should have the same size")
       var i = 1
       while (i <= x.toTable.length()) {
-        recursiveTensorApply2[T](x, y, func)
+        recursiveTensorApply2[T](x.toTable(i), y.toTable(i), func)
         i += 1
       }
     }
@@ -200,41 +201,40 @@ object Utils {
     recursiveTensorApply1[T](x, t => t.fill(ev.fromType[Double](value)))
   }
 
-  /**
-   * get all modules and map by name, currently only map Module[Tensor[T], Tensor[T], T]
-   *
-   * @param model
-   * @tparam T
-   * @return
-   */
-  def getParamModules[T](model: Module[_, _, T]):
-  Map[String, Module[_, _, T]] = {
-    var modules: Map[String, Module[_, _, T]] = Map()
-    def getModules(module: Module[_, _, T]): Unit = {
-      module match {
-        case m: Container[_, _, T] =>
-          for (m <- module.asInstanceOf[Container[_, _, T]].modules) getModules(m)
-        case _ => modules += (module.getName() -> module)
-      }
-    }
-    getModules(model)
-    modules
-  }
-
-  def copyParamModules[T](testModel: Module[_, _, T],
-    name2model: Map[String, Module[_, _, T]]) = {
-    def setModules(module: Module[_, _, T]): Unit = {
+  def copyParamModules[T](testModel: Module[T],
+    name2model: Map[String, Module[T]]) = {
+    def setModules(module: Module[T]): Unit = {
       if (module.isInstanceOf[Container[_, _, T]]) {
         val m2 = module.asInstanceOf[Container[_, _, T]].modules
         for (i <- m2.indices) {
           if (m2(i).isInstanceOf[Container[_, _, T]]) {
             setModules(m2(i))
           } else {
-            m2(i) = name2model(m2(i).getName()).asInstanceOf[Module[Activities, Activities, T]]
+            m2(i) = name2model(m2(i).getName())
           }
         }
       }
     }
     setModules(testModel)
+  }
+
+  /**
+   * get all modules and map by name
+   *
+   * @param model
+   * @tparam T
+   * @return
+   */
+  def getNamedModules[T](model: Module[T]): Map[String, Module[T]] = {
+    var namedModules: Map[String, Module[T]] = Map()
+    def getModules(module: Module[T]): Unit = {
+      module match {
+        case m: Container[_, _, T] =>
+          for (m <- module.asInstanceOf[Container[_, _, T]].modules) getModules(m)
+        case _ => namedModules += (module.getName() -> module)
+      }
+    }
+    getModules(model)
+    namedModules
   }
 }
