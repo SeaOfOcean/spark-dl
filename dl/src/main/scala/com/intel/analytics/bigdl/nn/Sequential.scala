@@ -17,13 +17,13 @@
 
 package com.intel.analytics.bigdl.nn
 
-import com.intel.analytics.bigdl.nn.abstractnn.{Activity, AbstractModule}
+import com.intel.analytics.bigdl.nn.abstractnn.{AbstractModule, Activity}
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 
 import scala.reflect.ClassTag
 
 class Sequential[T: ClassTag]
-  (implicit ev: TensorNumeric[T]) extends Container[Activity, Activity, T] {
+(implicit ev: TensorNumeric[T]) extends Container[Activity, Activity, T] {
 
   override def updateOutput(input: Activity): Activity = {
     var i = 0
@@ -41,11 +41,19 @@ class Sequential[T: ClassTag]
     var i = modules.length - 1
     var error = nextError.asInstanceOf[Activity]
     while (i > 0) {
-      val input = modules(i - 1).output
-      error = modules(i).backward(input, error)
+      if (modules(i).propagateBack) {
+        val input = modules(i - 1).output
+        error = modules(i).backward(input, error)
+      } else {
+        println(s"${modules(i).getName()} does not need backward computation.")
+      }
       i -= 1
     }
-    error = modules(0).backward(input, error)
+    if (modules(0).propagateBack) {
+      error = modules(0).backward(input, error)
+    } else {
+      println(s"${modules(0).getName()} does not need backward computation.")
+    }
 
     this.gradInput = error
     gradInput
@@ -80,7 +88,7 @@ class Sequential[T: ClassTag]
     true
   }
 
-  override def hashCode() : Int = {
+  override def hashCode(): Int = {
     val seed = 37
     var hash = super.hashCode()
     val moduleLength = modules.length
@@ -115,7 +123,7 @@ class Sequential[T: ClassTag]
 
 object Sequential {
   def apply[@specialized(Float, Double) T: ClassTag]()
-      (implicit ev: TensorNumeric[T]) : Sequential[T] = {
+    (implicit ev: TensorNumeric[T]): Sequential[T] = {
     new Sequential[T]()
   }
 }

@@ -24,8 +24,8 @@ import com.intel.analytics.bigdl.utils.{T, Table}
 
 import scala.reflect.ClassTag
 
-class ConcatTable[T : ClassTag]
-  (implicit ev: TensorNumeric[T]) extends Container[Activity, Table, T] {
+class ConcatTable[T: ClassTag]
+(implicit ev: TensorNumeric[T]) extends Container[Activity, Table, T] {
   override def updateOutput(input: Activity): Table = {
     if (gradInput == null) {
       gradInput = allocateAs(input)
@@ -41,18 +41,18 @@ class ConcatTable[T : ClassTag]
 
   /**
    * add in to out
- *
+   *
    * @param out a table
-   * @param in a table
+   * @param in  a table
    */
-  private def addTable(out: Activity, in: Activity) : Unit = {
+  private def addTable(out: Activity, in: Activity): Unit = {
     if (in.isInstanceOf[Tensor[T]] && out.isInstanceOf[Tensor[T]]) {
       require(in.toTensor[T].nElement() == out.toTensor[T].nElement(),
         "gradInput should have the same size")
       out.toTensor[T].add(in.toTensor[T])
     } else {
       var i = 1
-      while (i <= out.toTable.length()) {
+      while (i <= in.toTable.length()) {
         addTable(out.toTable(i), in.toTable(i))
         i += 1
       }
@@ -61,11 +61,11 @@ class ConcatTable[T : ClassTag]
 
   /**
    * copy src to out
- *
+   *
    * @param out a table
    * @param src a table
    */
-  private def copyTable(out: Activity, src: Activity) : Unit = {
+  private def copyTable(out: Activity, src: Activity): Unit = {
     if (src.isInstanceOf[Tensor[T]] && out.isInstanceOf[Tensor[T]]) {
       out.toTensor[T].resizeAs(src.toTensor[T]).copy(src.toTensor[T])
     } else {
@@ -80,11 +80,11 @@ class ConcatTable[T : ClassTag]
   /**
    * return a clone of src,
    * Notice: this is a deep copy, while Table.clone is a shallow copy.
- *
+   *
    * @param src a table
    * @return cloned table of src
    */
-  private def cloneTable(src: Activity) : Activity = {
+  private def cloneTable(src: Activity): Activity = {
     if (src.isInstanceOf[Tensor[T]]) {
       src.toTensor[T].clone()
     } else {
@@ -105,20 +105,24 @@ class ConcatTable[T : ClassTag]
     if (isInputTable) {
       var i = 0
       while (i < modules.length) {
-        val currentGradInput = modules(i).updateGradInput(input,
-          gradOutput.toTable(i + 1))
-        require(currentGradInput.isInstanceOf[Table],
-          "currentGradInput is not a table!")
-        if (i == 0) {
-          if (!wasGradInputTable ||
-            gradInput.toTable.length() != currentGradInput.toTable.length()) {
-            // We need deep copy here.
-            gradInput = cloneTable(currentGradInput)
+        if (modules(i).propagateBack) {
+          val currentGradInput = modules(i).updateGradInput(input,
+            gradOutput.toTable(i + 1))
+          require(currentGradInput.isInstanceOf[Table],
+            "currentGradInput is not a table!")
+          if (i == 0) {
+            if (!wasGradInputTable ||
+              gradInput.toTable.length() != currentGradInput.toTable.length()) {
+              // We need deep copy here.
+              gradInput = cloneTable(currentGradInput)
+            } else {
+              copyTable(gradInput, currentGradInput)
+            }
           } else {
-            copyTable(gradInput, currentGradInput)
+            addTable(gradInput, currentGradInput)
           }
         } else {
-          addTable(gradInput, currentGradInput)
+          println(s"${modules(i).getName()} does not need backward computation.")
         }
         i += 1
       }
@@ -148,7 +152,9 @@ class ConcatTable[T : ClassTag]
     scale: Double = 1.0): Unit = {
     var i = 0
     while (i < modules.length) {
-      modules(i).accGradParameters(input, gradOutput.toTable(i + 1), scale)
+      if (modules(i).propagateBack) {
+        modules(i).accGradParameters(input, gradOutput.toTable(i + 1), scale)
+      }
       i += 1
     }
   }
@@ -167,10 +173,10 @@ class ConcatTable[T : ClassTag]
     while (i <= modules.length) {
       if (i == modules.length) {
         str = str + line + tab + lastNext + "(" + i + "): " +
-          modules(i-1).toString.replace(line, line + tab + extlast)
+          modules(i - 1).toString.replace(line, line + tab + extlast)
       } else {
         str = str + line + tab + next + "(" + i + "): " +
-          modules(i-1).toString.replace(line, line + tab + ext)
+          modules(i - 1).toString.replace(line, line + tab + ext)
       }
       i += 1
     }
@@ -182,7 +188,7 @@ class ConcatTable[T : ClassTag]
 
 object ConcatTable {
   def apply[A <: Activity : ClassTag, @specialized(Float, Double) T: ClassTag]()
-      (implicit ev: TensorNumeric[T]) : ConcatTable[T] = {
+    (implicit ev: TensorNumeric[T]): ConcatTable[T] = {
     new ConcatTable[T]()
   }
 }

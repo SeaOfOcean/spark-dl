@@ -116,6 +116,13 @@ abstract class AbstractModule[A <: Activity: ClassTag, B <: Activity: ClassTag,
     backwardTime = 0
   }
 
+  var propagateBack: Boolean = true
+
+  def setPropagateBack(propagateBack: Boolean): this.type = {
+    this.propagateBack = propagateBack
+    this
+  }
+
   /**
    * Takes an input object, and computes the corresponding output of the module. After a forward,
    * the output state variable should have been updated to the new value.
@@ -273,6 +280,64 @@ abstract class AbstractModule[A <: Activity: ClassTag, B <: Activity: ClassTag,
     this.clearState()
     File.save(this, path, overWrite)
     this
+  }
+}
+
+object AbstractModule {
+  def load[A <: Activity: ClassTag, B <: Activity: ClassTag,
+  @specialized(Float, Double) T: ClassTag](path : String) : AbstractModule[A, B, T] = {
+    File.load[AbstractModule[A, B, T]](path)
+  }
+
+  def flatten[@specialized(Float, Double) T: ClassTag](parameters: Array[Tensor[T]])(
+    implicit ev: TensorNumeric[T]): Tensor[T] = {
+    val compactedTensor = isCompact(parameters)
+    if (compactedTensor != null) {
+      return compactedTensor
+    }
+    var i = 0
+    var length = 0
+    while (i < parameters.length) {
+      require(parameters(i).isContiguous())
+      length += parameters(i).nElement()
+      i += 1
+    }
+
+    val result = Tensor[T](length)
+    val resultStorage = result.storage()
+
+    i = 0
+    var offset = 0
+    while (i < parameters.length) {
+      System.arraycopy(parameters(i).storage().array(), parameters(i).storageOffset() - 1,
+        resultStorage.array(), offset, parameters(i).nElement())
+      parameters(i).set(resultStorage, offset + 1, parameters(i).size(), parameters(i).stride())
+      offset += parameters(i).nElement()
+      i += 1
+    }
+
+    result
+  }
+
+  def isCompact[@specialized(Float, Double) T: ClassTag](paramters: Array[Tensor[T]])(
+    implicit ev: TensorNumeric[T]): Tensor[T] = {
+    require(paramters.length > 0)
+    var i = 1
+    val storage = paramters(0).storage()
+    var length = paramters(0).nElement()
+    while (i < paramters.length) {
+      if (!storage.eq(paramters(i).storage())) {
+        return null
+      }
+      length += paramters(i).nElement()
+      i += 1
+    }
+
+    if (length != storage.array().length) {
+      return null
+    }
+
+    return Tensor(storage)
   }
 }
 
