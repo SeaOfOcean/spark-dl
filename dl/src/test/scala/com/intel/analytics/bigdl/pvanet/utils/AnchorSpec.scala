@@ -99,7 +99,7 @@ class AnchorSpec extends FlatSpec with Matchers {
     assert(act2 === expected2)
   }
 
-  val param =new PvanetParam()
+  val param = new PvanetParam()
   val root = "data/middle/"
   val width = 37
   val height = 50
@@ -120,8 +120,31 @@ class AnchorSpec extends FlatSpec with Matchers {
   }
 
   val allAnchors = Anchor.getAllAnchors(shifts, anchors)
+  val allAnchors2 = Anchor.getAllAnchors(Tensor(shifts), Tensor(anchors))
   "generateAllAnchors" should "work properly" in {
     val expected = FileUtil.loadFeatures[Float]("allAnchors", root)
     TestUtil.assertMatrixEqualTM(expected, convert(allAnchors, Double), 1e-6)
+    TestUtil.assertMatrixEqualTM(allAnchors2, convert(allAnchors, Double), 1e-6)
+  }
+
+  "generate shifts with tensor " should "work properly" in {
+    val shifts2 = Anchor.generateShifts2(2, 3, 2)
+    val shift = Anchor.generateShifts(2, 3, 2)
+    val expected = Tensor(Storage(Array(0.0, 0.0, 0.0, 0.0,
+      2.0, 0.0, 2.0, 0.0,
+      0.0, 2.0, 0.0, 2.0,
+      2.0, 2.0, 2.0, 2.0,
+      0.0, 4.0, 0.0, 4.0,
+      2.0, 4.0, 2.0, 4.0).map(x => x.toFloat))).resize(6, 4)
+    shifts2 should be(expected)
+    TestUtil.assertMatrixEqualTM(shifts2, convert(shift, Double), 1e-6)
+  }
+
+  "getAllAnchors" should "work properly" in {
+    val shifts = Tensor.randperm[Float](12).resize(3,4)
+    val anchors = Tensor.randperm[Float](8).resize(2,4)
+    val allAnchors = Anchor.getAllAnchors(shifts.toBreezeMatrix(), anchors.toBreezeMatrix())
+    val allAnchors2 = Anchor.getAllAnchors(shifts, anchors)
+    TestUtil.assertMatrixEqualTM(allAnchors2, convert(allAnchors, Double), 1e-6)
   }
 }

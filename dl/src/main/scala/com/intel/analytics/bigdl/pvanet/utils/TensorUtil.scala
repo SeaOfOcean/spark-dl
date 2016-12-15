@@ -23,6 +23,43 @@ import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import scala.reflect.ClassTag
 
 object TensorUtil {
+
+  /**
+   * element add vec with each mat row
+   *
+   * @param mat
+   * @param vec
+   * @return
+   */
+  def addMatrixWithVector(mat: Tensor[Float], vec: Tensor[Float]): Tensor[Float] = {
+    assert(mat.size(2) == vec.nElement(), "maxtrix cols should be same size as vec")
+    val res = mat.clone()
+    (1 to res.size(1)).foreach(r => res.update(r, vec))
+    res
+  }
+
+
+  /**
+   * update with 2d tensor, the range must be equal to the src tensor size
+   *
+   * @param startR
+   * @param endR
+   * @param startC
+   * @param endC
+   * @param dest
+   * @param src
+   */
+  def updateRange(dest: Tensor[Float], startR: Int, endR: Int, startC: Int, endC: Int,
+    src: Tensor[Float]) = {
+    assert(src.size(1) == endR - startR + 1)
+    assert(src.size(2) == endC - startC + 1)
+    (startR to endR).zip(Stream.from(1)).foreach(r => {
+      (startC to endC).zip(Stream.from(1)).foreach(c => {
+        dest.setValue(r._1, c._1, src.valueAt(r._2, c._2))
+      })
+    })
+  }
+
   def concat[T: ClassTag](tensors: Tensor[T]*)
     (implicit ev: TensorNumeric[T]): Tensor[T] = {
     require(tensors(0).dim() == 1, "currently only support 1D")
@@ -71,14 +108,14 @@ object TensorUtil {
       nRows += tensors(i).size(1)
     }
     val resData = Tensor[T](nRows, nCols)
-    var id = 1
-    tensors.foreach { tensor =>
-      (1 to tensor.size(1)).foreach { rid =>
+    var id = 0
+    tensors.foreach(tensor =>
+      (1 to tensor.size(1)).foreach(rid => {
+        id = id + 1
         (1 to tensor.size(2)).foreach(cid =>
-          resData.setValue(rid, id, tensor.valueAt(rid, cid)))
-      }
-      id = id + 1
-    }
+          resData.setValue(id, cid, tensor.valueAt(rid, cid)))
+      }))
     resData
   }
+
 }

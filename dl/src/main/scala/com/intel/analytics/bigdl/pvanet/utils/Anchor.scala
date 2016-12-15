@@ -119,12 +119,48 @@ object Anchor {
     new DenseMatrix(0, 0)
   }
 
+  def generateShifts2(width: Int, height: Int, featStride: Float): Tensor[Float] = {
+    val shiftX = Tensor[Float].range(0, width - 1).apply1(x => x * featStride)
+    val shiftY = Tensor[Float].range(0, height - 1).apply1(x => x * featStride)
+    MatrixUtil.meshgrid(shiftX, shiftY) match {
+      case (x1Mesh, x2Mesh) =>
+        return TensorUtil.concat(
+          x1Mesh.resize(x1Mesh.nElement()),
+          x2Mesh.resize(x2Mesh.nElement()),
+          x1Mesh.resize(x1Mesh.nElement()),
+          x2Mesh.resize(x2Mesh.nElement())).resize(4, x1Mesh.nElement()).t().contiguous()
+    }
+    Tensor[Float](0, 0)
+  }
+
   def getAllAnchors(shifts: DenseMatrix[Float],
     anchors: DenseMatrix[Float]): DenseMatrix[Float] = {
     val allAnchors = new DenseMatrix[Float](shifts.rows * anchors.rows, 4)
     for (s <- 0 until shifts.rows) {
       allAnchors(s * anchors.rows until (s + 1) * anchors.rows, 0 until 4) :=
         (anchors.t(::, *) + shifts.t(::, s)).t
+    }
+    allAnchors
+  }
+
+  /**
+   * each row of shifts add each row of anchors
+   * and return shifts.size(1) * anchors.size(1) rows
+   *
+   * @param shifts
+   * @param anchors
+   * @return
+   */
+  def getAllAnchors(shifts: Tensor[Float],
+    anchors: Tensor[Float]): Tensor[Float] = {
+    assert(shifts.size(2) == 4 && anchors.size(2) == 4)
+    val allAnchors = Tensor[Float](shifts.size(1) * anchors.size(1), 4)
+    var r = 1
+    for (s <- 1 to shifts.size(1)) {
+      for (a <- 1 to anchors.size(1)) {
+        allAnchors.update(r, shifts(s).clone().add(anchors(a)))
+        r = r + 1
+      }
     }
     allAnchors
   }

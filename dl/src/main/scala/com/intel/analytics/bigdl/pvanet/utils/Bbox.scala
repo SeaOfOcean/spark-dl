@@ -19,6 +19,7 @@ package com.intel.analytics.bigdl.pvanet.utils
 
 import breeze.linalg.{*, DenseMatrix, DenseVector, min}
 import breeze.numerics._
+import com.intel.analytics.bigdl.tensor.Tensor
 
 object Bbox {
   def bboxVote(detsNMS: DenseMatrix[Float], detsAll: DenseMatrix[Float]): DenseMatrix[Float] = {
@@ -68,7 +69,8 @@ object Bbox {
    * @param queryBoxes (K, >=4) ndarray of float
    * @return overlaps: (N, K) ndarray of overlap between boxes and query_boxes
    */
-  def bboxOverlap(boxes: DenseMatrix[Float], queryBoxes: DenseMatrix[Float]): DenseMatrix[Float] = {
+  def bboxOverlap(boxes: DenseMatrix[Float], queryBoxes: DenseMatrix[Float])
+  : DenseMatrix[Float] = {
     require(boxes.cols >= 4)
     require(queryBoxes.cols >= 4)
     val N = boxes.rows
@@ -95,6 +97,36 @@ object Bbox {
     }
     overlaps
   }
+
+
+  def bboxOverlap(boxes: Tensor[Float], queryBoxes: Tensor[Float]): Tensor[Float] = {
+    require(boxes.size(2) >= 4)
+    require(queryBoxes.size(2) >= 4)
+    val N = boxes.size(1)
+    val K = queryBoxes.size(1)
+    val overlaps = Tensor[Float](N, K)
+
+    for (k <- 1 to K) {
+      val boxArea = (queryBoxes.valueAt(k, 3) - queryBoxes.valueAt(k, 1) + 1) *
+        (queryBoxes.valueAt(k, 4) - queryBoxes.valueAt(k, 2) + 1)
+      for (n <- 1 to N) {
+        val iw = Math.min(boxes.valueAt(n, 3), queryBoxes.valueAt(k, 3)) -
+          Math.max(boxes.valueAt(n, 1), queryBoxes.valueAt(k, 1)) + 1
+        if (iw > 0) {
+          val ih = Math.min(boxes.valueAt(n, 4), queryBoxes.valueAt(k, 4)) -
+            Math.max(boxes.valueAt(n, 2), queryBoxes.valueAt(k, 2)) + 1
+
+          if (ih > 0) {
+            val ua = (boxes.valueAt(n, 3) - boxes.valueAt(n, 1) + 1) *
+              (boxes.valueAt(n, 4) - boxes.valueAt(n, 2) + 1) + boxArea - iw * ih
+            overlaps.setValue(n, k, iw * ih / ua)
+          }
+        }
+      }
+    }
+    overlaps
+  }
+
 
   /**
    * copy value to corresponding cols of mat, the start col ind is cid, with step

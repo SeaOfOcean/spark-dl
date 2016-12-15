@@ -29,16 +29,20 @@ class TensorUtilSpec extends FlatSpec with Matchers {
 
     val res = TensorUtil.concat[Double](t1, t2, t3)
     val expected = Tensor(Storage(Array[Double](1, 2, 3, 4, 5, 6, 7, 8, 9)))
-    res should be (expected)
+    res should be(expected)
   }
 
-  "testHorzConcat" should "work properly" in {
-//    val t1 = Tensor(Storage(Array(1, 2, 3)))
-//    val t2 = Tensor(Storage(Array(4, 5, 6)))
-  }
-
-  "testVertConcat" should "work properly" in {
-
+  "updateRange" should "work properly" in {
+    val dest = Tensor(Storage(Array(1, 2, 3, 4, 5, 6, 7, 8, 9).map(x => x.toFloat))).resize(3, 3)
+    val src = Tensor(Storage(Array(-1, -2, -3, -4).map(x => x.toFloat))).resize(2, 2)
+    TensorUtil.updateRange(dest, 1, 2, 1, 2, src)
+    val expected = Tensor(Storage(Array(-1, -2, 3, -3, -4, 6, 7, 8, 9)
+      .map(x => x.toFloat))).resize(3, 3)
+    dest should be(expected)
+    TensorUtil.updateRange(dest, 2, 3, 2, 3, src)
+    val expected2 = Tensor(Storage(Array(-1, -2, 3, -3, -1, -2, 7, -3, -4)
+      .map(x => x.toFloat))).resize(3, 3)
+    dest should be(expected2)
   }
 
 }

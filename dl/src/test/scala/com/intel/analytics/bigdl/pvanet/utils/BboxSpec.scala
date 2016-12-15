@@ -19,9 +19,12 @@ package com.intel.analytics.bigdl.pvanet.utils
 
 import breeze.linalg.{DenseMatrix, convert}
 import breeze.numerics.abs
-import org.scalatest.FlatSpec
+import com.intel.analytics.bigdl.tensor.Tensor
+import org.scalatest.{FlatSpec, Matchers}
 
-class BboxSpec extends FlatSpec {
+import scala.util.Random
+
+class BboxSpec extends FlatSpec with Matchers {
   behavior of "BboxSpec"
 
   it should "bboxVote" in {
@@ -134,6 +137,55 @@ class BboxSpec extends FlatSpec {
     for (i <- 0 until res.rows) {
       for (j <- 0 until res.cols) {
         assert(abs(res(i, j) - expectedResults(i, j)) < 1e-6)
+      }
+    }
+  }
+
+  "bbox overlap" should "have the same result for brzmatrix and tensor" in {
+    Random.setSeed(1)
+    val v1 = DenseMatrix((124.67757, 198.44446, 499.0, 319.46954, 0.44293448),
+      (342.84973, 159.25734, 499.0, 306.46826, 0.105595924),
+      (71.944336, 42.300797, 435.08072, 323.51843, 0.095248096))
+    val v2 = DenseMatrix((19.352219, 163.53407, 499.0, 318.2702, 0.1923532),
+      (124.67757, 198.44446, 499.0, 319.46954, 0.44293448),
+      (0.0, 191.88805, 499.0, 321.89288, 0.118584715),
+      (0.0, 99.202065, 493.6775, 321.6583, 0.1829617),
+      (0.0, 190.09538, 391.3026, 328.06378, 0.053920552),
+      (239.84499, 103.70652, 499.0, 321.04962, 0.100431755),
+      (100.49286, 91.12562, 499.0, 323.65686, 0.18068084),
+      (178.0736, 175.94618, 499.0, 321.1881, 0.37770998),
+      (0.0, 118.12887, 386.87604, 319.87268, 0.084006935),
+      (175.99504, 35.884323, 498.94446, 318.77704, 0.07011555),
+      (121.67645, 182.41452, 478.1596, 320.16412, 0.38305077),
+      (0.0, 30.538345, 492.15747, 312.7992, 0.07436083),
+      (77.29045, 125.990456, 478.4983, 320.66547, 0.10816171),
+      (123.633224, 205.55194, 447.4248, 319.41675, 0.11607359),
+      (178.96523, 206.04062, 499.0, 317.30673, 0.07201823),
+      (155.32773, 207.17589, 499.0, 316.96683, 0.07939793),
+      (287.53674, 118.663925, 499.0, 309.00146, 0.10261241),
+      (57.928955, 130.33197, 408.22736, 317.33112, 0.25868088),
+      (163.74406, 111.216034, 493.4549, 318.0517, 0.07715336),
+      (92.417786, 190.0836, 426.7011, 319.14508, 0.053326167),
+      (342.84973, 159.25734, 499.0, 306.46826, 0.105595924),
+      (71.944336, 42.300797, 435.08072, 323.51843, 0.095248096))
+
+    val d1 = convert(v1, Float)
+    val d2 = convert(v2, Float)
+    val t1 = Tensor(d1)
+    val t2 = Tensor(d2)
+
+    for (i <- 0 until d1.rows) {
+      for (j <- 0 until d1.cols) {
+        assert(d1(i, j) == t1.valueAt(i + 1, j + 1))
+      }
+    }
+
+    val r1 = Bbox.bboxOverlap(d1, d2)
+    val r2 = Bbox.bboxOverlap(t1, t2)
+
+    for (i <- 0 until r1.rows) {
+      for (j <- 0 until r1.cols) {
+        assert(r1(i, j) == r2.valueAt(i + 1, j + 1))
       }
     }
   }

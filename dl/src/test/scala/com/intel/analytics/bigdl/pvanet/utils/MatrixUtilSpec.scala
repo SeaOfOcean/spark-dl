@@ -18,6 +18,7 @@
 package com.intel.analytics.bigdl.pvanet.utils
 
 import breeze.linalg.{DenseMatrix, convert}
+import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import org.scalatest.{FlatSpec, Matchers}
 
 
@@ -89,6 +90,18 @@ class MatrixUtilSpec extends FlatSpec with Matchers {
       (66.0, 70.0),
       (74.0, 78.0))
     assert(res2 === expectedRes2)
+  }
+
+  "meshgrid " should "work properly" in {
+    val a = Tensor(Storage(Array(1f, 2f, 3f)))
+    val b = Tensor(Storage(Array(4f, 5f, 6f)))
+    val r1 = MatrixUtil.meshgrid(a, b)
+
+    val expectedx1 = Tensor(DenseMatrix((1f, 2f, 3f), (1f, 2f, 3f), (1f, 2f, 3f)))
+    val expectedx2 = Tensor(DenseMatrix((4f, 4f, 4f), (5f, 5f, 5f), (6f, 6f, 6f)))
+
+    r1._1 should be(expectedx1)
+    r1._2 should be(expectedx2)
   }
 
 }

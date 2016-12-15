@@ -64,16 +64,29 @@ object MatrixUtil {
     (x1Mesh, x2Mesh)
   }
 
-//  def meshgrid(x1: Tensor[Float],
-//    x2: Tensor[Float]): (Tensor[Float], Tensor[Float]) = {
-//    val x1Mesh = Tensor[Float](x2.nElement(), x1.nElement())
-//    (1 to x2.nElement()).foreach(i => x1Mesh.update(i, x1))
-//    val x2Mesh = Tensor[Float](x2.nElement(), x1.nElement())
-//    (1 to x1.nElement()).foreach { i=>
-//      (1 to x2Mesh.size(1)).foreach(x => x2Mesh.setValue(x, i, x2.valueAt(x)))
-//    }
-//    (x1Mesh, x2Mesh)
-//  }
+  /**
+   * If x1 = [1, 2, 3]
+   * x2 = [4, 5, 6]
+   * return [1 2 3
+   *         1 2 3
+   *         1 2 3
+   *         4 4 4
+   *         5 5 5
+   *         6 6 6]
+   * @param x1
+   * @param x2
+   * @return
+   */
+  def meshgrid(x1: Tensor[Float],
+    x2: Tensor[Float]): (Tensor[Float], Tensor[Float]) = {
+    val x1Mesh = Tensor[Float](x2.nElement(), x1.nElement())
+    (1 to x2.nElement()).foreach(i => x1Mesh.update(i, x1))
+    val x2Mesh = Tensor[Float](x2.nElement(), x1.nElement())
+    (1 to x1.nElement()).foreach { i=>
+      (1 to x2Mesh.size(1)).foreach(x => x2Mesh.setValue(x, i, x2.valueAt(x)))
+    }
+    (x1Mesh, x2Mesh)
+  }
 
   /**
    * return the max value in rows(d=0) or in cols(d=1)
