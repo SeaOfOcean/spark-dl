@@ -19,83 +19,93 @@ package com.intel.analytics.bigdl.pvanet.datasets
 
 import java.awt.Color
 import java.awt.image.{BufferedImage, DataBufferByte}
+import java.util.concurrent.atomic.AtomicInteger
 import javax.imageio.ImageIO
 
 import breeze.linalg.DenseVector
-import com.intel.analytics.bigdl.dataset.{LocalDataSource, Transformer}
+import com.intel.analytics.bigdl.dataset.{LocalDataSet, Transformer}
 import com.intel.analytics.bigdl.pvanet.model.FasterRcnnParam
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
+import com.intel.analytics.bigdl.utils.RandomGenerator
 
-import scala.util
 import scala.util.Random
 
 
-class ObjectDataSource(val imdb: Imdb, param: FasterRcnnParam, looped: Boolean = true)
-  extends LocalDataSource[Roidb] {
+class ObjectDataSource(val imdb: Imdb, looped: Boolean = true)
+  extends LocalDataSet[Roidb] {
 
-  def this(name: String, devkitPath: String, looped: Boolean, param: FasterRcnnParam) {
-    this(Imdb.getImdb(name, param, Some(devkitPath)), param, looped)
-  }
+  val roidbs = imdb.getRoidb
 
-  def this(name: String, looped: Boolean, param: FasterRcnnParam) {
-    this(Imdb.getImdb(name, param), param, looped)
-  }
-
-  val data: Array[Roidb] = imdb.getRoidb
   // permutation of the data index
-  var perm: Array[Int] = data.indices.toArray
-
-  private var offset = 0
-
-
-  override def reset(): Unit = {
-    offset = 0
-  }
-
-  def finished(): Boolean = offset >= data.length
-
-  override def hasNext: Boolean = {
-    if (looped) {
-      true
-    } else {
-      offset < data.length
-    }
-  }
-
-  override def total(): Long = data.length
+  var perm: Array[Int] = _
 
   override def shuffle(): Unit = {
-    def shuffleWithAspectGrouping(widths: Array[Int], heights: Array[Int]): Array[Int] = {
+    def shuffleWithAspectGrouping(widths: Array[Int], heights: Array[Int]): Unit = {
       val horz = (widths zip heights).map(x => x._1 >= x._2)
       val vert = horz.map(x => !x)
       val horzInds = horz.zipWithIndex.filter(x => x._1).map(x => x._2)
       val vertInds = vert.zipWithIndex.filter(x => x._1).map(x => x._2)
       val indsArr = (Random.shuffle(horzInds.toSeq) ++ Random.shuffle(vertInds.toSeq)).toArray
       val rowPerm = Random.shuffle(Seq.range(0, indsArr.length / 2))
-      val newInds = new Array[Int](indsArr.length)
       rowPerm.zipWithIndex.foreach(r => {
-        newInds(r._1 * 2) = indsArr(r._2 * 2)
-        newInds(r._1 * 2 + 1) = indsArr(r._2 * 2 + 1)
+        perm(r._1 * 2) = indsArr(r._2 * 2)
+        perm(r._1 * 2 + 1) = indsArr(r._2 * 2 + 1)
       })
-      newInds
     }
     if (imdb.param.ASPECT_GROUPING) {
-      perm = shuffleWithAspectGrouping(imdb.widths, imdb.heights)
+      shuffleWithAspectGrouping(imdb.widths, imdb.heights)
     } else {
-      perm = Random.shuffle(Array.range(0, data.length).toSeq).toArray
+      RandomGenerator.shuffle(perm)
     }
   }
 
+  /**
+   * Get a sequence of data
+   *
+   * @return
+   */
+  override def data(): Iterator[Roidb] = {
+    perm = imdb.getRoidb.indices.toArray
+    new Iterator[Roidb] {
+      private val index = new AtomicInteger()
 
-  override def next(): Roidb = {
-    val r = if (looped) offset % data.length else offset
-    offset += 1
-    data(perm(r))
+      override def hasNext: Boolean = {
+        if (looped) {
+          true
+        } else {
+          index.get() < perm.length
+        }
+      }
+
+      override def next(): Roidb = {
+        val curIndex = index.getAndIncrement()
+        if (looped || curIndex < perm.length) {
+          roidbs(perm(if (looped) (curIndex % perm.length) else curIndex))
+        } else {
+          null.asInstanceOf[Roidb]
+        }
+      }
+    }
   }
 
-  def next(i: Int): Roidb = {
-    data(i)
-  }
+  /**
+   * Return the total size of the data set
+   *
+   * @return
+   */
+  override def size(): Long = roidbs.length
+}
+
+object ObjectDataSource {
+  def apply(imdb: Imdb, looped: Boolean = true): ObjectDataSource =
+    new ObjectDataSource(imdb, looped)
+
+  def apply(name: String, devkitPath: String, param: FasterRcnnParam,
+    looped: Boolean): ObjectDataSource =
+    new ObjectDataSource(Imdb.getImdb(name, param, Some(devkitPath)), looped)
+
+  def apply(name: String, param: FasterRcnnParam, looped: Boolean): ObjectDataSource =
+    new ObjectDataSource(Imdb.getImdb(name, param), looped)
 }
 
 class ImageScalerAndMeanSubstractor(param: FasterRcnnParam)
@@ -158,54 +168,11 @@ class ImageScalerAndMeanSubstractor(param: FasterRcnnParam)
     ImageWithRoi(img.getWidth, img.getHeight, gtBoxes, scaledImage, imInfo)
   }
 
-  override def transform(prev: Iterator[Roidb]): Iterator[ImageWithRoi] = {
+  override def apply(prev: Iterator[Roidb]): Iterator[ImageWithRoi] = {
     // generate a serious of random scales
     prev.map(data => apply(data))
   }
 }
-
-// todo: height and width may be removed
-//class AnchorToTensor(batchSize: Int = 1, height: Int = 0, width: Int = 0) {
-//  private val labelTensor: Tensor[Float] = Tensor[Float]()
-//  private val roiLabelTensor: Tensor[Float] = Tensor[Float]()
-
-// todo: buffer for roiLabelData and labelData
-//  def apply(anchorTarget: BboxTarget): (Tensor[Float], Table) = {
-//    var k = 0
-//
-//    val roiLabelData: Array[Float] =
-//      new Array[Float](batchSize * 3 * 4 * anchorTarget.labels.nElement())
-//    val labelData: Array[Float] = new Array[Float](batchSize * anchorTarget.labels.nElement())
-//    val stride = anchorTarget.bboxTargets.size(1) * anchorTarget.bboxTargets.size(2)
-//    for (r <- 0 until anchorTarget.bboxTargets.size(1)) {
-//      labelData(r) = anchorTarget.labels.valueAt(r + 1)
-////        if (anchorTarget.labels(r) != -1) anchorTarget.labels(r) + 1
-////      else anchorTarget.labels(r)
-//
-//      for (c <- 0 until anchorTarget.bboxTargets.size(2)) {
-//        roiLabelData(k) = anchorTarget.bboxTargets.valueAt(r, c)
-//        roiLabelData(k + stride) = anchorTarget.bboxInsideWeights.valueAt(r, c)
-//        roiLabelData(k + stride * 2) = anchorTarget.bboxOutsideWeights.valueAt(r, c)
-//        k += 1
-//      }
-//    }
-//    val labelTensor = Tensor(Storage[Float](labelData)).resize(Array(batchSize, 1,
-//      labelData.length / width / batchSize, width))
-//    val roiLabelTensor = Tensor(Storage[Float](roiLabelData)).resize(Array(batchSize, 12,
-//      roiLabelData.length / 12 / width / batchSize, width))
-
-//    val labelTensor = Tensor(Storage[Float](labelData))
-//    val roiLabelTensor
-// = Tensor(Storage[Float](roiLabelData))
-//val table = new Table
-//    table.insert(anchorTarget.bboxTargets)
-//    table.insert( anchorTarget.bboxInsideWeights)
-//    table.insert(anchorTarget.bboxOutsideWeights)
-//    (anchorTarget.labels, table)
-//  }
-
-
-//}
 
 object ImageToTensor {
   val imgToTensor = new ImageToTensor(1)
@@ -226,7 +193,7 @@ class ImageToTensor(batchSize: Int = 1) extends Transformer[ImageWithRoi, Tensor
     featureTensor.transpose(2, 3).transpose(2, 4).contiguous()
   }
 
-  override def transform(prev: Iterator[ImageWithRoi]): Iterator[Tensor[Float]] = {
+  override def apply(prev: Iterator[ImageWithRoi]): Iterator[Tensor[Float]] = {
     new Iterator[Tensor[Float]] {
 
 

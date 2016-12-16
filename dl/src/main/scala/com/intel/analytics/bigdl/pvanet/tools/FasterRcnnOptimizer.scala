@@ -18,17 +18,16 @@
 package com.intel.analytics.bigdl.pvanet.tools
 
 import com.intel.analytics.bigdl.Module
-import com.intel.analytics.bigdl.dataset.LocalDataSource
+import com.intel.analytics.bigdl.dataset.LocalDataSet
 import com.intel.analytics.bigdl.nn.ParallelCriterion
 import com.intel.analytics.bigdl.optim.{OptimMethod, Trigger}
 import com.intel.analytics.bigdl.pvanet.datasets.{ImageToTensor, ImageWithRoi, ObjectDataSource}
-import com.intel.analytics.bigdl.pvanet.layers.{AnchorTarget, BboxTarget}
+import com.intel.analytics.bigdl.pvanet.layers.AnchorTarget
 import com.intel.analytics.bigdl.pvanet.model.FasterRcnn
-import com.intel.analytics.bigdl.pvanet.utils.FileUtil
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.Table
 
-class FasterRcnnOptimizer(data: LocalDataSource[ImageWithRoi],
+class FasterRcnnOptimizer(data: LocalDataSet[ImageWithRoi],
   validationData: ObjectDataSource,
   net: FasterRcnn,
   model: Module[Float],
@@ -73,6 +72,8 @@ class FasterRcnnOptimizer(data: LocalDataSource[ImageWithRoi],
     this
   }
 
+  val anchorTarget = new AnchorTarget(net.param)
+
   /**
    *
    * @param d      image data class
@@ -85,17 +86,18 @@ class FasterRcnnOptimizer(data: LocalDataSource[ImageWithRoi],
     val sizes = output(2).asInstanceOf[Tensor[Float]].size()
     val height = sizes(sizes.length - 2)
     val width = sizes(sizes.length - 1)
-    val anchorTargets = AnchorTarget(d, height, width, net.param)
-//    targets.insert(anchorTargets.labels)
-//    targets.insert(anchorTargets.targetsTable)
-    val expected1 = BboxTarget(
-      FileUtil.loadFeatures[Float]("rpn_labels"),
-      FileUtil.loadFeatures[Float]("rpn_bbox_targets"),
-      FileUtil.loadFeatures[Float]("rpn_bbox_inside_weights"),
-      FileUtil.loadFeatures[Float]("rpn_bbox_outside_weights"))
+    val anchorTargets = anchorTarget.getAnchorTarget(height, width,
+      d.scaledImage.height(), d.scaledImage.width(), d.gtBoxes.get)
+    targets.insert(anchorTargets.labels)
+    targets.insert(anchorTargets.targetsTable)
+//    val expected1 = BboxTarget(
+//      FileUtil.loadFeatures[Float]("rpn_labels"),
+//      FileUtil.loadFeatures[Float]("rpn_bbox_targets"),
+//      FileUtil.loadFeatures[Float]("rpn_bbox_inside_weights"),
+//      FileUtil.loadFeatures[Float]("rpn_bbox_outside_weights"))
     //require(anchorTargets.labels.equals(expected.labels))
-    targets.insert(expected1.labels)
-    targets.insert(expected1.targetsTable)
+//    targets.insert(expected1.labels)
+//    targets.insert(expected1.targetsTable)
 
 
     // proposal targets
@@ -120,11 +122,11 @@ class FasterRcnnOptimizer(data: LocalDataSource[ImageWithRoi],
 
     state("epoch") = state.get[Int]("epoch").getOrElse(1)
     state("neval") = state.get[Int]("neval").getOrElse(1)
-    data.reset()
+    var dataIter = data.data()
     data.shuffle()
     while (!endWhen(state)) {
       val start = System.nanoTime()
-      val d = data.next()
+      val d = dataIter.next()
       val input = new Table
       input.insert(ImageToTensor(d))
       input.insert(d.imInfo.get)
@@ -150,7 +152,7 @@ val dataFetchTime = System.nanoTime()
       val end = System.nanoTime()
       wallClockTime += end - start
       count += 1
-      println(s"[Epoch ${state[Int]("epoch")} $count/${data.total()}][Iteration ${
+      println(s"[Epoch ${state[Int]("epoch")} $count/${data.size()}][Iteration ${
         state[Int]("neval")
       }][Wall Clock ${
         wallClockTime / 1e9
@@ -160,9 +162,9 @@ val dataFetchTime = System.nanoTime()
         s" Throughput is ${1.toDouble / (end - start) * 1e9} img / second")
       state("neval") = state[Int]("neval") + 1
 
-      if (count >= data.total()) {
+      if (count >= data.size()) {
         state("epoch") = state[Int]("epoch") + 1
-        data.reset()
+        dataIter = data.data()
         data.shuffle()
         count = 0
       }
@@ -184,8 +186,6 @@ val dataFetchTime = System.nanoTime()
       if (trigger(state)) {
         println(s"[Wall Clock ${wallClockTime / 1e9}s] Validate model...")
         net.evaluate
-        validationData.reset()
-//        net.copyParamToTest(model)
         Test.testNet(net, validationData)
         net.train
       }

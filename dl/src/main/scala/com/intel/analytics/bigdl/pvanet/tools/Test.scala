@@ -35,7 +35,7 @@ object Test {
     val allBoxes: Array[Array[DenseMatrix[Float]]] = {
       val out = new Array[Array[DenseMatrix[Float]]](imdb.numClasses)
       Range(0, imdb.numClasses).foreach(x => {
-        out(x) = new Array[DenseMatrix[Float]](dataSource.total().toInt)
+        out(x) = new Array[DenseMatrix[Float]](dataSource.size().toInt)
       })
       out
     }
@@ -45,8 +45,9 @@ object Test {
     val imDetectTimer = new Timer
     val miscTimer = new Timer
 
+    val dataIter = dataSource.data()
     for (i <- 0 until imdb.numImages) {
-      val d = dataSource.next()
+      val d = dataIter.next()
       val imgWithRoi = imageScaler.apply(d)
       println(s"process ${d.imagePath} ...............")
 
@@ -169,8 +170,8 @@ object Test {
 
     val model = FasterRcnn(param.net, Phase.TEST, model2caffePath(param.net))
     MKL.setNumThreads(param.nThread)
-    val testDataSource = new ObjectDataSource("voc_2007_testcode",
-      FileUtil.DATA_DIR + "/VOCdevkit", false, model.param)
+    val testDataSource = ObjectDataSource("voc_2007_testcode4",
+      FileUtil.DATA_DIR + "/VOCdevkit", model.param, false)
     testNet(model, testDataSource)
   }
 
