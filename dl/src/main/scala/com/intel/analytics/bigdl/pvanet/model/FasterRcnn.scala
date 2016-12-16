@@ -250,14 +250,14 @@ abstract class FasterRcnn(var phase: PhaseType) {
 
   def loadFromCaffeOrCache(dp: String, mp: String): this.type = {
     val cachedPath = mp.substring(0, mp.lastIndexOf(".")) + ".bigdl"
-    val mod = FileUtil.loadModuleFromFile[(Sequential[Float], Sequential[Float])](cachedPath)
+    val mod = FileUtil.load[(Sequential[Float], Sequential[Float])](cachedPath)
     mod match {
       case Some((featureAndRpn, fastRcnn)) =>
         println(s"load model with caffe weight from cache $cachedPath")
         setFeatureAndRpnNet(featureAndRpn)
         setFastRcnn(fastRcnn)
       case _ =>
-        Module.loadCaffe[Float](getModel, dp, mp, phase == TEST)
+        Module.loadCaffeParameters[Float](getModel, dp, mp, phase == TEST)
         DlFile.save((featureAndRpnNet, fastRcnn), cachedPath, true)
     }
     this
