@@ -52,6 +52,10 @@ class Table private[bigdl](
     Option(state(key).asInstanceOf[T])
   }
 
+  def getOrElse[T](key: Any, default: T): T = {
+    state.getOrElse(key, default).asInstanceOf[T]
+  }
+
   def contains(key: Any): Boolean = {
     state.contains(key)
   }
@@ -147,6 +151,13 @@ class Table private[bigdl](
     } else {
       None
     }
+  }
+
+  def delete(obj: Any): this.type = {
+    if (state.get(obj).isDefined) {
+      state.remove(obj)
+    }
+    this
   }
 
   def insert[T](obj: T): this.type = update(topIndex + 1, obj)

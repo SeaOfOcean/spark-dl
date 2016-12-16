@@ -39,8 +39,8 @@ class Threshold[@specialized(Float, Double) T: ClassTag](
     require(input.isContiguous())
     validateParameters()
 
-    val taskSize = input.nElement() / Engine.coresNum
-    var extraTaskSize = input.nElement() % Engine.coresNum
+    val taskSize = input.nElement() / Engine.coreNumber()
+    var extraTaskSize = input.nElement() % Engine.coreNumber()
     var allocated = 0
     val tasks = new ArrayBuffer[(Int, Int)]()
     while (allocated < input.nElement()) {
@@ -60,7 +60,7 @@ class Threshold[@specialized(Float, Double) T: ClassTag](
     if (inPlace) {
       output = input
       ev.getType() match {
-        case "Double" =>
+        case DoubleType =>
           val inputDouble = input.asInstanceOf[Tensor[Double]]
           val inputData = inputDouble.storage().array()
           val inputOffset = inputDouble.storageOffset() - 1
@@ -68,7 +68,7 @@ class Threshold[@specialized(Float, Double) T: ClassTag](
           var t = 0
           while (t < taskArray.length) {
             val _t = t
-            results(_t) = Future {
+            results(_t) = Engine.model.invoke(() => {
               var i = taskArray(_t)._1
               while (i < taskArray(_t)._2) {
                 inputData(inputOffset + i) =
@@ -79,10 +79,10 @@ class Threshold[@specialized(Float, Double) T: ClassTag](
                   }
                 i += 1
               }
-            }(Engine.getInstance())
+            })
             t += 1
           }
-        case "Float" =>
+        case FloatType =>
           val inputDouble = input.asInstanceOf[Tensor[Float]]
           val inputData = inputDouble.storage().array()
           val inputOffset = inputDouble.storageOffset() - 1
@@ -91,7 +91,7 @@ class Threshold[@specialized(Float, Double) T: ClassTag](
           var t = 0
           while (t < taskArray.length) {
             val _t = t
-            results(_t) = Future {
+            results(_t) = Engine.model.invoke(() => {
               var i = taskArray(_t)._1
               while (i < taskArray(_t)._2) {
                 inputData(inputOffset + i) =
@@ -102,7 +102,7 @@ class Threshold[@specialized(Float, Double) T: ClassTag](
                   }
                 i += 1
               }
-            }(Engine.getInstance())
+            })
             t += 1
           }
         case _ => throw new UnsupportedOperationException(s"Only Float/Double supported")
@@ -111,7 +111,7 @@ class Threshold[@specialized(Float, Double) T: ClassTag](
     }
     else {
       ev.getType() match {
-        case "Double" =>
+        case DoubleType =>
           output.asInstanceOf[Tensor[Double]].resizeAs(input.asInstanceOf[Tensor[Double]])
 
           val inputDouble = input.asInstanceOf[Tensor[Double]]
@@ -124,7 +124,7 @@ class Threshold[@specialized(Float, Double) T: ClassTag](
           var t = 0
           while (t < taskArray.length) {
             val _t = t
-            results(_t) = Future {
+            results(_t) = Engine.model.invoke(() => {
               var i = taskArray(_t)._1
               while (i < taskArray(_t)._2) {
                 outputData(outputOffset + i) =
@@ -135,10 +135,10 @@ class Threshold[@specialized(Float, Double) T: ClassTag](
                   }
                 i += 1
               }
-            }(Engine.getInstance())
+            })
             t += 1
           }
-        case "Float" =>
+        case FloatType =>
           output.asInstanceOf[Tensor[Float]].resizeAs(input.asInstanceOf[Tensor[Float]])
 
           val inputFloat = input.asInstanceOf[Tensor[Float]]
@@ -152,7 +152,7 @@ class Threshold[@specialized(Float, Double) T: ClassTag](
           var t = 0
           while (t < taskArray.length) {
             val _t = t
-            results(_t) = Future {
+            results(_t) = Engine.model.invoke(() => {
               var i = taskArray(_t)._1
               while (i < taskArray(_t)._2) {
                 outputData(outputOffset + i) =
@@ -163,17 +163,13 @@ class Threshold[@specialized(Float, Double) T: ClassTag](
                   }
                 i += 1
               }
-            }(Engine.getInstance())
+            })
             t += 1
           }
         case _ => throw new UnsupportedOperationException(s"Only Float/Double supported")
       }
     }
-    var r = 0
-    while (r < results.length) {
-      Await.result(results(r), Duration.Inf)
-      r += 1
-    }
+    Engine.model.sync(results)
     output
   }
 
@@ -182,10 +178,10 @@ class Threshold[@specialized(Float, Double) T: ClassTag](
     if (inPlace) {
       gradInput = gradOutput
       ev.getType() match {
-        case "Double" =>
+        case DoubleType =>
           gradInput.asInstanceOf[Tensor[Double]].map(input.asInstanceOf[Tensor[Double]], (g, i) =>
             if (i <= threshold) 0 else g)
-        case "Float" =>
+        case FloatType =>
           gradInput.asInstanceOf[Tensor[Float]].map(input.asInstanceOf[Tensor[Float]], (g, i) =>
             if (i <= threshold) 0 else g)
         case _ =>
@@ -196,10 +192,10 @@ class Threshold[@specialized(Float, Double) T: ClassTag](
       gradInput.resizeAs(gradOutput)
       gradInput.copy(gradOutput)
       ev.getType() match {
-        case "Double" =>
+        case DoubleType =>
           gradInput.asInstanceOf[Tensor[Double]].map(input.asInstanceOf[Tensor[Double]], (g, i) =>
             if (i > threshold) g else 0)
-        case "Float" =>
+        case FloatType =>
           gradInput.asInstanceOf[Tensor[Float]].map(input.asInstanceOf[Tensor[Float]], (g, i) =>
             if (i > threshold) g else 0)
         case _ => throw new UnsupportedOperationException(s"Only Float/Double supported")
@@ -219,8 +215,8 @@ class Threshold[@specialized(Float, Double) T: ClassTag](
       i += 1
     }
 
-    val taskSize = gradOutput.nElement() / Engine.coresNum
-    var extraTaskSize = gradOutput.nElement() % Engine.coresNum
+    val taskSize = gradOutput.nElement() / Engine.coreNumber()
+    var extraTaskSize = gradOutput.nElement() % Engine.coreNumber()
     var allocated = 0
     val tasks = new ArrayBuffer[(Int, Int)]()
     while (allocated < gradOutput.nElement()) {
@@ -240,7 +236,7 @@ class Threshold[@specialized(Float, Double) T: ClassTag](
     if (inPlace) {
       gradInput = gradOutput
       ev.getType() match {
-        case "Double" =>
+        case DoubleType =>
           val gradInputDouble = gradInput.asInstanceOf[Tensor[Double]]
           val inputDouble = input.asInstanceOf[Tensor[Double]]
           val gradInputData = gradInputDouble.storage().array()
@@ -251,7 +247,7 @@ class Threshold[@specialized(Float, Double) T: ClassTag](
           var t = 0
           while (t < taskArray.length) {
             val _t = t
-            results(_t) = Future {
+            results(_t) = Engine.model.invoke(() => {
               var i = taskArray(_t)._1
               while (i < taskArray(_t)._2) {
                 gradInputData(gradInputOffset + i) =
@@ -262,11 +258,11 @@ class Threshold[@specialized(Float, Double) T: ClassTag](
                   }
                 i += 1
               }
-            }(Engine.getInstance())
+            })
             t += 1
           }
 
-        case "Float" =>
+        case FloatType =>
           val gradInputFloat = gradInput.asInstanceOf[Tensor[Float]]
           val inputFloat = input.asInstanceOf[Tensor[Float]]
           val gradInputData = gradInputFloat.storage().array()
@@ -277,7 +273,7 @@ class Threshold[@specialized(Float, Double) T: ClassTag](
           var t = 0
           while (t < taskArray.length) {
             val _t = t
-            results(_t) = Future {
+            results(_t) = Engine.model.invoke(() => {
               var i = taskArray(_t)._1
               while (i < taskArray(_t)._2) {
                 gradInputData(gradInputOffset + i) =
@@ -288,7 +284,7 @@ class Threshold[@specialized(Float, Double) T: ClassTag](
                   }
                 i += 1
               }
-            }(Engine.getInstance())
+            })
             t += 1
           }
         case _ => throw new UnsupportedOperationException(s"Only Float/Double supported")
@@ -296,7 +292,7 @@ class Threshold[@specialized(Float, Double) T: ClassTag](
     }
     else {
       ev.getType() match {
-        case "Double" =>
+        case DoubleType =>
           gradInput.asInstanceOf[Tensor[Double]].resizeAs(gradOutput.asInstanceOf[Tensor[Double]])
           gradInput.asInstanceOf[Tensor[Double]].copy(gradOutput.asInstanceOf[Tensor[Double]])
           val gradInputDouble = gradInput.asInstanceOf[Tensor[Double]]
@@ -309,7 +305,7 @@ class Threshold[@specialized(Float, Double) T: ClassTag](
           var t = 0
           while (t < taskArray.length) {
             val _t = t
-            results(_t) = Future {
+            results(_t) = Engine.model.invoke(() => {
               var i = taskArray(_t)._1
               while (i < taskArray(_t)._2) {
                 gradInputData(gradInputOffset + i) =
@@ -320,10 +316,10 @@ class Threshold[@specialized(Float, Double) T: ClassTag](
                   }
                 i += 1
               }
-            }(Engine.getInstance())
+            })
             t += 1
           }
-        case "Float" =>
+        case FloatType =>
           gradInput.asInstanceOf[Tensor[Float]].resizeAs(gradOutput.asInstanceOf[Tensor[Float]])
           gradInput.asInstanceOf[Tensor[Float]].copy(gradOutput.asInstanceOf[Tensor[Float]])
           val gradInputFloat = gradInput.asInstanceOf[Tensor[Float]]
@@ -336,7 +332,7 @@ class Threshold[@specialized(Float, Double) T: ClassTag](
           var t = 0
           while (t < taskArray.length) {
             val _t = t
-            results(_t) = Future {
+            results(_t) = Engine.model.invoke(() => {
               var i = taskArray(_t)._1
               while (i < taskArray(_t)._2) {
                 gradInputData(gradInputOffset + i) =
@@ -347,18 +343,14 @@ class Threshold[@specialized(Float, Double) T: ClassTag](
                   }
                 i += 1
               }
-            }(Engine.getInstance())
+            })
             t += 1
           }
         case _ => throw new UnsupportedOperationException(s"Only Float/Double supported")
       }
     }
 
-    var r = 0
-    while (r < results.length) {
-      Await.result(results(r), Duration.Inf)
-      r += 1
-    }
+    Engine.model.sync(results)
     gradInput
   }
 

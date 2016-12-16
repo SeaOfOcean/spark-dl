@@ -27,7 +27,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.reflect.ClassTag
 
-class SpatialConvolution[@specialized(Float, Double) T: ClassTag](
+class SpatialConvolution[T: ClassTag](
   val nInputPlane: Int, // The number of expected input planes in the image given into forward()
   val nOutputPlane: Int, // The number of output planes the convolution layer will produce.
   val kernelW: Int, // The kernel width of the convolution
@@ -99,6 +99,7 @@ class SpatialConvolution[@specialized(Float, Double) T: ClassTag](
         val stdv = math.sqrt(6.0 / (fanIn + fanOut))
         weight.apply1(_ => ev.fromType[Double](RNG.uniform(-stdv, stdv)))
         bias.fill(ev.fromType(0))
+      case _ => throw new IllegalArgumentException()
     }
     zeroGradParameters()
   }
@@ -171,7 +172,7 @@ class SpatialConvolution[@specialized(Float, Double) T: ClassTag](
       var i = 0
       while (i < batchSize) {
         val _i = i + 1
-        results(i) = Future {
+        results(i) = Engine.model.invoke(() => {
           val inputT = input.select(1, _i)
           require(inputT.isContiguous())
           val outputT = output.select(1, _i)
@@ -190,15 +191,10 @@ class SpatialConvolution[@specialized(Float, Double) T: ClassTag](
               nOutputPlane / nGroup, outputWidth, outputHeight)
             g += 1
           }
-        }(Engine.getInstance())
+        })
         i += 1
       }
-
-      i = 0
-      while (i < results.length) {
-        Await.result(results(i), Duration.Inf)
-        i += 1
-      }
+      Engine.model.sync(results)
     }
     output
   }
@@ -234,7 +230,7 @@ class SpatialConvolution[@specialized(Float, Double) T: ClassTag](
       var i = 0
       while (i < batchSize) {
         val _i = i + 1
-        results(i) = Future {
+        results(i) = Engine.model.invoke(() => {
           val gradInputT = gradInput.select(1, _i)
           val gradOutputT = gradOutput.select(1, _i)
           require(gradOutputT.isContiguous())
@@ -249,15 +245,10 @@ class SpatialConvolution[@specialized(Float, Double) T: ClassTag](
               kernelW, kernelH, strideW, strideH, padW, padH)
             g += 1
           }
-        }(Engine.getInstance())
+        })
         i += 1
       }
-
-      i = 0
-      while (i < results.length) {
-        Await.result(results(i), Duration.Inf)
-        i += 1
-      }
+      Engine.model.sync(results)
     }
 
     return gradInput
@@ -302,7 +293,7 @@ class SpatialConvolution[@specialized(Float, Double) T: ClassTag](
       var i = 0
       while (i < batchSize) {
         val _i = i + 1
-        results(i) = Future {
+        results(i) = Engine.model.invoke(() => {
           val gradOutputT = gradOutput.select(1, _i)
           val fInputT = fInput.select(1, _i)
           var g = 0
@@ -316,15 +307,11 @@ class SpatialConvolution[@specialized(Float, Double) T: ClassTag](
               ev.fromType[Double](scale))
             g += 1
           }
-        }(Engine.getInstance())
+        })
         i += 1
       }
 
-      i = 0
-      while (i < results.length) {
-        Await.result(results(i), Duration.Inf)
-        i += 1
-      }
+      Engine.model.sync(results)
 
       val gradView = gradWeightMMInBatch.view(batchSize,
         nOutputPlane * nInputPlane * kernelH * kernelW / nGroup).t
@@ -370,6 +357,8 @@ class SpatialConvolution[@specialized(Float, Double) T: ClassTag](
       strideH == other.strideH &&
       padW == other.padW &&
       padH == other.padH &&
+      nGroup == other.nGroup &&
+      propagateBack == other.propagateBack &&
       weight == other.weight &&
       bias == other.bias &&
       gradWeight == other.gradWeight &&
@@ -421,13 +410,13 @@ class SpatialConvolution[@specialized(Float, Double) T: ClassTag](
     val output2d = output.view(nOutputPlane, outputHeight * outputWidth)
     if (!_1x1) {
       ev.getType() match {
-        case "Double" =>
+        case DoubleType =>
           val before = System.nanoTime()
           NNPrimitive.im2colDouble(fInput.asInstanceOf[Tensor[Double]],
             input.asInstanceOf[Tensor[Double]], kW, kH, dW, dH, padW, padH, nInputPlane,
             inputWidth, inputHeight, outputWidth, outputHeight)
           im2colTime += System.nanoTime() - before
-        case "Float" =>
+        case FloatType =>
           val before = System.nanoTime()
           NNPrimitive.im2colFloat(fInput.asInstanceOf[Tensor[Float]],
             input.asInstanceOf[Tensor[Float]], kW, kH, dW, dH, padW, padH, nInputPlane,
@@ -444,7 +433,7 @@ class SpatialConvolution[@specialized(Float, Double) T: ClassTag](
     weight: Tensor[T], fgradInput: Tensor[T], kW: Int, kH: Int, dW: Int, dH: Int,
     padW: Int, padH: Int)(implicit ev: TensorNumeric[T]): Unit = {
     ev.getType() match {
-      case "Double" =>
+      case DoubleType =>
         val gradOutput2d = Tensor(gradOutput.storage().asInstanceOf[Storage[Double]],
           gradOutput.storageOffset(), Array(gradOutput.size(1),
             gradOutput.size(2) * gradOutput.size(3)))
@@ -459,7 +448,7 @@ class SpatialConvolution[@specialized(Float, Double) T: ClassTag](
             gradInput.size(2), gradOutput.size(3), gradOutput.size(2))
           col2imTime += System.nanoTime() - before
         }
-      case "Float" =>
+      case FloatType =>
         val gradOutput2d = Tensor(gradOutput.storage().asInstanceOf[Storage[Float]],
           gradOutput.storageOffset(),
           Array(gradOutput.size(1), gradOutput.size(2) * gradOutput.size(3)))
@@ -482,7 +471,7 @@ class SpatialConvolution[@specialized(Float, Double) T: ClassTag](
     gradBias: Tensor[T], fInput: Tensor[T], scale: T)(implicit ev: TensorNumeric[T]): Unit = {
 
     ev.getType() match {
-      case "Double" =>
+      case DoubleType =>
         val gradOutput2d = Tensor[Double](gradOutput.storage().asInstanceOf[Storage[Double]],
           gradOutput.storageOffset(),
           Array(gradOutput.size(1), gradOutput.size(2) * gradOutput.size(3)))
@@ -506,7 +495,7 @@ class SpatialConvolution[@specialized(Float, Double) T: ClassTag](
               (ev.toType[Double](scale) * sum))
           i += 1
         }
-      case "Float" =>
+      case FloatType =>
         val gradOutput2d = Tensor[Float](gradOutput.storage().asInstanceOf[Storage[Float]],
           gradOutput.storageOffset(),
           Array(gradOutput.size(1), gradOutput.size(2) * gradOutput.size(3)))
@@ -539,7 +528,7 @@ class SpatialConvolution[@specialized(Float, Double) T: ClassTag](
     fInput: Tensor[T], scale: T)(implicit ev: TensorNumeric[T]): Unit = {
 
     ev.getType() match {
-      case "Double" =>
+      case DoubleType =>
         val gradOutput2d = Tensor[Double](gradOutput.storage().asInstanceOf[Storage[Double]],
           gradOutput.storageOffset(),
           Array(gradOutput.size(1), gradOutput.size(2) * gradOutput.size(3)))
@@ -549,7 +538,7 @@ class SpatialConvolution[@specialized(Float, Double) T: ClassTag](
           fInput.t.asInstanceOf[Tensor[Double]])
         gradBias.asInstanceOf[Tensor[Double]].addmv(0.0, 1.0, gradOutput2d,
           ones.asInstanceOf[Tensor[Double]])
-      case "Float" =>
+      case FloatType =>
         val gradOutput2d = Tensor[Float](gradOutput.storage().asInstanceOf[Storage[Float]],
           gradOutput.storageOffset(),
           Array(gradOutput.size(1), gradOutput.size(2) * gradOutput.size(3)))

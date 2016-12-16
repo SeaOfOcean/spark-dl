@@ -19,7 +19,7 @@ package com.intel.analytics.bigdl.nn
 
 import com.intel.analytics.bigdl.nn.abstractnn.TensorModule
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
-import com.intel.analytics.bigdl.tensor.Tensor
+import com.intel.analytics.bigdl.tensor.{DoubleType, FloatType, Tensor}
 import com.intel.analytics.bigdl.utils.Engine
 import com.intel.analytics.bigdl.utils.RandomGenerator._
 
@@ -88,7 +88,7 @@ class BatchNormalization[@specialized(Float, Double) T: ClassTag](
     }
     val n = input.nElement() / nInput
     ev.getType() match {
-      case "Double" =>
+      case DoubleType =>
         val inputDouble = input.asInstanceOf[Tensor[Double]]
         val inputData = inputDouble.storage().array()
         val inputOffset = inputDouble.storageOffset() - 1
@@ -101,7 +101,7 @@ class BatchNormalization[@specialized(Float, Double) T: ClassTag](
         updateOutputDouble(inputData, inputOffset, inputStride, outputData, outputOffset,
           outputStride, nInput, n, inputStride2)
 
-      case "Float" =>
+      case FloatType =>
         val inputFloat = input.asInstanceOf[Tensor[Float]]
         val inputData = inputFloat.storage().array()
         val inputOffset = inputFloat.storageOffset() - 1
@@ -125,7 +125,7 @@ class BatchNormalization[@specialized(Float, Double) T: ClassTag](
     var f = 0
     while (f < nInput) {
       val _f = f + 1
-      results(f) = Future {
+      results(f) = Engine.model.invoke(() => {
         var mean = 0.0
         var invstd = 0.0
         if (train) {
@@ -175,10 +175,10 @@ class BatchNormalization[@specialized(Float, Double) T: ClassTag](
             inputOffset + (i / stride2) * inputStride) - mean) * invstd * w + b
           i += 1
         }
-      }(Engine.getInstance())
+      })
       f += 1
     }
-    Engine.releaseInstance[Any](results)
+    Engine.model.sync(results)
   }
 
   private def updateOutputFloat(input: Array[Float], inputOffset: Int, inputStride: Int,
@@ -188,7 +188,7 @@ class BatchNormalization[@specialized(Float, Double) T: ClassTag](
     var f = 0
     while (f < nInput) {
       val _f = f + 1
-      results(f) = Future {
+      results(f) = Engine.model.invoke(() => {
         var mean = 0.0f
         var invstd = 0.0f
         if (train) {
@@ -239,10 +239,10 @@ class BatchNormalization[@specialized(Float, Double) T: ClassTag](
             inputOffset + (i / stride2) * inputStride) - mean) * invstd * w + b
           i += 1
         }
-      }(Engine.getInstance())
+      })
       f += 1
     }
-    Engine.releaseInstance[Any](results)
+    Engine.model.sync(results)
   }
 
   override def updateGradInput(input: Tensor[T], gradOutput: Tensor[T]): Tensor[T] = {
@@ -279,7 +279,7 @@ class BatchNormalization[@specialized(Float, Double) T: ClassTag](
     val n = input.nElement() / nInput
 
     ev.getType() match {
-      case "Double" =>
+      case DoubleType =>
         val inputDouble = input.asInstanceOf[Tensor[Double]]
         val inputData = inputDouble.storage().array()
         val inputOffset = inputDouble.storageOffset() - 1
@@ -331,7 +331,7 @@ class BatchNormalization[@specialized(Float, Double) T: ClassTag](
 
         }
 
-      case "Float" =>
+      case FloatType =>
         val inputFloat = input.asInstanceOf[Tensor[Float]]
         val inputData = inputFloat.storage().array()
         val inputOffset = inputFloat.storageOffset() - 1
@@ -396,7 +396,7 @@ class BatchNormalization[@specialized(Float, Double) T: ClassTag](
     var f = 0
     while (f < nInput) {
       val _f = f + 1
-      results(f) = Future {
+      results(f) = Engine.model.invoke(() => {
         val w = if (null != weight) ev.toType[Double](weight.valueAt(_f)) else 1.0
         val (mean, invstd) = if (train) {
           (ev.toType[Double](saveMean.valueAt(_f)), ev.toType[Double](saveStd.valueAt(_f)))
@@ -469,10 +469,10 @@ class BatchNormalization[@specialized(Float, Double) T: ClassTag](
         if (null != gradBias) {
           gradBias(_f - 1 + gradBiasOffset) += scale * sum
         }
-      }(Engine.getInstance())
+      })
       f += 1
     }
-    Engine.releaseInstance[Any](results)
+    Engine.model.sync(results)
   }
 
   private def backwardFloat(input: Array[Float], inputOffset: Int, inputStride: Int,
@@ -484,7 +484,7 @@ class BatchNormalization[@specialized(Float, Double) T: ClassTag](
     var f = 0
     while (f < nInput) {
       val _f = f + 1
-      results(f) = Future {
+      results(f) = Engine.model.invoke(() => {
         val w = if (null != weight) ev.toType[Float](weight.valueAt(_f)) else 1.0f
         val (mean, invstd) = if (train) {
           (ev.toType[Float](saveMean.valueAt(_f)), ev.toType[Float](saveStd.valueAt(_f)))
@@ -557,10 +557,10 @@ class BatchNormalization[@specialized(Float, Double) T: ClassTag](
         if (null != gradBias) {
           gradBias(_f - 1 + gradBiasOffset) += scale * sum
         }
-      }(Engine.getInstance())
+      })
       f += 1
     }
-    Engine.releaseInstance[Any](results)
+    Engine.model.sync(results)
   }
 
   override def zeroGradParameters(): Unit = {
