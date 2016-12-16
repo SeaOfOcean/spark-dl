@@ -172,7 +172,7 @@ object CaffeLoader {
   }
 
   def main(args: Array[String]): Unit = {
-    val module = Module.loadCaffe[Float](AlexNet(1000),
+    val module = Module.loadCaffeParameters[Float](AlexNet(1000),
       "data/model/alexnet/deploy.prototxt",
       "data/model/alexnet/bvlc_alexnet.caffemodel"
     )
