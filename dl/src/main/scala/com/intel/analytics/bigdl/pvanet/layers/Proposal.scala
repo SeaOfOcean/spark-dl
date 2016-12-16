@@ -43,7 +43,7 @@ class Proposal[@specialized(Float, Double) T: ClassTag](param: FasterRcnnParam)
   //  if len(top) > 1:
   //    top[ 1].reshape(1, 1, 1, 1)
 
-  val basicAnchors = Anchor.generateAnchors(param.anchorRatios, param.anchorScales)
+  val basicAnchors = Anchor.generateBasicAnchors(param.anchorRatios, param.anchorScales)
 
   /**
    *

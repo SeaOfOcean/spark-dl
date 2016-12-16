@@ -27,7 +27,7 @@ object Anchor {
    * scales wrt a reference (0, 0, 15, 15) window.
    *
    */
-  def generateAnchors(ratios: Array[Float], scales: Array[Float],
+  def generateBasicAnchors(ratios: Array[Float], scales: Array[Float],
     baseSize: Float = 16): DenseMatrix[Float] = {
     val baseAnchor = Tensor(Storage(Array(1 - 1, 1 - 1, baseSize - 1, baseSize - 1)))
     val ratioAnchors = ratioEnum(baseAnchor, Tensor(Storage(ratios)))
@@ -40,6 +40,30 @@ object Anchor {
         anchors(idx, 1) = scaleAnchors(j + 1).valueAt(2)
         anchors(idx, 2) = scaleAnchors(j + 1).valueAt(3)
         anchors(idx, 3) = scaleAnchors(j + 1).valueAt(4)
+        idx = idx + 1
+      }
+    }
+    anchors
+  }
+
+  /**
+   * Generate anchor (reference) windows by enumerating aspect ratios X
+   * scales wrt a reference (0, 0, 15, 15) window.
+   *
+   */
+  def generateAnchors2(ratios: Array[Float], scales: Array[Float],
+    baseSize: Float = 16): Tensor[Float] = {
+    val baseAnchor = Tensor(Storage(Array(1 - 1, 1 - 1, baseSize - 1, baseSize - 1)))
+    val ratioAnchors = ratioEnum(baseAnchor, Tensor(Storage(ratios)))
+    val anchors = Tensor[Float](scales.length * ratioAnchors.size(1), 4)
+    var idx = 1
+    for (i <- 1 to ratioAnchors.size(1)) {
+      val scaleAnchors = scaleEnum(ratioAnchors(i), Tensor(Storage(scales)))
+      for (j <- 1 to scaleAnchors.size(1)) {
+        anchors.setValue(idx, 1, scaleAnchors(j).valueAt(1))
+        anchors.setValue(idx, 2, scaleAnchors(j).valueAt(2))
+        anchors.setValue(idx, 3, scaleAnchors(j).valueAt(3))
+        anchors.setValue(idx, 4, scaleAnchors(j).valueAt(4))
         idx = idx + 1
       }
     }

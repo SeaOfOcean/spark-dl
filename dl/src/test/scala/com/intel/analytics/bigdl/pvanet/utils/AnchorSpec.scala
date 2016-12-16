@@ -55,7 +55,9 @@ class AnchorSpec extends FlatSpec with Matchers {
   }
 
   "_generate anchors" should "work well" in {
-    val act1 = Anchor.generateAnchors(Array[Float](0.5f, 1, 2),
+    val act1 = Anchor.generateBasicAnchors(Array[Float](0.5f, 1, 2),
+      Array[Float](8, 16, 32))
+    val act1Tensor = Anchor.generateAnchors2(Array[Float](0.5f, 1, 2),
       Array[Float](8, 16, 32))
     val expected1 = DenseMatrix((-84.0, -40.0, 99.0, 55.0),
       (-176.0, -88.0, 191.0, 103.0),
@@ -67,7 +69,10 @@ class AnchorSpec extends FlatSpec with Matchers {
       (-80.0, -168.0, 95.0, 183.0),
       (-168.0, -344.0, 183.0, 359.0))
     assert(act1 === expected1)
-    val act2 = Anchor.generateAnchors(Array[Float](0.5f, 1, 2, 4, 8),
+    TestUtil.assertMatrixEqualTM(act1Tensor, expected1, 1e-6)
+    val act2 = Anchor.generateBasicAnchors(Array[Float](0.5f, 1, 2, 4, 8),
+      Array[Float](8, 16, 32, 64, 128))
+    val act2Tensor = Anchor.generateAnchors2(Array[Float](0.5f, 1, 2, 4, 8),
       Array[Float](8, 16, 32, 64, 128))
     val expected2 = DenseMatrix(
       (-84.0, -40.0, 99.0, 55.0),
@@ -97,6 +102,7 @@ class AnchorSpec extends FlatSpec with Matchers {
       (-376.0, -3064.0, 391.0, 3079.0)
     )
     assert(act2 === expected2)
+    TestUtil.assertMatrixEqualTM(act2Tensor, expected2, 1e-6)
   }
 
   val param = new PvanetParam()
@@ -105,7 +111,7 @@ class AnchorSpec extends FlatSpec with Matchers {
   val height = 50
 
 
-  val anchors = Anchor.generateAnchors(param.anchorRatios, param.anchorScales)
+  val anchors = Anchor.generateBasicAnchors(param.anchorRatios, param.anchorScales)
 
   "generateAnchors" should "work properly" in {
     TestUtil.assertMatrixEqualTM(FileUtil.loadFeatures[Float]("anchors", root),

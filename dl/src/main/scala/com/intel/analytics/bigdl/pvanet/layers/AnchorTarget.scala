@@ -18,10 +18,9 @@
 package com.intel.analytics.bigdl.pvanet.layers
 
 import breeze.linalg.{DenseMatrix, DenseVector, convert}
-import com.intel.analytics.bigdl.pvanet.datasets.ImageWithRoi
 import com.intel.analytics.bigdl.pvanet.model.FasterRcnnParam
 import com.intel.analytics.bigdl.pvanet.utils._
-import com.intel.analytics.bigdl.tensor.Tensor
+import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import com.intel.analytics.bigdl.utils.Table
 
 import scala.collection.mutable.ArrayBuffer
@@ -39,8 +38,8 @@ case class BboxTarget(labels: Tensor[Float],
   targetsTable.insert(bboxOutsideWeights)
 }
 
-object AnchorTarget {
-  var basicAnchors: DenseMatrix[Float] = _
+class AnchorTarget(param: FasterRcnnParam) {
+  val basicAnchors = Anchor.generateBasicAnchors(param.anchorRatios, param.anchorScales)
 
   /**
    * Compute bounding-box regression targets for an image.
@@ -67,6 +66,20 @@ object AnchorTarget {
     insideAnchors
   }
 
+  def getInsideAnchors(indsInside: ArrayBuffer[Int],
+    allAnchors: Tensor[Float]): Tensor[Float] = {
+    val insideAnchors = Tensor[Float](indsInside.length, 4)
+    indsInside.zip(Stream.from(1)).foreach(i => {
+      insideAnchors.setValue(i._2, 1, allAnchors.valueAt(i._1, 1))
+      insideAnchors.setValue(i._2, 2, allAnchors.valueAt(i._1, 2))
+      insideAnchors.setValue(i._2, 3, allAnchors.valueAt(i._1, 3))
+      insideAnchors.setValue(i._2, 4, allAnchors.valueAt(i._1, 4))
+    })
+    insideAnchors
+  }
+
+  var totalAnchors: Int = 0
+
   /**
    * Algorithm:
    *
@@ -76,42 +89,59 @@ object AnchorTarget {
    * filter out-of-image anchors
    * measure GT overlap
    */
-
-  def apply(data: ImageWithRoi, height: Int, width: Int, param: FasterRcnnParam): BboxTarget = {
-    if (basicAnchors == null) {
-      basicAnchors = Anchor.generateAnchors(param.anchorRatios, param.anchorScales)
-    }
+  def getAnchorTarget(featureH: Int, featureW: Int,
+    imgH: Int, imgW: Int, gtBoxes: Tensor[Float]): BboxTarget = {
+    println("img size", imgH, imgW)
     // 1. Generate proposals from bbox deltas and shifted anchors
-    val shifts = Anchor.generateShifts(width, height, param.featStride)
-    val totalAnchors = shifts.rows * param.anchorNum
-    val allAnchors: DenseMatrix[Float] = Anchor.getAllAnchors(shifts, basicAnchors)
-    val indsInside: ArrayBuffer[Int] = getIndsInside(data.scaledImage.width(),
-      data.scaledImage.height(), allAnchors, 0)
+    val shifts = Anchor.generateShifts(featureW, featureH, param.featStride)
+    totalAnchors = shifts.rows * param.anchorNum
+    println("totalAnchors", totalAnchors)
+    val allAnchors = Anchor.getAllAnchors(shifts, basicAnchors)
 
 
     // keep only inside anchors
-    val insideAnchors: DenseMatrix[Float] = getInsideAnchors(indsInside, allAnchors)
-
-    // label: 1 is positive, 0 is negative, -1 is dont care
-    val labels = DenseVector.fill[Float](indsInside.length, -1)
+    val indsInside = getIndsInside(imgW, imgH, allAnchors, 0)
+    println("indsInside", indsInside.length)
+    val exp = FileUtil.loadFeaturesFullName[Float]("inds_inside", false)
+    FileUtil.assertEqualIgnoreSize[Float](exp, Tensor(Storage(indsInside.toArray.map(x=>x.toFloat))), "compare indsInside")
+    val insideAnchors = getInsideAnchors(indsInside, allAnchors)
 
     // overlaps between the anchors and the gt boxes
-    // overlaps (ex, gt)
-    val overlaps = Bbox.bboxOverlap(insideAnchors, data.gtBoxes.get.toBreezeMatrix())
+    val insideAnchorsGtOverlaps = Bbox.bboxOverlap(insideAnchors, gtBoxes.toBreezeMatrix())
 
-    val argmaxOverlaps = MatrixUtil.argmax2(overlaps, 1)
+    // label: 1 is positive, 0 is negative, -1 is don't care
+    val labels = getLabels(indsInside, insideAnchorsGtOverlaps)
 
-    val maxOverlaps = argmaxOverlaps.zipWithIndex.map(x => overlaps(x._2, x._1))
-    var gtArgmaxOverlaps = MatrixUtil.argmax2(overlaps, 0)
+    val bboxTargets = computeTargets(insideAnchors,
+      MatrixUtil.selectMatrix(gtBoxes.toBreezeMatrix(),
+        MatrixUtil.argmax2(insideAnchorsGtOverlaps, 1), 0))
+
+    val bboxInsideWeights = getBboxInsideWeights(indsInside, labels)
+
+    val bboxOutSideWeights = getBboxOutsideWeights(indsInside, labels)
+
+    // map up to original set of anchors
+    mapUpToOriginal(labels, bboxTargets, bboxInsideWeights, bboxOutSideWeights, indsInside)
+
+  }
+
+  // label: 1 is positive, 0 is negative, -1 is don't care
+  def getLabels(indsInside: ArrayBuffer[Int],
+    insideAnchorsGtOverlaps: DenseMatrix[Float]): DenseVector[Float] = {
+    val labels = DenseVector.fill[Float](indsInside.length, -1)
+    // todo: argmaxOverlaps may not be needed here
+    val argmaxOverlaps = MatrixUtil.argmax2(insideAnchorsGtOverlaps, 1)
+    val maxOverlaps = argmaxOverlaps.zipWithIndex.map(x => insideAnchorsGtOverlaps(x._2, x._1))
+    val gtArgmaxOverlaps = MatrixUtil.argmax2(insideAnchorsGtOverlaps, 0)
 
     val gtMaxOverlaps = gtArgmaxOverlaps.zipWithIndex.map(x => {
-      overlaps(x._1, x._2)
+      insideAnchorsGtOverlaps(x._1, x._2)
     })
 
-    gtArgmaxOverlaps = Array.range(0, overlaps.rows).filter(r => {
+    val gtArgmaxOverlaps2 = Array.range(0, insideAnchorsGtOverlaps.rows).filter(r => {
       def isFilter: Boolean = {
-        for (i <- 0 until overlaps.cols) {
-          if (overlaps(r, i) == gtMaxOverlaps(i)) {
+        for (i <- 0 until insideAnchorsGtOverlaps.cols) {
+          if (insideAnchorsGtOverlaps(r, i) == gtMaxOverlaps(i)) {
             return true
           }
         }
@@ -129,7 +159,7 @@ object AnchorTarget {
     }
 
     // fg label: for each gt, anchor with highest overlap
-    gtArgmaxOverlaps.foreach(x => labels(x) = 1)
+    gtArgmaxOverlaps2.foreach(x => labels(x) = 1)
 
     // fg label: above threshold IOU
     maxOverlaps.zipWithIndex.foreach(x => {
@@ -143,17 +173,36 @@ object AnchorTarget {
       })
     }
 
+    sampleLabels(labels)
+    labels
+  }
+
+  def sampleLabels(labels: DenseVector[Float]): DenseVector[Float] = {
     // subsample positive labels if we have too many
     val numFg = param.RPN_FG_FRACTION * param.RPN_BATCHSIZE
     val fgInds = labels.findAll(_ == 1)
     if (fgInds.length > numFg) {
       val disableInds = Random.shuffle(fgInds).take(fgInds.length - numFg.toInt)
       disableInds.foreach(x => labels(x) = -1)
+      println(s"${disableInds.length} fg inds are disabled")
     }
+    println(s"fg: ${fgInds.length}")
 
-    val bboxTargets = computeTargets(insideAnchors,
-      MatrixUtil.selectMatrix(data.gtBoxes.get.toBreezeMatrix(), argmaxOverlaps, 0))
+    // subsample negative labels if we have too many
+    val numBg = param.RPN_BATCHSIZE - fgInds.length
+    val bgInds = labels.findAll(_ == 0)
+    if (bgInds.length > numBg) {
+      //      val disableInds = Random.shuffle(bgInds).take(bgInds.length - numBg.toInt)
+      val disableInds = FileUtil.loadFeaturesFullName[Float]("disablebg3354", false,
+        "/home/xianyan/code/intel/big-dl/spark-dl/dl/data/middle/vgg16/step1/").storage().array()
+      disableInds.foreach(x => labels(x.toInt) = -1)
+      println(s"${disableInds.length} bg inds are disabled, " +
+        s"now ${labels.findAll(_ == 0).length} inds")
+    }
+    labels
+  }
 
+  def getBboxInsideWeights(indsInside: ArrayBuffer[Int], labels: DenseVector[Float]): DenseMatrix[Float] = {
     val bboxInsideWeights = DenseMatrix.zeros[Float](indsInside.length, 4)
     labels.foreachPair((k, v) => {
       if (v == 1) {
@@ -161,7 +210,11 @@ object AnchorTarget {
           convert(DenseVector(param.RPN_BBOX_INSIDE_WEIGHTS), Float).t
       }
     })
+    bboxInsideWeights
+  }
 
+  def getBboxOutsideWeights(indsInside: ArrayBuffer[Int], labels: DenseVector[Float])
+  : DenseMatrix[Float] = {
     val bboxOutSideWeights = DenseMatrix.zeros[Float](indsInside.length, 4)
 
     val labelGe0 = labels.findAll(x => x >= 0).toArray
@@ -186,15 +239,23 @@ object AnchorTarget {
 
     labelE1.foreach(x => bboxOutSideWeights(x, ::) := positiveWeights.get.toDenseVector.t)
     labelE0.foreach(x => bboxOutSideWeights(x, ::) := negative_weights.get.toDenseVector.t)
+    bboxOutSideWeights
+  }
 
-    // map up to original set of anchors
+  /**
+   * map up to original set of anchors
+   */
+  def mapUpToOriginal(labels: DenseVector[Float],
+    bboxTargets: DenseMatrix[Float],
+    bboxInsideWeights: DenseMatrix[Float],
+    bboxOutSideWeights: DenseMatrix[Float],
+    indsInside: ArrayBuffer[Int]): BboxTarget = {
     val labels2 = unmap(Tensor(DenseMatrix(labels.data.array).t), totalAnchors, indsInside, -1)
     val bboxTargets2 = unmap(Tensor(bboxTargets), totalAnchors, indsInside, 0)
     val bboxInsideWeights2 = unmap(Tensor(bboxInsideWeights), totalAnchors, indsInside, 0)
     val bboxOutSideWeights2 = unmap(Tensor(bboxOutSideWeights), totalAnchors, indsInside, 0)
 
-    BboxTarget(labels2, bboxTargets2, bboxInsideWeights2,bboxOutSideWeights2)
-
+    BboxTarget(labels2, bboxTargets2, bboxInsideWeights2, bboxOutSideWeights2)
   }
 
   def getIndsInside(width: Int, height: Int,
@@ -205,6 +266,20 @@ object AnchorTarget {
         (allAnchors(i, 1) >= -allowedBorder) &&
         (allAnchors(i, 2) < width.toFloat + allowedBorder) &&
         (allAnchors(i, 3) < height.toFloat + allowedBorder)) {
+        indsInside += i
+      }
+    }
+    indsInside
+  }
+
+  def getIndsInside(width: Int, height: Int,
+    allAnchors: Tensor[Float], allowedBorder: Float): ArrayBuffer[Int] = {
+    var indsInside = ArrayBuffer[Int]()
+    for (i <- 1 to allAnchors.size(1)) {
+      if ((allAnchors.valueAt(i, 1) >= -allowedBorder) &&
+        (allAnchors.valueAt(i, 2) >= -allowedBorder) &&
+        (allAnchors.valueAt(i, 3) < width.toFloat + allowedBorder) &&
+        (allAnchors.valueAt(i, 4) < height.toFloat + allowedBorder)) {
         indsInside += i
       }
     }

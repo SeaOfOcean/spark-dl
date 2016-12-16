@@ -23,7 +23,7 @@ import breeze.linalg.DenseMatrix
 import com.intel.analytics.bigdl.pvanet.datasets.Imdb
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
-import com.intel.analytics.bigdl.utils.{File => DlFile}
+import com.intel.analytics.bigdl.utils.{Table, File => DlFile}
 
 import scala.io.Source
 import scala.reflect.ClassTag
@@ -80,25 +80,32 @@ object FileUtil {
   }
 
 
-  def loadFeaturesFullName[T: ClassTag](s: String, middleRoot: String = middleRoot)
-    (implicit ev: TensorNumeric[T]): Tensor[T] = {
+  def loadFeaturesFullName[T: ClassTag](s: String, hasSize: Boolean = true,
+    middleRoot: String = middleRoot)(implicit ev: TensorNumeric[T]): Tensor[T] = {
     println(s"load $s from file")
-    val size = s.substring(s.lastIndexOf("-") + 1, s.lastIndexOf(".")).split("_").map(x => x.toInt)
-    Tensor(Storage(Source.fromFile(middleRoot + s).getLines()
-      .map(x => ev.fromType[Double](x.toDouble)).toArray)).reshape(size)
+
+    if (hasSize) {
+      val size = s.substring(s.lastIndexOf("-") + 1, s.lastIndexOf("."))
+        .split("_").map(x => x.toInt)
+      Tensor(Storage(Source.fromFile(middleRoot + s).getLines()
+        .map(x => ev.fromType[Double](x.toDouble)).toArray)).reshape(size)
+    } else {
+      Tensor(Storage(Source.fromFile(middleRoot + s).getLines()
+        .map(x => ev.fromType[Double](x.toDouble)).toArray))
+    }
   }
 
-  var middleRoot = "dl/data/middle/vgg16/step1/"
+  var middleRoot = "/home/xianyan/code/intel/big-dl/spark-dl/dl/data/middle/vgg16/step1/"
 
   def loadFeatures[T: ClassTag](s: String, middleRoot: String = middleRoot)
     (implicit ev: TensorNumeric[T]): Tensor[T] = {
     if (s.contains(".txt")) {
-      loadFeaturesFullName[T](s, middleRoot)
+      loadFeaturesFullName[T](s, true, middleRoot)
     } else {
       val list = new File(middleRoot).listFiles()
       list.foreach(x => {
         if (x.getName.matches(s"$s-.*txt")) {
-          return loadFeaturesFullName[T](x.getName, middleRoot)
+          return loadFeaturesFullName[T](x.getName, true, middleRoot)
         }
       })
       throw new FileNotFoundException(s"cannot map $s")
@@ -141,7 +148,29 @@ object FileUtil {
     }
   }
 
-  def loadModuleFromFile[M](filename: String): Option[M] = {
+  def assertEqualTable[T: ClassTag](expected: Table, output: Table, info: String = "")
+    (implicit ev: TensorNumeric[T]): Unit = {
+    require(expected.length() == output.length())
+    (1 to expected.length()).foreach(i => assertEqualIgnoreSize[T](expected(i), output(i)))
+  }
+
+  def assertEqualIgnoreSize[T: ClassTag](expected: Tensor[T], output: Tensor[T], info: String = "")
+    (implicit ev: TensorNumeric[T]): Unit = {
+    if (!info.isEmpty) {
+      println(s"compare $info ...")
+    }
+    require(expected.nElement() == output.nElement(), "size mismatch: " +
+      s"expected size ${expected.size().mkString(",")} " +
+      s"does not match output ${output.size().mkString(",")}")
+    (expected.contiguous().storage().array() zip output.contiguous().storage().array()).foreach(x =>
+      require(ev.toType[Double](ev.abs(ev.minus(x._1, x._2))) < 1e-6,
+        s"${x._1} does not equal ${x._2}"))
+    if (!info.isEmpty) {
+      println(s"$info pass")
+    }
+  }
+
+  def load[M](filename: String): Option[M] = {
     try {
       if (existFile(filename)) return Some(DlFile.load[M](filename))
     } catch {

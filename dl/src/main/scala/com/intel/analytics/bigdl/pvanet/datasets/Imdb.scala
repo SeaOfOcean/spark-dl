@@ -112,6 +112,8 @@ abstract class Imdb(val param: FasterRcnnParam) {
     sizes
   }
 
+  def loadAnnotation(index: String): Roidb
+
   /**
    * load image width and height without loading the entire image
    *

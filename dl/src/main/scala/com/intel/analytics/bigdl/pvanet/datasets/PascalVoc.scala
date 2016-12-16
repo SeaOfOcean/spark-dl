@@ -91,7 +91,7 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
    * Load image and bounding boxes info from XML file in the PASCAL VOC
    * format.
    */
-  def loadPascalAnnotation(index: String): Roidb = {
+  def loadAnnotation(index: String): Roidb = {
     val xml = XML.loadFile(dataPath + "/Annotations/" + index + ".xml")
     var objs = xml \\ "object"
 
@@ -105,12 +105,12 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
     val gt_classes = Tensor[Float](objs.length)
     // Load object bounding boxes into a data frame.
     for ((obj, ix) <- objs.zip(Stream from 1)) {
-      // pixel indexes 1-based
+      // pixel indexes 0-based
       val bndbox = obj \ "bndbox"
-      val x1 = (bndbox \ "xmin").text.toFloat
-      val y1 = (bndbox \ "ymin").text.toFloat
-      val x2 = (bndbox \ "xmax").text.toFloat
-      val y2 = (bndbox \ "ymax").text.toFloat
+      val x1 = (bndbox \ "xmin").text.toFloat - 1
+      val y1 = (bndbox \ "ymin").text.toFloat - 1
+      val x2 = (bndbox \ "xmax").text.toFloat - 1
+      val y2 = (bndbox \ "ymax").text.toFloat - 1
       val cls = classToInd((obj \ "name").text)
       boxes(ix - 1, 0) = x1
       boxes(ix - 1, 1) = y1
@@ -122,6 +122,11 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
   }
 
 
+  def createRoidb: Array[Roidb] = {
+    roidb = imageIndex.map(index => loadAnnotation(index))
+    roidb
+  }
+
   /**
    * This function loads/saves from/to a cache file to speed up future calls.
    *
@@ -129,21 +134,14 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
    */
   def loadRoidb: Array[Roidb] = {
     val cache_file = FileUtil.cachePath + "/" + name + "_gt_roidb.pkl"
-    if (FileUtil.existFile(cache_file)) {
-      println("%s gt roidb loaded from %s".format(name, cache_file))
-      try {
-        DlFile.load[Array[Roidb]](cache_file)
-      } catch {
-        case e: Exception =>
-          val gtRoidb = imageIndex.map(index => loadPascalAnnotation(index))
-          new java.io.File(cache_file).delete()
-          DlFile.save(gtRoidb, cache_file)
-          gtRoidb
-      }
-    } else {
-      val gtRoidb = imageIndex.map(index => loadPascalAnnotation(index))
-      DlFile.save(gtRoidb, cache_file)
-      gtRoidb
+    val gtRoidb = FileUtil.load[Array[Roidb]](cache_file)
+
+    gtRoidb match {
+      case Some(gt) => gt
+      case _ =>
+        createRoidb
+        DlFile.save(roidb, cache_file, true)
+        roidb
     }
   }
 
@@ -222,3 +220,4 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
     eval(outputDir)
   }
 }
+
