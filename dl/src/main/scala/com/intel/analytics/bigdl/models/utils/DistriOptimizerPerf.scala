@@ -18,7 +18,6 @@ package com.intel.analytics.bigdl.models.utils
 
 import com.intel.analytics.bigdl.dataset.{Batch, DistributedDataSet}
 import com.intel.analytics.bigdl.models.imagenet._
-import com.intel.analytics.bigdl.models.mnist.LeNet5
 import com.intel.analytics.bigdl.nn.ClassNLLCriterion
 import com.intel.analytics.bigdl.optim.{DistriOptimizer, Trigger}
 import com.intel.analytics.bigdl.tensor.Tensor
@@ -98,7 +97,6 @@ object DistriOptimizerPerf {
       case "googlenet_v2" => (GoogleNet_v2(1000), Tensor(param.batchSize, 3, 224, 224))
       case "vgg16" => (Vgg_16(1000), Tensor(param.batchSize, 3, 224, 224))
       case "vgg19" => (Vgg_19(1000), Tensor(param.batchSize, 3, 224, 224))
-      case "lenet5" => (LeNet5(10), Tensor(param.batchSize, 1, 28, 28))
     }
     param.inputData match {
       case "constant" => input.fill(0.01f)
@@ -110,11 +108,13 @@ object DistriOptimizerPerf {
     val labels = Tensor(param.batchSize).fill(1)
 
     val conf = Engine.sparkConf().setAppName("DistriOptimizer Performance Test")
+      .set("spark.task.cpus", param.corePerNode.toString)
     val sc = new SparkContext(conf)
     val broadcast = sc.broadcast(Batch(input, labels))
-    val rdd = sc.parallelize((1 to param.nodeNumber), param.nodeNumber).mapPartitions(iter => {
-      Iterator.single((broadcast.value))
-    }).persist()
+    val rdd = sc.parallelize((1 to param.nodeNumber), param.nodeNumber)
+      .mapPartitions(iter => {
+        Iterator.single((broadcast.value))
+      }).persist()
     rdd.count()
     val dummyDataSet = new DistributedDataSet[Batch[Float]] {
       override def size(): Long = 100000
@@ -123,8 +123,7 @@ object DistriOptimizerPerf {
       override def data(): RDD[Batch[Float]] = rdd
     }
 
-    Engine.setCoreNumber(param.corePerNode)
-    Engine.setNodeNumber(param.nodeNumber)
+    Engine.setCluster(param.nodeNumber, param.corePerNode)
     val optimizer = new DistriOptimizer[Float](
       model,
       dummyDataSet,
