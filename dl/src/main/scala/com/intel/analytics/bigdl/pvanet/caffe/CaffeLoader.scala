@@ -17,16 +17,16 @@
 
 package com.intel.analytics.bigdl.pvanet.caffe
 
-import java.io.{File, FileInputStream, InputStream, InputStreamReader}
+import java.io.{File, FileInputStream, InputStreamReader}
 
 import caffe.Caffe
-import caffe.Caffe.{LayerParameter, NetParameter}
+import caffe.Caffe.{LayerParameter, NetParameter, V1LayerParameter}
 import com.google.protobuf.{CodedInputStream, TextFormat}
 import com.intel.analytics.bigdl.Module
 import com.intel.analytics.bigdl.models.imagenet.AlexNet
 import com.intel.analytics.bigdl.nn.{Module, Utils}
+import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
-import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 
 import scala.reflect.ClassTag
 
@@ -35,27 +35,31 @@ class CaffeLoader[@specialized(Float, Double) T: ClassTag](defName: String, mode
 )(implicit ev: TensorNumeric[T]) {
   val isOverwrite = true
   var netparam: Caffe.NetParameter = _
-  var name2CaffeLayer: Map[String, LayerParameter] = loadCaffe(defName, modelName)
+  var name2CaffeLayerV1: Map[String, V1LayerParameter] = _
+  var name2CaffeLayerV2: Map[String, LayerParameter] = _
 
-  private def loadCaffe(prototxtName: String, modelName: String): Map[String, LayerParameter] = {
-    if (name2CaffeLayer == null) {
-      name2CaffeLayer = Map[String, LayerParameter]()
+  private def loadCaffe(prototxtName: String, modelName: String): Unit = {
+    if (name2CaffeLayerV2 == null) {
       netparam = loadBinary(prototxtName, modelName)
-      assert(netparam.getLayerCount > 0, "only support proto V2")
-      for (i <- 0 until netparam.getLayerCount) {
-        val layer = netparam.getLayer(i)
-        name2CaffeLayer += (layer.getName -> layer)
-      }
+      name2CaffeLayerV2 = Map[String, LayerParameter]()
+      name2CaffeLayerV1 = Map[String, V1LayerParameter]()
+      import scala.collection.JavaConversions._
+      // V1LayerParameter
+      netparam.getLayersList.foreach(layer => {
+        name2CaffeLayerV1 += (layer.getName -> layer)
+      })
+      // V2LayerParameter
+      netparam.getLayerList.foreach(layer => {
+        name2CaffeLayerV2 += (layer.getName -> layer)
+      })
     }
-    name2CaffeLayer
   }
 
   private def loadBinary(prototxtName: String, modelName: String): Caffe.NetParameter = {
     val f: File = new File(prototxtName)
     assert(f.exists(), prototxtName + "does not exists")
-    val rawInput: InputStream = new FileInputStream(f)
-    val reader: InputStreamReader = new InputStreamReader(rawInput, "ASCII")
-    val builder: Caffe.NetParameter.Builder = NetParameter.newBuilder
+    val reader = new InputStreamReader(new FileInputStream(f), "ASCII")
+    val builder = NetParameter.newBuilder
     TextFormat.merge(reader, builder)
     println("start loading caffe model")
     val cis = CodedInputStream.newInstance(new FileInputStream(modelName))
@@ -65,61 +69,42 @@ class CaffeLoader[@specialized(Float, Double) T: ClassTag](defName: String, mode
     builder.build()
   }
 
-  private def loadModule(name: String, hasBias: Boolean = true): (Tensor[T], Tensor[T]) = {
-    val layer = name2CaffeLayer(name)
-    var weight: Tensor[T] = null
-    var bias: Tensor[T] = null
-    if (layer.getBlobsCount == 0) {
-      return (null, null)
+  private def getBlob(name: String, ind: Int): Caffe.BlobProto = {
+    if (name2CaffeLayerV2(name).getBlobsCount != 0) {
+      name2CaffeLayerV2(name).getBlobs(ind)
+    } else if (name2CaffeLayerV1(name).getBlobsCount != 0) {
+      name2CaffeLayerV1(name).getBlobs(ind)
+    } else {
+      null
     }
-    val wB = layer.getBlobs(0)
-    var nInputPlane, nOutputPlane, kW, kH = 0
-    if (wB.hasShape && wB.getShape.getDimCount >= 2) {
-      nInputPlane = wB.getShape.getDim(1).toInt
-      nOutputPlane = wB.getShape.getDim(0).toInt
-      if (layer.getType != "InnerProduct") {
-        kW = wB.getShape.getDim(3).toInt
-        kH = wB.getShape.getDim(2).toInt
-      }
-    }
-    else {
-      if (layer.getType == "InnerProduct") {
-        nInputPlane = wB.getWidth
-        nOutputPlane = wB.getHeight
-      }
-      else {
-        nInputPlane = wB.getChannels
-        nOutputPlane = wB.getNum
-        kW = wB.getWidth
-        kH = wB.getHeight
-      }
-    }
-    val weightList = layer.getBlobs(0).getDataList
-    val weightData: Array[T] = new Array[T](weightList.size())
+  }
+
+  private def loadModule(name: String, destPara: Array[Tensor[T]]):
+  (Tensor[T], Tensor[T]) = {
+    val caffeWeight = getBlob(name, 0)
+    if (caffeWeight == null) return (null, null)
+    val weightList = caffeWeight.getDataList
+    require(destPara != null && destPara(0).nElement() == weightList.size(),
+      s"weight element must be equal in module $name")
+    require(destPara(0).isContiguous())
+    val weightData = destPara(0).storage().array()
     for (i <- 0 until weightList.size()) {
       weightData(i) = ev.fromType[Float](weightList.get(i))
     }
-    weight = Tensor(Storage(weightData))
-    layer.getType match {
-      case "InnerProduct" =>
-        printf("%s: %d %d (%d, %d)\n", name, 1, 1, nInputPlane, nOutputPlane)
-        weight.resize(Array(layer.getConvolutionParam.getGroup, 1, 1, nInputPlane, nOutputPlane))
-      case "Scale" =>
-      case "Deconvolution" =>
-      case _ => weight.resize(Array(layer.getConvolutionParam.getGroup, nOutputPlane,
-        nInputPlane, kW, kH))
-    }
 
-    if (hasBias) {
-      val biasList = layer.getBlobs(1).getDataList
-      val biasData: Array[T] = new Array[T](biasList.size())
+    if (destPara.size > 1) {
+      val caffeBias = getBlob(name, 1)
+      if (caffeBias == null) return (destPara(1), null)
+      val biasList = caffeBias.getDataList
+      require(destPara(1).nElement() == biasList.size(),
+        s"bias element must be equal in module $name")
+      require(destPara(1).isContiguous())
+      val biasData = destPara(1).storage().array()
       for (i <- 0 until biasList.size()) {
         biasData(i) = ev.fromType[Float](biasList.get(i))
       }
-      bias = Tensor(Storage(biasData))
     }
-
-    (weight, bias)
+    (destPara(0), destPara(1))
   }
 
   /**
@@ -130,25 +115,22 @@ class CaffeLoader[@specialized(Float, Double) T: ClassTag](defName: String, mode
    * @return
    */
   def copyParameters(model: Module[T]): Module[T] = {
+    loadCaffe(defName, modelName)
     val namedModules = Utils.getNamedModules[T](model)
 
     def copyParameter(name: String, mod: Module[T]): Unit = {
       if (mod.parameters() == null) return
-      if (!name2CaffeLayer.contains(name)) {
+      if (!name2CaffeLayerV2.contains(name) && !name2CaffeLayerV1.contains(name)) {
         if (matchAll) {
           throw new Exception(s"module $name cannot map a layer in caffe model")
         }
         println(s"$name uses initialized parameters")
         return
       }
-      val (weight, bias) = loadModule(name)
+      val (weight, bias) = loadModule(name, mod.parameters()._1)
       if (weight == null) {
         println(s"$name uses initialized parameters")
         return
-      }
-      mod.parameters()._1(0).copy(weight)
-      if (bias != null) {
-        mod.parameters()._1(1).copy(bias)
       }
       println(s"load ${mod.getName()} done")
     }

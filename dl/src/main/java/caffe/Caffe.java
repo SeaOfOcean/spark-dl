@@ -9294,8 +9294,6 @@ public final class Caffe {
      *      zero by the max_iter. return base_lr (1 - iter/max_iter) ^ (power)
      *    - sigmoid: the effective learning rate follows a sigmod decay
      *      return base_lr ( 1/(1 + exp(-gamma * (iter - stepsize))))
-     *    - plateau: decreases lr
-     *              if the minimum loss isn't updated for 'plateau_winsize' iters
      * where base_lr, max_iter, gamma, step, stepvalue and power are defined
      * in the solver parameter protocol buffer, and iter is the current iteration.
      * </pre>
@@ -9317,8 +9315,6 @@ public final class Caffe {
      *      zero by the max_iter. return base_lr (1 - iter/max_iter) ^ (power)
      *    - sigmoid: the effective learning rate follows a sigmod decay
      *      return base_lr ( 1/(1 + exp(-gamma * (iter - stepsize))))
-     *    - plateau: decreases lr
-     *              if the minimum loss isn't updated for 'plateau_winsize' iters
      * where base_lr, max_iter, gamma, step, stepvalue and power are defined
      * in the solver parameter protocol buffer, and iter is the current iteration.
      * </pre>
@@ -9340,8 +9336,6 @@ public final class Caffe {
      *      zero by the max_iter. return base_lr (1 - iter/max_iter) ^ (power)
      *    - sigmoid: the effective learning rate follows a sigmod decay
      *      return base_lr ( 1/(1 + exp(-gamma * (iter - stepsize))))
-     *    - plateau: decreases lr
-     *              if the minimum loss isn't updated for 'plateau_winsize' iters
      * where base_lr, max_iter, gamma, step, stepvalue and power are defined
      * in the solver parameter protocol buffer, and iter is the current iteration.
      * </pre>
@@ -9489,31 +9483,6 @@ public final class Caffe {
      * <code>repeated int32 stepvalue = 34;</code>
      */
     int getStepvalue(int index);
-
-    /**
-     * <pre>
-     * the stepsize for learning rate policy "plateau"
-     * </pre>
-     *
-     * <code>repeated int32 plateau_winsize = 41;</code>
-     */
-    java.util.List<java.lang.Integer> getPlateauWinsizeList();
-    /**
-     * <pre>
-     * the stepsize for learning rate policy "plateau"
-     * </pre>
-     *
-     * <code>repeated int32 plateau_winsize = 41;</code>
-     */
-    int getPlateauWinsizeCount();
-    /**
-     * <pre>
-     * the stepsize for learning rate policy "plateau"
-     * </pre>
-     *
-     * <code>repeated int32 plateau_winsize = 41;</code>
-     */
-    int getPlateauWinsize(int index);
 
     /**
      * <pre>
@@ -9788,7 +9757,7 @@ public final class Caffe {
    * <pre>
    * NOTE
    * Update the next available ID when you add a new SolverParameter field.
-   * SolverParameter next available ID: 42 (last added: plateau_winsize)
+   * SolverParameter next available ID: 41 (last added: type)
    * </pre>
    *
    * Protobuf type {@code caffe.SolverParameter}
@@ -9824,7 +9793,6 @@ public final class Caffe {
       regularizationType_ = "L2";
       stepsize_ = 0;
       stepvalue_ = java.util.Collections.emptyList();
-      plateauWinsize_ = java.util.Collections.emptyList();
       clipGradients_ = -1F;
       snapshot_ = 0;
       snapshotPrefix_ = "";
@@ -10163,27 +10131,6 @@ public final class Caffe {
               type_ = bs;
               break;
             }
-            case 328: {
-              if (!((mutable_bitField0_ & 0x02000000) == 0x02000000)) {
-                plateauWinsize_ = new java.util.ArrayList<java.lang.Integer>();
-                mutable_bitField0_ |= 0x02000000;
-              }
-              plateauWinsize_.add(input.readInt32());
-              break;
-            }
-            case 330: {
-              int length = input.readRawVarint32();
-              int limit = input.pushLimit(length);
-              if (!((mutable_bitField0_ & 0x02000000) == 0x02000000) && input.getBytesUntilLimit() > 0) {
-                plateauWinsize_ = new java.util.ArrayList<java.lang.Integer>();
-                mutable_bitField0_ |= 0x02000000;
-              }
-              while (input.getBytesUntilLimit() > 0) {
-                plateauWinsize_.add(input.readInt32());
-              }
-              input.popLimit(limit);
-              break;
-            }
           }
         }
       } catch (com.google.protobuf.InvalidProtocolBufferException e) {
@@ -10206,9 +10153,6 @@ public final class Caffe {
         }
         if (((mutable_bitField0_ & 0x01000000) == 0x01000000)) {
           stepvalue_ = java.util.Collections.unmodifiableList(stepvalue_);
-        }
-        if (((mutable_bitField0_ & 0x02000000) == 0x02000000)) {
-          plateauWinsize_ = java.util.Collections.unmodifiableList(plateauWinsize_);
         }
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
@@ -11132,8 +11076,6 @@ public final class Caffe {
      *      zero by the max_iter. return base_lr (1 - iter/max_iter) ^ (power)
      *    - sigmoid: the effective learning rate follows a sigmod decay
      *      return base_lr ( 1/(1 + exp(-gamma * (iter - stepsize))))
-     *    - plateau: decreases lr
-     *              if the minimum loss isn't updated for 'plateau_winsize' iters
      * where base_lr, max_iter, gamma, step, stepvalue and power are defined
      * in the solver parameter protocol buffer, and iter is the current iteration.
      * </pre>
@@ -11157,8 +11099,6 @@ public final class Caffe {
      *      zero by the max_iter. return base_lr (1 - iter/max_iter) ^ (power)
      *    - sigmoid: the effective learning rate follows a sigmod decay
      *      return base_lr ( 1/(1 + exp(-gamma * (iter - stepsize))))
-     *    - plateau: decreases lr
-     *              if the minimum loss isn't updated for 'plateau_winsize' iters
      * where base_lr, max_iter, gamma, step, stepvalue and power are defined
      * in the solver parameter protocol buffer, and iter is the current iteration.
      * </pre>
@@ -11193,8 +11133,6 @@ public final class Caffe {
      *      zero by the max_iter. return base_lr (1 - iter/max_iter) ^ (power)
      *    - sigmoid: the effective learning rate follows a sigmod decay
      *      return base_lr ( 1/(1 + exp(-gamma * (iter - stepsize))))
-     *    - plateau: decreases lr
-     *              if the minimum loss isn't updated for 'plateau_winsize' iters
      * where base_lr, max_iter, gamma, step, stepvalue and power are defined
      * in the solver parameter protocol buffer, and iter is the current iteration.
      * </pre>
@@ -11419,40 +11357,6 @@ public final class Caffe {
      */
     public int getStepvalue(int index) {
       return stepvalue_.get(index);
-    }
-
-    public static final int PLATEAU_WINSIZE_FIELD_NUMBER = 41;
-    private java.util.List<java.lang.Integer> plateauWinsize_;
-    /**
-     * <pre>
-     * the stepsize for learning rate policy "plateau"
-     * </pre>
-     *
-     * <code>repeated int32 plateau_winsize = 41;</code>
-     */
-    public java.util.List<java.lang.Integer>
-        getPlateauWinsizeList() {
-      return plateauWinsize_;
-    }
-    /**
-     * <pre>
-     * the stepsize for learning rate policy "plateau"
-     * </pre>
-     *
-     * <code>repeated int32 plateau_winsize = 41;</code>
-     */
-    public int getPlateauWinsizeCount() {
-      return plateauWinsize_.size();
-    }
-    /**
-     * <pre>
-     * the stepsize for learning rate policy "plateau"
-     * </pre>
-     *
-     * <code>repeated int32 plateau_winsize = 41;</code>
-     */
-    public int getPlateauWinsize(int index) {
-      return plateauWinsize_.get(index);
     }
 
     public static final int CLIP_GRADIENTS_FIELD_NUMBER = 35;
@@ -11993,9 +11897,6 @@ public final class Caffe {
       if (((bitField0_ & 0x10000000) == 0x10000000)) {
         com.google.protobuf.GeneratedMessageV3.writeString(output, 40, type_);
       }
-      for (int i = 0; i < plateauWinsize_.size(); i++) {
-        output.writeInt32(41, plateauWinsize_.get(i));
-      }
       unknownFields.writeTo(output);
     }
 
@@ -12172,15 +12073,6 @@ public final class Caffe {
       if (((bitField0_ & 0x10000000) == 0x10000000)) {
         size += com.google.protobuf.GeneratedMessageV3.computeStringSize(40, type_);
       }
-      {
-        int dataSize = 0;
-        for (int i = 0; i < plateauWinsize_.size(); i++) {
-          dataSize += com.google.protobuf.CodedOutputStream
-            .computeInt32SizeNoTag(plateauWinsize_.get(i));
-        }
-        size += dataSize;
-        size += 2 * getPlateauWinsizeList().size();
-      }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
       return size;
@@ -12318,8 +12210,6 @@ public final class Caffe {
       }
       result = result && getStepvalueList()
           .equals(other.getStepvalueList());
-      result = result && getPlateauWinsizeList()
-          .equals(other.getPlateauWinsizeList());
       result = result && (hasClipGradients() == other.hasClipGradients());
       if (hasClipGradients()) {
         result = result && (
@@ -12518,10 +12408,6 @@ public final class Caffe {
         hash = (37 * hash) + STEPVALUE_FIELD_NUMBER;
         hash = (53 * hash) + getStepvalueList().hashCode();
       }
-      if (getPlateauWinsizeCount() > 0) {
-        hash = (37 * hash) + PLATEAU_WINSIZE_FIELD_NUMBER;
-        hash = (53 * hash) + getPlateauWinsizeList().hashCode();
-      }
       if (hasClipGradients()) {
         hash = (37 * hash) + CLIP_GRADIENTS_FIELD_NUMBER;
         hash = (53 * hash) + java.lang.Float.floatToIntBits(
@@ -12676,7 +12562,7 @@ public final class Caffe {
      * <pre>
      * NOTE
      * Update the next available ID when you add a new SolverParameter field.
-     * SolverParameter next available ID: 42 (last added: plateau_winsize)
+     * SolverParameter next available ID: 41 (last added: type)
      * </pre>
      *
      * Protobuf type {@code caffe.SolverParameter}
@@ -12789,38 +12675,36 @@ public final class Caffe {
         bitField0_ = (bitField0_ & ~0x00800000);
         stepvalue_ = java.util.Collections.emptyList();
         bitField0_ = (bitField0_ & ~0x01000000);
-        plateauWinsize_ = java.util.Collections.emptyList();
-        bitField0_ = (bitField0_ & ~0x02000000);
         clipGradients_ = -1F;
-        bitField0_ = (bitField0_ & ~0x04000000);
+        bitField0_ = (bitField0_ & ~0x02000000);
         snapshot_ = 0;
-        bitField0_ = (bitField0_ & ~0x08000000);
+        bitField0_ = (bitField0_ & ~0x04000000);
         snapshotPrefix_ = "";
-        bitField0_ = (bitField0_ & ~0x10000000);
+        bitField0_ = (bitField0_ & ~0x08000000);
         snapshotDiff_ = false;
-        bitField0_ = (bitField0_ & ~0x20000000);
+        bitField0_ = (bitField0_ & ~0x10000000);
         snapshotFormat_ = 1;
-        bitField0_ = (bitField0_ & ~0x40000000);
+        bitField0_ = (bitField0_ & ~0x20000000);
         solverMode_ = 1;
-        bitField0_ = (bitField0_ & ~0x80000000);
+        bitField0_ = (bitField0_ & ~0x40000000);
         deviceId_ = 0;
-        bitField1_ = (bitField1_ & ~0x00000001);
+        bitField0_ = (bitField0_ & ~0x80000000);
         randomSeed_ = -1L;
-        bitField1_ = (bitField1_ & ~0x00000002);
+        bitField1_ = (bitField1_ & ~0x00000001);
         type_ = "SGD";
-        bitField1_ = (bitField1_ & ~0x00000004);
+        bitField1_ = (bitField1_ & ~0x00000002);
         delta_ = 1e-08F;
-        bitField1_ = (bitField1_ & ~0x00000008);
+        bitField1_ = (bitField1_ & ~0x00000004);
         momentum2_ = 0.999F;
-        bitField1_ = (bitField1_ & ~0x00000010);
+        bitField1_ = (bitField1_ & ~0x00000008);
         rmsDecay_ = 0.99F;
-        bitField1_ = (bitField1_ & ~0x00000020);
+        bitField1_ = (bitField1_ & ~0x00000010);
         debugInfo_ = false;
-        bitField1_ = (bitField1_ & ~0x00000040);
+        bitField1_ = (bitField1_ & ~0x00000020);
         snapshotAfterTrain_ = true;
-        bitField1_ = (bitField1_ & ~0x00000080);
+        bitField1_ = (bitField1_ & ~0x00000040);
         solverType_ = 0;
-        bitField1_ = (bitField1_ & ~0x00000100);
+        bitField1_ = (bitField1_ & ~0x00000080);
         return this;
       }
 
@@ -12972,68 +12856,63 @@ public final class Caffe {
           bitField0_ = (bitField0_ & ~0x01000000);
         }
         result.stepvalue_ = stepvalue_;
-        if (((bitField0_ & 0x02000000) == 0x02000000)) {
-          plateauWinsize_ = java.util.Collections.unmodifiableList(plateauWinsize_);
-          bitField0_ = (bitField0_ & ~0x02000000);
-        }
-        result.plateauWinsize_ = plateauWinsize_;
-        if (((from_bitField0_ & 0x04000000) == 0x04000000)) {
+        if (((from_bitField0_ & 0x02000000) == 0x02000000)) {
           to_bitField0_ |= 0x00100000;
         }
         result.clipGradients_ = clipGradients_;
-        if (((from_bitField0_ & 0x08000000) == 0x08000000)) {
+        if (((from_bitField0_ & 0x04000000) == 0x04000000)) {
           to_bitField0_ |= 0x00200000;
         }
         result.snapshot_ = snapshot_;
-        if (((from_bitField0_ & 0x10000000) == 0x10000000)) {
+        if (((from_bitField0_ & 0x08000000) == 0x08000000)) {
           to_bitField0_ |= 0x00400000;
         }
         result.snapshotPrefix_ = snapshotPrefix_;
-        if (((from_bitField0_ & 0x20000000) == 0x20000000)) {
+        if (((from_bitField0_ & 0x10000000) == 0x10000000)) {
           to_bitField0_ |= 0x00800000;
         }
         result.snapshotDiff_ = snapshotDiff_;
-        if (((from_bitField0_ & 0x40000000) == 0x40000000)) {
+        if (((from_bitField0_ & 0x20000000) == 0x20000000)) {
           to_bitField0_ |= 0x01000000;
         }
         result.snapshotFormat_ = snapshotFormat_;
-        if (((from_bitField0_ & 0x80000000) == 0x80000000)) {
+        if (((from_bitField0_ & 0x40000000) == 0x40000000)) {
           to_bitField0_ |= 0x02000000;
         }
         result.solverMode_ = solverMode_;
-        if (((from_bitField1_ & 0x00000001) == 0x00000001)) {
+        if (((from_bitField0_ & 0x80000000) == 0x80000000)) {
           to_bitField0_ |= 0x04000000;
         }
         result.deviceId_ = deviceId_;
-        if (((from_bitField1_ & 0x00000002) == 0x00000002)) {
+        if (((from_bitField1_ & 0x00000001) == 0x00000001)) {
           to_bitField0_ |= 0x08000000;
         }
         result.randomSeed_ = randomSeed_;
-        if (((from_bitField1_ & 0x00000004) == 0x00000004)) {
+        if (((from_bitField1_ & 0x00000002) == 0x00000002)) {
           to_bitField0_ |= 0x10000000;
         }
         result.type_ = type_;
-        if (((from_bitField1_ & 0x00000008) == 0x00000008)) {
+        if (((from_bitField1_ & 0x00000004) == 0x00000004)) {
           to_bitField0_ |= 0x20000000;
         }
         result.delta_ = delta_;
-        if (((from_bitField1_ & 0x00000010) == 0x00000010)) {
+        if (((from_bitField1_ & 0x00000008) == 0x00000008)) {
           to_bitField0_ |= 0x40000000;
         }
         result.momentum2_ = momentum2_;
-        if (((from_bitField1_ & 0x00000020) == 0x00000020)) {
+        if (((from_bitField1_ & 0x00000010) == 0x00000010)) {
           to_bitField0_ |= 0x80000000;
         }
         result.rmsDecay_ = rmsDecay_;
-        if (((from_bitField1_ & 0x00000040) == 0x00000040)) {
+        if (((from_bitField1_ & 0x00000020) == 0x00000020)) {
           to_bitField1_ |= 0x00000001;
         }
         result.debugInfo_ = debugInfo_;
-        if (((from_bitField1_ & 0x00000080) == 0x00000080)) {
+        if (((from_bitField1_ & 0x00000040) == 0x00000040)) {
           to_bitField1_ |= 0x00000002;
         }
         result.snapshotAfterTrain_ = snapshotAfterTrain_;
-        if (((from_bitField1_ & 0x00000100) == 0x00000100)) {
+        if (((from_bitField1_ & 0x00000080) == 0x00000080)) {
           to_bitField1_ |= 0x00000004;
         }
         result.solverType_ = solverType_;
@@ -13230,16 +13109,6 @@ public final class Caffe {
           }
           onChanged();
         }
-        if (!other.plateauWinsize_.isEmpty()) {
-          if (plateauWinsize_.isEmpty()) {
-            plateauWinsize_ = other.plateauWinsize_;
-            bitField0_ = (bitField0_ & ~0x02000000);
-          } else {
-            ensurePlateauWinsizeIsMutable();
-            plateauWinsize_.addAll(other.plateauWinsize_);
-          }
-          onChanged();
-        }
         if (other.hasClipGradients()) {
           setClipGradients(other.getClipGradients());
         }
@@ -13247,7 +13116,7 @@ public final class Caffe {
           setSnapshot(other.getSnapshot());
         }
         if (other.hasSnapshotPrefix()) {
-          bitField0_ |= 0x10000000;
+          bitField0_ |= 0x08000000;
           snapshotPrefix_ = other.snapshotPrefix_;
           onChanged();
         }
@@ -13267,7 +13136,7 @@ public final class Caffe {
           setRandomSeed(other.getRandomSeed());
         }
         if (other.hasType()) {
-          bitField1_ |= 0x00000004;
+          bitField1_ |= 0x00000002;
           type_ = other.type_;
           onChanged();
         }
@@ -15197,8 +15066,6 @@ public final class Caffe {
        *      zero by the max_iter. return base_lr (1 - iter/max_iter) ^ (power)
        *    - sigmoid: the effective learning rate follows a sigmod decay
        *      return base_lr ( 1/(1 + exp(-gamma * (iter - stepsize))))
-       *    - plateau: decreases lr
-       *              if the minimum loss isn't updated for 'plateau_winsize' iters
        * where base_lr, max_iter, gamma, step, stepvalue and power are defined
        * in the solver parameter protocol buffer, and iter is the current iteration.
        * </pre>
@@ -15222,8 +15089,6 @@ public final class Caffe {
        *      zero by the max_iter. return base_lr (1 - iter/max_iter) ^ (power)
        *    - sigmoid: the effective learning rate follows a sigmod decay
        *      return base_lr ( 1/(1 + exp(-gamma * (iter - stepsize))))
-       *    - plateau: decreases lr
-       *              if the minimum loss isn't updated for 'plateau_winsize' iters
        * where base_lr, max_iter, gamma, step, stepvalue and power are defined
        * in the solver parameter protocol buffer, and iter is the current iteration.
        * </pre>
@@ -15258,8 +15123,6 @@ public final class Caffe {
        *      zero by the max_iter. return base_lr (1 - iter/max_iter) ^ (power)
        *    - sigmoid: the effective learning rate follows a sigmod decay
        *      return base_lr ( 1/(1 + exp(-gamma * (iter - stepsize))))
-       *    - plateau: decreases lr
-       *              if the minimum loss isn't updated for 'plateau_winsize' iters
        * where base_lr, max_iter, gamma, step, stepvalue and power are defined
        * in the solver parameter protocol buffer, and iter is the current iteration.
        * </pre>
@@ -15293,8 +15156,6 @@ public final class Caffe {
        *      zero by the max_iter. return base_lr (1 - iter/max_iter) ^ (power)
        *    - sigmoid: the effective learning rate follows a sigmod decay
        *      return base_lr ( 1/(1 + exp(-gamma * (iter - stepsize))))
-       *    - plateau: decreases lr
-       *              if the minimum loss isn't updated for 'plateau_winsize' iters
        * where base_lr, max_iter, gamma, step, stepvalue and power are defined
        * in the solver parameter protocol buffer, and iter is the current iteration.
        * </pre>
@@ -15325,8 +15186,6 @@ public final class Caffe {
        *      zero by the max_iter. return base_lr (1 - iter/max_iter) ^ (power)
        *    - sigmoid: the effective learning rate follows a sigmod decay
        *      return base_lr ( 1/(1 + exp(-gamma * (iter - stepsize))))
-       *    - plateau: decreases lr
-       *              if the minimum loss isn't updated for 'plateau_winsize' iters
        * where base_lr, max_iter, gamma, step, stepvalue and power are defined
        * in the solver parameter protocol buffer, and iter is the current iteration.
        * </pre>
@@ -15353,8 +15212,6 @@ public final class Caffe {
        *      zero by the max_iter. return base_lr (1 - iter/max_iter) ^ (power)
        *    - sigmoid: the effective learning rate follows a sigmod decay
        *      return base_lr ( 1/(1 + exp(-gamma * (iter - stepsize))))
-       *    - plateau: decreases lr
-       *              if the minimum loss isn't updated for 'plateau_winsize' iters
        * where base_lr, max_iter, gamma, step, stepvalue and power are defined
        * in the solver parameter protocol buffer, and iter is the current iteration.
        * </pre>
@@ -15812,100 +15669,6 @@ public final class Caffe {
         return this;
       }
 
-      private java.util.List<java.lang.Integer> plateauWinsize_ = java.util.Collections.emptyList();
-      private void ensurePlateauWinsizeIsMutable() {
-        if (!((bitField0_ & 0x02000000) == 0x02000000)) {
-          plateauWinsize_ = new java.util.ArrayList<java.lang.Integer>(plateauWinsize_);
-          bitField0_ |= 0x02000000;
-         }
-      }
-      /**
-       * <pre>
-       * the stepsize for learning rate policy "plateau"
-       * </pre>
-       *
-       * <code>repeated int32 plateau_winsize = 41;</code>
-       */
-      public java.util.List<java.lang.Integer>
-          getPlateauWinsizeList() {
-        return java.util.Collections.unmodifiableList(plateauWinsize_);
-      }
-      /**
-       * <pre>
-       * the stepsize for learning rate policy "plateau"
-       * </pre>
-       *
-       * <code>repeated int32 plateau_winsize = 41;</code>
-       */
-      public int getPlateauWinsizeCount() {
-        return plateauWinsize_.size();
-      }
-      /**
-       * <pre>
-       * the stepsize for learning rate policy "plateau"
-       * </pre>
-       *
-       * <code>repeated int32 plateau_winsize = 41;</code>
-       */
-      public int getPlateauWinsize(int index) {
-        return plateauWinsize_.get(index);
-      }
-      /**
-       * <pre>
-       * the stepsize for learning rate policy "plateau"
-       * </pre>
-       *
-       * <code>repeated int32 plateau_winsize = 41;</code>
-       */
-      public Builder setPlateauWinsize(
-          int index, int value) {
-        ensurePlateauWinsizeIsMutable();
-        plateauWinsize_.set(index, value);
-        onChanged();
-        return this;
-      }
-      /**
-       * <pre>
-       * the stepsize for learning rate policy "plateau"
-       * </pre>
-       *
-       * <code>repeated int32 plateau_winsize = 41;</code>
-       */
-      public Builder addPlateauWinsize(int value) {
-        ensurePlateauWinsizeIsMutable();
-        plateauWinsize_.add(value);
-        onChanged();
-        return this;
-      }
-      /**
-       * <pre>
-       * the stepsize for learning rate policy "plateau"
-       * </pre>
-       *
-       * <code>repeated int32 plateau_winsize = 41;</code>
-       */
-      public Builder addAllPlateauWinsize(
-          java.lang.Iterable<? extends java.lang.Integer> values) {
-        ensurePlateauWinsizeIsMutable();
-        com.google.protobuf.AbstractMessageLite.Builder.addAll(
-            values, plateauWinsize_);
-        onChanged();
-        return this;
-      }
-      /**
-       * <pre>
-       * the stepsize for learning rate policy "plateau"
-       * </pre>
-       *
-       * <code>repeated int32 plateau_winsize = 41;</code>
-       */
-      public Builder clearPlateauWinsize() {
-        plateauWinsize_ = java.util.Collections.emptyList();
-        bitField0_ = (bitField0_ & ~0x02000000);
-        onChanged();
-        return this;
-      }
-
       private float clipGradients_ = -1F;
       /**
        * <pre>
@@ -15916,7 +15679,7 @@ public final class Caffe {
        * <code>optional float clip_gradients = 35 [default = -1];</code>
        */
       public boolean hasClipGradients() {
-        return ((bitField0_ & 0x04000000) == 0x04000000);
+        return ((bitField0_ & 0x02000000) == 0x02000000);
       }
       /**
        * <pre>
@@ -15938,7 +15701,7 @@ public final class Caffe {
        * <code>optional float clip_gradients = 35 [default = -1];</code>
        */
       public Builder setClipGradients(float value) {
-        bitField0_ |= 0x04000000;
+        bitField0_ |= 0x02000000;
         clipGradients_ = value;
         onChanged();
         return this;
@@ -15952,7 +15715,7 @@ public final class Caffe {
        * <code>optional float clip_gradients = 35 [default = -1];</code>
        */
       public Builder clearClipGradients() {
-        bitField0_ = (bitField0_ & ~0x04000000);
+        bitField0_ = (bitField0_ & ~0x02000000);
         clipGradients_ = -1F;
         onChanged();
         return this;
@@ -15967,7 +15730,7 @@ public final class Caffe {
        * <code>optional int32 snapshot = 14 [default = 0];</code>
        */
       public boolean hasSnapshot() {
-        return ((bitField0_ & 0x08000000) == 0x08000000);
+        return ((bitField0_ & 0x04000000) == 0x04000000);
       }
       /**
        * <pre>
@@ -15987,7 +15750,7 @@ public final class Caffe {
        * <code>optional int32 snapshot = 14 [default = 0];</code>
        */
       public Builder setSnapshot(int value) {
-        bitField0_ |= 0x08000000;
+        bitField0_ |= 0x04000000;
         snapshot_ = value;
         onChanged();
         return this;
@@ -16000,7 +15763,7 @@ public final class Caffe {
        * <code>optional int32 snapshot = 14 [default = 0];</code>
        */
       public Builder clearSnapshot() {
-        bitField0_ = (bitField0_ & ~0x08000000);
+        bitField0_ = (bitField0_ & ~0x04000000);
         snapshot_ = 0;
         onChanged();
         return this;
@@ -16015,7 +15778,7 @@ public final class Caffe {
        * <code>optional string snapshot_prefix = 15;</code>
        */
       public boolean hasSnapshotPrefix() {
-        return ((bitField0_ & 0x10000000) == 0x10000000);
+        return ((bitField0_ & 0x08000000) == 0x08000000);
       }
       /**
        * <pre>
@@ -16070,7 +15833,7 @@ public final class Caffe {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x10000000;
+  bitField0_ |= 0x08000000;
         snapshotPrefix_ = value;
         onChanged();
         return this;
@@ -16083,7 +15846,7 @@ public final class Caffe {
        * <code>optional string snapshot_prefix = 15;</code>
        */
       public Builder clearSnapshotPrefix() {
-        bitField0_ = (bitField0_ & ~0x10000000);
+        bitField0_ = (bitField0_ & ~0x08000000);
         snapshotPrefix_ = getDefaultInstance().getSnapshotPrefix();
         onChanged();
         return this;
@@ -16100,7 +15863,7 @@ public final class Caffe {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField0_ |= 0x10000000;
+  bitField0_ |= 0x08000000;
         snapshotPrefix_ = value;
         onChanged();
         return this;
@@ -16116,7 +15879,7 @@ public final class Caffe {
        * <code>optional bool snapshot_diff = 16 [default = false];</code>
        */
       public boolean hasSnapshotDiff() {
-        return ((bitField0_ & 0x20000000) == 0x20000000);
+        return ((bitField0_ & 0x10000000) == 0x10000000);
       }
       /**
        * <pre>
@@ -16138,7 +15901,7 @@ public final class Caffe {
        * <code>optional bool snapshot_diff = 16 [default = false];</code>
        */
       public Builder setSnapshotDiff(boolean value) {
-        bitField0_ |= 0x20000000;
+        bitField0_ |= 0x10000000;
         snapshotDiff_ = value;
         onChanged();
         return this;
@@ -16152,7 +15915,7 @@ public final class Caffe {
        * <code>optional bool snapshot_diff = 16 [default = false];</code>
        */
       public Builder clearSnapshotDiff() {
-        bitField0_ = (bitField0_ & ~0x20000000);
+        bitField0_ = (bitField0_ & ~0x10000000);
         snapshotDiff_ = false;
         onChanged();
         return this;
@@ -16163,7 +15926,7 @@ public final class Caffe {
        * <code>optional .caffe.SolverParameter.SnapshotFormat snapshot_format = 37 [default = BINARYPROTO];</code>
        */
       public boolean hasSnapshotFormat() {
-        return ((bitField0_ & 0x40000000) == 0x40000000);
+        return ((bitField0_ & 0x20000000) == 0x20000000);
       }
       /**
        * <code>optional .caffe.SolverParameter.SnapshotFormat snapshot_format = 37 [default = BINARYPROTO];</code>
@@ -16179,7 +15942,7 @@ public final class Caffe {
         if (value == null) {
           throw new NullPointerException();
         }
-        bitField0_ |= 0x40000000;
+        bitField0_ |= 0x20000000;
         snapshotFormat_ = value.getNumber();
         onChanged();
         return this;
@@ -16188,7 +15951,7 @@ public final class Caffe {
        * <code>optional .caffe.SolverParameter.SnapshotFormat snapshot_format = 37 [default = BINARYPROTO];</code>
        */
       public Builder clearSnapshotFormat() {
-        bitField0_ = (bitField0_ & ~0x40000000);
+        bitField0_ = (bitField0_ & ~0x20000000);
         snapshotFormat_ = 1;
         onChanged();
         return this;
@@ -16199,7 +15962,7 @@ public final class Caffe {
        * <code>optional .caffe.SolverParameter.SolverMode solver_mode = 17 [default = GPU];</code>
        */
       public boolean hasSolverMode() {
-        return ((bitField0_ & 0x80000000) == 0x80000000);
+        return ((bitField0_ & 0x40000000) == 0x40000000);
       }
       /**
        * <code>optional .caffe.SolverParameter.SolverMode solver_mode = 17 [default = GPU];</code>
@@ -16215,7 +15978,7 @@ public final class Caffe {
         if (value == null) {
           throw new NullPointerException();
         }
-        bitField0_ |= 0x80000000;
+        bitField0_ |= 0x40000000;
         solverMode_ = value.getNumber();
         onChanged();
         return this;
@@ -16224,7 +15987,7 @@ public final class Caffe {
        * <code>optional .caffe.SolverParameter.SolverMode solver_mode = 17 [default = GPU];</code>
        */
       public Builder clearSolverMode() {
-        bitField0_ = (bitField0_ & ~0x80000000);
+        bitField0_ = (bitField0_ & ~0x40000000);
         solverMode_ = 1;
         onChanged();
         return this;
@@ -16239,7 +16002,7 @@ public final class Caffe {
        * <code>optional int32 device_id = 18 [default = 0];</code>
        */
       public boolean hasDeviceId() {
-        return ((bitField1_ & 0x00000001) == 0x00000001);
+        return ((bitField0_ & 0x80000000) == 0x80000000);
       }
       /**
        * <pre>
@@ -16259,7 +16022,7 @@ public final class Caffe {
        * <code>optional int32 device_id = 18 [default = 0];</code>
        */
       public Builder setDeviceId(int value) {
-        bitField1_ |= 0x00000001;
+        bitField0_ |= 0x80000000;
         deviceId_ = value;
         onChanged();
         return this;
@@ -16272,7 +16035,7 @@ public final class Caffe {
        * <code>optional int32 device_id = 18 [default = 0];</code>
        */
       public Builder clearDeviceId() {
-        bitField1_ = (bitField1_ & ~0x00000001);
+        bitField0_ = (bitField0_ & ~0x80000000);
         deviceId_ = 0;
         onChanged();
         return this;
@@ -16289,7 +16052,7 @@ public final class Caffe {
        * <code>optional int64 random_seed = 20 [default = -1];</code>
        */
       public boolean hasRandomSeed() {
-        return ((bitField1_ & 0x00000002) == 0x00000002);
+        return ((bitField1_ & 0x00000001) == 0x00000001);
       }
       /**
        * <pre>
@@ -16313,7 +16076,7 @@ public final class Caffe {
        * <code>optional int64 random_seed = 20 [default = -1];</code>
        */
       public Builder setRandomSeed(long value) {
-        bitField1_ |= 0x00000002;
+        bitField1_ |= 0x00000001;
         randomSeed_ = value;
         onChanged();
         return this;
@@ -16328,7 +16091,7 @@ public final class Caffe {
        * <code>optional int64 random_seed = 20 [default = -1];</code>
        */
       public Builder clearRandomSeed() {
-        bitField1_ = (bitField1_ & ~0x00000002);
+        bitField1_ = (bitField1_ & ~0x00000001);
         randomSeed_ = -1L;
         onChanged();
         return this;
@@ -16343,7 +16106,7 @@ public final class Caffe {
        * <code>optional string type = 40 [default = "SGD"];</code>
        */
       public boolean hasType() {
-        return ((bitField1_ & 0x00000004) == 0x00000004);
+        return ((bitField1_ & 0x00000002) == 0x00000002);
       }
       /**
        * <pre>
@@ -16398,7 +16161,7 @@ public final class Caffe {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField1_ |= 0x00000004;
+  bitField1_ |= 0x00000002;
         type_ = value;
         onChanged();
         return this;
@@ -16411,7 +16174,7 @@ public final class Caffe {
        * <code>optional string type = 40 [default = "SGD"];</code>
        */
       public Builder clearType() {
-        bitField1_ = (bitField1_ & ~0x00000004);
+        bitField1_ = (bitField1_ & ~0x00000002);
         type_ = getDefaultInstance().getType();
         onChanged();
         return this;
@@ -16428,7 +16191,7 @@ public final class Caffe {
         if (value == null) {
     throw new NullPointerException();
   }
-  bitField1_ |= 0x00000004;
+  bitField1_ |= 0x00000002;
         type_ = value;
         onChanged();
         return this;
@@ -16443,7 +16206,7 @@ public final class Caffe {
        * <code>optional float delta = 31 [default = 1e-08];</code>
        */
       public boolean hasDelta() {
-        return ((bitField1_ & 0x00000008) == 0x00000008);
+        return ((bitField1_ & 0x00000004) == 0x00000004);
       }
       /**
        * <pre>
@@ -16463,7 +16226,7 @@ public final class Caffe {
        * <code>optional float delta = 31 [default = 1e-08];</code>
        */
       public Builder setDelta(float value) {
-        bitField1_ |= 0x00000008;
+        bitField1_ |= 0x00000004;
         delta_ = value;
         onChanged();
         return this;
@@ -16476,7 +16239,7 @@ public final class Caffe {
        * <code>optional float delta = 31 [default = 1e-08];</code>
        */
       public Builder clearDelta() {
-        bitField1_ = (bitField1_ & ~0x00000008);
+        bitField1_ = (bitField1_ & ~0x00000004);
         delta_ = 1e-08F;
         onChanged();
         return this;
@@ -16491,7 +16254,7 @@ public final class Caffe {
        * <code>optional float momentum2 = 39 [default = 0.999];</code>
        */
       public boolean hasMomentum2() {
-        return ((bitField1_ & 0x00000010) == 0x00000010);
+        return ((bitField1_ & 0x00000008) == 0x00000008);
       }
       /**
        * <pre>
@@ -16511,7 +16274,7 @@ public final class Caffe {
        * <code>optional float momentum2 = 39 [default = 0.999];</code>
        */
       public Builder setMomentum2(float value) {
-        bitField1_ |= 0x00000010;
+        bitField1_ |= 0x00000008;
         momentum2_ = value;
         onChanged();
         return this;
@@ -16524,7 +16287,7 @@ public final class Caffe {
        * <code>optional float momentum2 = 39 [default = 0.999];</code>
        */
       public Builder clearMomentum2() {
-        bitField1_ = (bitField1_ & ~0x00000010);
+        bitField1_ = (bitField1_ & ~0x00000008);
         momentum2_ = 0.999F;
         onChanged();
         return this;
@@ -16540,7 +16303,7 @@ public final class Caffe {
        * <code>optional float rms_decay = 38 [default = 0.99];</code>
        */
       public boolean hasRmsDecay() {
-        return ((bitField1_ & 0x00000020) == 0x00000020);
+        return ((bitField1_ & 0x00000010) == 0x00000010);
       }
       /**
        * <pre>
@@ -16562,7 +16325,7 @@ public final class Caffe {
        * <code>optional float rms_decay = 38 [default = 0.99];</code>
        */
       public Builder setRmsDecay(float value) {
-        bitField1_ |= 0x00000020;
+        bitField1_ |= 0x00000010;
         rmsDecay_ = value;
         onChanged();
         return this;
@@ -16576,7 +16339,7 @@ public final class Caffe {
        * <code>optional float rms_decay = 38 [default = 0.99];</code>
        */
       public Builder clearRmsDecay() {
-        bitField1_ = (bitField1_ & ~0x00000020);
+        bitField1_ = (bitField1_ & ~0x00000010);
         rmsDecay_ = 0.99F;
         onChanged();
         return this;
@@ -16592,7 +16355,7 @@ public final class Caffe {
        * <code>optional bool debug_info = 23 [default = false];</code>
        */
       public boolean hasDebugInfo() {
-        return ((bitField1_ & 0x00000040) == 0x00000040);
+        return ((bitField1_ & 0x00000020) == 0x00000020);
       }
       /**
        * <pre>
@@ -16614,7 +16377,7 @@ public final class Caffe {
        * <code>optional bool debug_info = 23 [default = false];</code>
        */
       public Builder setDebugInfo(boolean value) {
-        bitField1_ |= 0x00000040;
+        bitField1_ |= 0x00000020;
         debugInfo_ = value;
         onChanged();
         return this;
@@ -16628,7 +16391,7 @@ public final class Caffe {
        * <code>optional bool debug_info = 23 [default = false];</code>
        */
       public Builder clearDebugInfo() {
-        bitField1_ = (bitField1_ & ~0x00000040);
+        bitField1_ = (bitField1_ & ~0x00000020);
         debugInfo_ = false;
         onChanged();
         return this;
@@ -16643,7 +16406,7 @@ public final class Caffe {
        * <code>optional bool snapshot_after_train = 28 [default = true];</code>
        */
       public boolean hasSnapshotAfterTrain() {
-        return ((bitField1_ & 0x00000080) == 0x00000080);
+        return ((bitField1_ & 0x00000040) == 0x00000040);
       }
       /**
        * <pre>
@@ -16663,7 +16426,7 @@ public final class Caffe {
        * <code>optional bool snapshot_after_train = 28 [default = true];</code>
        */
       public Builder setSnapshotAfterTrain(boolean value) {
-        bitField1_ |= 0x00000080;
+        bitField1_ |= 0x00000040;
         snapshotAfterTrain_ = value;
         onChanged();
         return this;
@@ -16676,7 +16439,7 @@ public final class Caffe {
        * <code>optional bool snapshot_after_train = 28 [default = true];</code>
        */
       public Builder clearSnapshotAfterTrain() {
-        bitField1_ = (bitField1_ & ~0x00000080);
+        bitField1_ = (bitField1_ & ~0x00000040);
         snapshotAfterTrain_ = true;
         onChanged();
         return this;
@@ -16691,7 +16454,7 @@ public final class Caffe {
        * <code>optional .caffe.SolverParameter.SolverType solver_type = 30 [default = SGD];</code>
        */
       public boolean hasSolverType() {
-        return ((bitField1_ & 0x00000100) == 0x00000100);
+        return ((bitField1_ & 0x00000080) == 0x00000080);
       }
       /**
        * <pre>
@@ -16715,7 +16478,7 @@ public final class Caffe {
         if (value == null) {
           throw new NullPointerException();
         }
-        bitField1_ |= 0x00000100;
+        bitField1_ |= 0x00000080;
         solverType_ = value.getNumber();
         onChanged();
         return this;
@@ -16728,7 +16491,7 @@ public final class Caffe {
        * <code>optional .caffe.SolverParameter.SolverType solver_type = 30 [default = SGD];</code>
        */
       public Builder clearSolverType() {
-        bitField1_ = (bitField1_ & ~0x00000100);
+        bitField1_ = (bitField1_ & ~0x00000080);
         solverType_ = 0;
         onChanged();
         return this;
@@ -16889,40 +16652,6 @@ public final class Caffe {
      * <code>optional int32 current_step = 4 [default = 0];</code>
      */
     int getCurrentStep();
-
-    /**
-     * <pre>
-     * Historical minimum loss
-     * </pre>
-     *
-     * <code>optional float minimum_loss = 5 [default = 1e+38];</code>
-     */
-    boolean hasMinimumLoss();
-    /**
-     * <pre>
-     * Historical minimum loss
-     * </pre>
-     *
-     * <code>optional float minimum_loss = 5 [default = 1e+38];</code>
-     */
-    float getMinimumLoss();
-
-    /**
-     * <pre>
-     * The iteration when last lr-update or min_loss-update happend
-     * </pre>
-     *
-     * <code>optional int32 iter_last_event = 6 [default = 0];</code>
-     */
-    boolean hasIterLastEvent();
-    /**
-     * <pre>
-     * The iteration when last lr-update or min_loss-update happend
-     * </pre>
-     *
-     * <code>optional int32 iter_last_event = 6 [default = 0];</code>
-     */
-    int getIterLastEvent();
   }
   /**
    * <pre>
@@ -16944,8 +16673,6 @@ public final class Caffe {
       learnedNet_ = "";
       history_ = java.util.Collections.emptyList();
       currentStep_ = 0;
-      minimumLoss_ = 1e+38F;
-      iterLastEvent_ = 0;
     }
 
     @java.lang.Override
@@ -16999,16 +16726,6 @@ public final class Caffe {
             case 32: {
               bitField0_ |= 0x00000004;
               currentStep_ = input.readInt32();
-              break;
-            }
-            case 45: {
-              bitField0_ |= 0x00000008;
-              minimumLoss_ = input.readFloat();
-              break;
-            }
-            case 48: {
-              bitField0_ |= 0x00000010;
-              iterLastEvent_ = input.readInt32();
               break;
             }
           }
@@ -17194,52 +16911,6 @@ public final class Caffe {
       return currentStep_;
     }
 
-    public static final int MINIMUM_LOSS_FIELD_NUMBER = 5;
-    private float minimumLoss_;
-    /**
-     * <pre>
-     * Historical minimum loss
-     * </pre>
-     *
-     * <code>optional float minimum_loss = 5 [default = 1e+38];</code>
-     */
-    public boolean hasMinimumLoss() {
-      return ((bitField0_ & 0x00000008) == 0x00000008);
-    }
-    /**
-     * <pre>
-     * Historical minimum loss
-     * </pre>
-     *
-     * <code>optional float minimum_loss = 5 [default = 1e+38];</code>
-     */
-    public float getMinimumLoss() {
-      return minimumLoss_;
-    }
-
-    public static final int ITER_LAST_EVENT_FIELD_NUMBER = 6;
-    private int iterLastEvent_;
-    /**
-     * <pre>
-     * The iteration when last lr-update or min_loss-update happend
-     * </pre>
-     *
-     * <code>optional int32 iter_last_event = 6 [default = 0];</code>
-     */
-    public boolean hasIterLastEvent() {
-      return ((bitField0_ & 0x00000010) == 0x00000010);
-    }
-    /**
-     * <pre>
-     * The iteration when last lr-update or min_loss-update happend
-     * </pre>
-     *
-     * <code>optional int32 iter_last_event = 6 [default = 0];</code>
-     */
-    public int getIterLastEvent() {
-      return iterLastEvent_;
-    }
-
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -17264,12 +16935,6 @@ public final class Caffe {
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         output.writeInt32(4, currentStep_);
       }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        output.writeFloat(5, minimumLoss_);
-      }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        output.writeInt32(6, iterLastEvent_);
-      }
       unknownFields.writeTo(output);
     }
 
@@ -17292,14 +16957,6 @@ public final class Caffe {
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
           .computeInt32Size(4, currentStep_);
-      }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeFloatSize(5, minimumLoss_);
-      }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(6, iterLastEvent_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -17335,18 +16992,6 @@ public final class Caffe {
         result = result && (getCurrentStep()
             == other.getCurrentStep());
       }
-      result = result && (hasMinimumLoss() == other.hasMinimumLoss());
-      if (hasMinimumLoss()) {
-        result = result && (
-            java.lang.Float.floatToIntBits(getMinimumLoss())
-            == java.lang.Float.floatToIntBits(
-                other.getMinimumLoss()));
-      }
-      result = result && (hasIterLastEvent() == other.hasIterLastEvent());
-      if (hasIterLastEvent()) {
-        result = result && (getIterLastEvent()
-            == other.getIterLastEvent());
-      }
       result = result && unknownFields.equals(other.unknownFields);
       return result;
     }
@@ -17373,15 +17018,6 @@ public final class Caffe {
       if (hasCurrentStep()) {
         hash = (37 * hash) + CURRENT_STEP_FIELD_NUMBER;
         hash = (53 * hash) + getCurrentStep();
-      }
-      if (hasMinimumLoss()) {
-        hash = (37 * hash) + MINIMUM_LOSS_FIELD_NUMBER;
-        hash = (53 * hash) + java.lang.Float.floatToIntBits(
-            getMinimumLoss());
-      }
-      if (hasIterLastEvent()) {
-        hash = (37 * hash) + ITER_LAST_EVENT_FIELD_NUMBER;
-        hash = (53 * hash) + getIterLastEvent();
       }
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
@@ -17518,10 +17154,6 @@ public final class Caffe {
         }
         currentStep_ = 0;
         bitField0_ = (bitField0_ & ~0x00000008);
-        minimumLoss_ = 1e+38F;
-        bitField0_ = (bitField0_ & ~0x00000010);
-        iterLastEvent_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000020);
         return this;
       }
 
@@ -17567,14 +17199,6 @@ public final class Caffe {
           to_bitField0_ |= 0x00000004;
         }
         result.currentStep_ = currentStep_;
-        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
-          to_bitField0_ |= 0x00000008;
-        }
-        result.minimumLoss_ = minimumLoss_;
-        if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
-          to_bitField0_ |= 0x00000010;
-        }
-        result.iterLastEvent_ = iterLastEvent_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -17653,12 +17277,6 @@ public final class Caffe {
         }
         if (other.hasCurrentStep()) {
           setCurrentStep(other.getCurrentStep());
-        }
-        if (other.hasMinimumLoss()) {
-          setMinimumLoss(other.getMinimumLoss());
-        }
-        if (other.hasIterLastEvent()) {
-          setIterLastEvent(other.getIterLastEvent());
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -18192,102 +17810,6 @@ public final class Caffe {
       public Builder clearCurrentStep() {
         bitField0_ = (bitField0_ & ~0x00000008);
         currentStep_ = 0;
-        onChanged();
-        return this;
-      }
-
-      private float minimumLoss_ = 1e+38F;
-      /**
-       * <pre>
-       * Historical minimum loss
-       * </pre>
-       *
-       * <code>optional float minimum_loss = 5 [default = 1e+38];</code>
-       */
-      public boolean hasMinimumLoss() {
-        return ((bitField0_ & 0x00000010) == 0x00000010);
-      }
-      /**
-       * <pre>
-       * Historical minimum loss
-       * </pre>
-       *
-       * <code>optional float minimum_loss = 5 [default = 1e+38];</code>
-       */
-      public float getMinimumLoss() {
-        return minimumLoss_;
-      }
-      /**
-       * <pre>
-       * Historical minimum loss
-       * </pre>
-       *
-       * <code>optional float minimum_loss = 5 [default = 1e+38];</code>
-       */
-      public Builder setMinimumLoss(float value) {
-        bitField0_ |= 0x00000010;
-        minimumLoss_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <pre>
-       * Historical minimum loss
-       * </pre>
-       *
-       * <code>optional float minimum_loss = 5 [default = 1e+38];</code>
-       */
-      public Builder clearMinimumLoss() {
-        bitField0_ = (bitField0_ & ~0x00000010);
-        minimumLoss_ = 1e+38F;
-        onChanged();
-        return this;
-      }
-
-      private int iterLastEvent_ ;
-      /**
-       * <pre>
-       * The iteration when last lr-update or min_loss-update happend
-       * </pre>
-       *
-       * <code>optional int32 iter_last_event = 6 [default = 0];</code>
-       */
-      public boolean hasIterLastEvent() {
-        return ((bitField0_ & 0x00000020) == 0x00000020);
-      }
-      /**
-       * <pre>
-       * The iteration when last lr-update or min_loss-update happend
-       * </pre>
-       *
-       * <code>optional int32 iter_last_event = 6 [default = 0];</code>
-       */
-      public int getIterLastEvent() {
-        return iterLastEvent_;
-      }
-      /**
-       * <pre>
-       * The iteration when last lr-update or min_loss-update happend
-       * </pre>
-       *
-       * <code>optional int32 iter_last_event = 6 [default = 0];</code>
-       */
-      public Builder setIterLastEvent(int value) {
-        bitField0_ |= 0x00000020;
-        iterLastEvent_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <pre>
-       * The iteration when last lr-update or min_loss-update happend
-       * </pre>
-       *
-       * <code>optional int32 iter_last_event = 6 [default = 0];</code>
-       */
-      public Builder clearIterLastEvent() {
-        bitField0_ = (bitField0_ & ~0x00000020);
-        iterLastEvent_ = 0;
         onChanged();
         return this;
       }
@@ -22487,45 +22009,6 @@ public final class Caffe {
      * <code>optional .caffe.WindowDataParameter window_data_param = 129;</code>
      */
     caffe.Caffe.WindowDataParameterOrBuilder getWindowDataParamOrBuilder();
-
-    /**
-     * <code>optional .caffe.ROIPoolingParameter roi_pooling_param = 8266711;</code>
-     */
-    boolean hasRoiPoolingParam();
-    /**
-     * <code>optional .caffe.ROIPoolingParameter roi_pooling_param = 8266711;</code>
-     */
-    caffe.Caffe.ROIPoolingParameter getRoiPoolingParam();
-    /**
-     * <code>optional .caffe.ROIPoolingParameter roi_pooling_param = 8266711;</code>
-     */
-    caffe.Caffe.ROIPoolingParameterOrBuilder getRoiPoolingParamOrBuilder();
-
-    /**
-     * <code>optional .caffe.SmoothL1LossParameter smooth_l1_loss_param = 8266712;</code>
-     */
-    boolean hasSmoothL1LossParam();
-    /**
-     * <code>optional .caffe.SmoothL1LossParameter smooth_l1_loss_param = 8266712;</code>
-     */
-    caffe.Caffe.SmoothL1LossParameter getSmoothL1LossParam();
-    /**
-     * <code>optional .caffe.SmoothL1LossParameter smooth_l1_loss_param = 8266712;</code>
-     */
-    caffe.Caffe.SmoothL1LossParameterOrBuilder getSmoothL1LossParamOrBuilder();
-
-    /**
-     * <code>optional .caffe.ProposalParameter proposal_param = 8266713;</code>
-     */
-    boolean hasProposalParam();
-    /**
-     * <code>optional .caffe.ProposalParameter proposal_param = 8266713;</code>
-     */
-    caffe.Caffe.ProposalParameter getProposalParam();
-    /**
-     * <code>optional .caffe.ProposalParameter proposal_param = 8266713;</code>
-     */
-    caffe.Caffe.ProposalParameterOrBuilder getProposalParamOrBuilder();
   }
   /**
    * <pre>
@@ -23315,45 +22798,6 @@ public final class Caffe {
                 recurrentParam_ = subBuilder.buildPartial();
               }
               bitField1_ |= 0x00000020;
-              break;
-            }
-            case 66133690: {
-              caffe.Caffe.ROIPoolingParameter.Builder subBuilder = null;
-              if (((bitField1_ & 0x00040000) == 0x00040000)) {
-                subBuilder = roiPoolingParam_.toBuilder();
-              }
-              roiPoolingParam_ = input.readMessage(caffe.Caffe.ROIPoolingParameter.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(roiPoolingParam_);
-                roiPoolingParam_ = subBuilder.buildPartial();
-              }
-              bitField1_ |= 0x00040000;
-              break;
-            }
-            case 66133698: {
-              caffe.Caffe.SmoothL1LossParameter.Builder subBuilder = null;
-              if (((bitField1_ & 0x00080000) == 0x00080000)) {
-                subBuilder = smoothL1LossParam_.toBuilder();
-              }
-              smoothL1LossParam_ = input.readMessage(caffe.Caffe.SmoothL1LossParameter.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(smoothL1LossParam_);
-                smoothL1LossParam_ = subBuilder.buildPartial();
-              }
-              bitField1_ |= 0x00080000;
-              break;
-            }
-            case 66133706: {
-              caffe.Caffe.ProposalParameter.Builder subBuilder = null;
-              if (((bitField1_ & 0x00100000) == 0x00100000)) {
-                subBuilder = proposalParam_.toBuilder();
-              }
-              proposalParam_ = input.readMessage(caffe.Caffe.ProposalParameter.PARSER, extensionRegistry);
-              if (subBuilder != null) {
-                subBuilder.mergeFrom(proposalParam_);
-                proposalParam_ = subBuilder.buildPartial();
-              }
-              bitField1_ |= 0x00100000;
               break;
             }
           }
@@ -24982,69 +24426,6 @@ public final class Caffe {
       return windowDataParam_ == null ? caffe.Caffe.WindowDataParameter.getDefaultInstance() : windowDataParam_;
     }
 
-    public static final int ROI_POOLING_PARAM_FIELD_NUMBER = 8266711;
-    private caffe.Caffe.ROIPoolingParameter roiPoolingParam_;
-    /**
-     * <code>optional .caffe.ROIPoolingParameter roi_pooling_param = 8266711;</code>
-     */
-    public boolean hasRoiPoolingParam() {
-      return ((bitField1_ & 0x00040000) == 0x00040000);
-    }
-    /**
-     * <code>optional .caffe.ROIPoolingParameter roi_pooling_param = 8266711;</code>
-     */
-    public caffe.Caffe.ROIPoolingParameter getRoiPoolingParam() {
-      return roiPoolingParam_ == null ? caffe.Caffe.ROIPoolingParameter.getDefaultInstance() : roiPoolingParam_;
-    }
-    /**
-     * <code>optional .caffe.ROIPoolingParameter roi_pooling_param = 8266711;</code>
-     */
-    public caffe.Caffe.ROIPoolingParameterOrBuilder getRoiPoolingParamOrBuilder() {
-      return roiPoolingParam_ == null ? caffe.Caffe.ROIPoolingParameter.getDefaultInstance() : roiPoolingParam_;
-    }
-
-    public static final int SMOOTH_L1_LOSS_PARAM_FIELD_NUMBER = 8266712;
-    private caffe.Caffe.SmoothL1LossParameter smoothL1LossParam_;
-    /**
-     * <code>optional .caffe.SmoothL1LossParameter smooth_l1_loss_param = 8266712;</code>
-     */
-    public boolean hasSmoothL1LossParam() {
-      return ((bitField1_ & 0x00080000) == 0x00080000);
-    }
-    /**
-     * <code>optional .caffe.SmoothL1LossParameter smooth_l1_loss_param = 8266712;</code>
-     */
-    public caffe.Caffe.SmoothL1LossParameter getSmoothL1LossParam() {
-      return smoothL1LossParam_ == null ? caffe.Caffe.SmoothL1LossParameter.getDefaultInstance() : smoothL1LossParam_;
-    }
-    /**
-     * <code>optional .caffe.SmoothL1LossParameter smooth_l1_loss_param = 8266712;</code>
-     */
-    public caffe.Caffe.SmoothL1LossParameterOrBuilder getSmoothL1LossParamOrBuilder() {
-      return smoothL1LossParam_ == null ? caffe.Caffe.SmoothL1LossParameter.getDefaultInstance() : smoothL1LossParam_;
-    }
-
-    public static final int PROPOSAL_PARAM_FIELD_NUMBER = 8266713;
-    private caffe.Caffe.ProposalParameter proposalParam_;
-    /**
-     * <code>optional .caffe.ProposalParameter proposal_param = 8266713;</code>
-     */
-    public boolean hasProposalParam() {
-      return ((bitField1_ & 0x00100000) == 0x00100000);
-    }
-    /**
-     * <code>optional .caffe.ProposalParameter proposal_param = 8266713;</code>
-     */
-    public caffe.Caffe.ProposalParameter getProposalParam() {
-      return proposalParam_ == null ? caffe.Caffe.ProposalParameter.getDefaultInstance() : proposalParam_;
-    }
-    /**
-     * <code>optional .caffe.ProposalParameter proposal_param = 8266713;</code>
-     */
-    public caffe.Caffe.ProposalParameterOrBuilder getProposalParamOrBuilder() {
-      return proposalParam_ == null ? caffe.Caffe.ProposalParameter.getDefaultInstance() : proposalParam_;
-    }
-
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
       byte isInitialized = memoizedIsInitialized;
@@ -25230,15 +24611,6 @@ public final class Caffe {
       }
       if (((bitField1_ & 0x00000020) == 0x00000020)) {
         output.writeMessage(146, getRecurrentParam());
-      }
-      if (((bitField1_ & 0x00040000) == 0x00040000)) {
-        output.writeMessage(8266711, getRoiPoolingParam());
-      }
-      if (((bitField1_ & 0x00080000) == 0x00080000)) {
-        output.writeMessage(8266712, getSmoothL1LossParam());
-      }
-      if (((bitField1_ & 0x00100000) == 0x00100000)) {
-        output.writeMessage(8266713, getProposalParam());
       }
       unknownFields.writeTo(output);
     }
@@ -25489,18 +24861,6 @@ public final class Caffe {
       if (((bitField1_ & 0x00000020) == 0x00000020)) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(146, getRecurrentParam());
-      }
-      if (((bitField1_ & 0x00040000) == 0x00040000)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(8266711, getRoiPoolingParam());
-      }
-      if (((bitField1_ & 0x00080000) == 0x00080000)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(8266712, getSmoothL1LossParam());
-      }
-      if (((bitField1_ & 0x00100000) == 0x00100000)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(8266713, getProposalParam());
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -25784,21 +25144,6 @@ public final class Caffe {
         result = result && getWindowDataParam()
             .equals(other.getWindowDataParam());
       }
-      result = result && (hasRoiPoolingParam() == other.hasRoiPoolingParam());
-      if (hasRoiPoolingParam()) {
-        result = result && getRoiPoolingParam()
-            .equals(other.getRoiPoolingParam());
-      }
-      result = result && (hasSmoothL1LossParam() == other.hasSmoothL1LossParam());
-      if (hasSmoothL1LossParam()) {
-        result = result && getSmoothL1LossParam()
-            .equals(other.getSmoothL1LossParam());
-      }
-      result = result && (hasProposalParam() == other.hasProposalParam());
-      if (hasProposalParam()) {
-        result = result && getProposalParam()
-            .equals(other.getProposalParam());
-      }
       result = result && unknownFields.equals(other.unknownFields);
       return result;
     }
@@ -26042,18 +25387,6 @@ public final class Caffe {
         hash = (37 * hash) + WINDOW_DATA_PARAM_FIELD_NUMBER;
         hash = (53 * hash) + getWindowDataParam().hashCode();
       }
-      if (hasRoiPoolingParam()) {
-        hash = (37 * hash) + ROI_POOLING_PARAM_FIELD_NUMBER;
-        hash = (53 * hash) + getRoiPoolingParam().hashCode();
-      }
-      if (hasSmoothL1LossParam()) {
-        hash = (37 * hash) + SMOOTH_L1_LOSS_PARAM_FIELD_NUMBER;
-        hash = (53 * hash) + getSmoothL1LossParam().hashCode();
-      }
-      if (hasProposalParam()) {
-        hash = (37 * hash) + PROPOSAL_PARAM_FIELD_NUMBER;
-        hash = (53 * hash) + getProposalParam().hashCode();
-      }
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
       return hash;
@@ -26225,9 +25558,6 @@ public final class Caffe {
           getThresholdParamFieldBuilder();
           getTileParamFieldBuilder();
           getWindowDataParamFieldBuilder();
-          getRoiPoolingParamFieldBuilder();
-          getSmoothL1LossParamFieldBuilder();
-          getProposalParamFieldBuilder();
         }
       }
       public Builder clear() {
@@ -26552,24 +25882,6 @@ public final class Caffe {
           windowDataParamBuilder_.clear();
         }
         bitField1_ = (bitField1_ & ~0x02000000);
-        if (roiPoolingParamBuilder_ == null) {
-          roiPoolingParam_ = null;
-        } else {
-          roiPoolingParamBuilder_.clear();
-        }
-        bitField1_ = (bitField1_ & ~0x04000000);
-        if (smoothL1LossParamBuilder_ == null) {
-          smoothL1LossParam_ = null;
-        } else {
-          smoothL1LossParamBuilder_.clear();
-        }
-        bitField1_ = (bitField1_ & ~0x08000000);
-        if (proposalParamBuilder_ == null) {
-          proposalParam_ = null;
-        } else {
-          proposalParamBuilder_.clear();
-        }
-        bitField1_ = (bitField1_ & ~0x10000000);
         return this;
       }
 
@@ -27040,30 +26352,6 @@ public final class Caffe {
         } else {
           result.windowDataParam_ = windowDataParamBuilder_.build();
         }
-        if (((from_bitField1_ & 0x04000000) == 0x04000000)) {
-          to_bitField1_ |= 0x00040000;
-        }
-        if (roiPoolingParamBuilder_ == null) {
-          result.roiPoolingParam_ = roiPoolingParam_;
-        } else {
-          result.roiPoolingParam_ = roiPoolingParamBuilder_.build();
-        }
-        if (((from_bitField1_ & 0x08000000) == 0x08000000)) {
-          to_bitField1_ |= 0x00080000;
-        }
-        if (smoothL1LossParamBuilder_ == null) {
-          result.smoothL1LossParam_ = smoothL1LossParam_;
-        } else {
-          result.smoothL1LossParam_ = smoothL1LossParamBuilder_.build();
-        }
-        if (((from_bitField1_ & 0x10000000) == 0x10000000)) {
-          to_bitField1_ |= 0x00100000;
-        }
-        if (proposalParamBuilder_ == null) {
-          result.proposalParam_ = proposalParam_;
-        } else {
-          result.proposalParam_ = proposalParamBuilder_.build();
-        }
         result.bitField0_ = to_bitField0_;
         result.bitField1_ = to_bitField1_;
         onBuilt();
@@ -27404,15 +26692,6 @@ public final class Caffe {
         }
         if (other.hasWindowDataParam()) {
           mergeWindowDataParam(other.getWindowDataParam());
-        }
-        if (other.hasRoiPoolingParam()) {
-          mergeRoiPoolingParam(other.getRoiPoolingParam());
-        }
-        if (other.hasSmoothL1LossParam()) {
-          mergeSmoothL1LossParam(other.getSmoothL1LossParam());
-        }
-        if (other.hasProposalParam()) {
-          mergeProposalParam(other.getProposalParam());
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -35163,360 +34442,6 @@ public final class Caffe {
         }
         return windowDataParamBuilder_;
       }
-
-      private caffe.Caffe.ROIPoolingParameter roiPoolingParam_ = null;
-      private com.google.protobuf.SingleFieldBuilderV3<
-          caffe.Caffe.ROIPoolingParameter, caffe.Caffe.ROIPoolingParameter.Builder, caffe.Caffe.ROIPoolingParameterOrBuilder> roiPoolingParamBuilder_;
-      /**
-       * <code>optional .caffe.ROIPoolingParameter roi_pooling_param = 8266711;</code>
-       */
-      public boolean hasRoiPoolingParam() {
-        return ((bitField1_ & 0x04000000) == 0x04000000);
-      }
-      /**
-       * <code>optional .caffe.ROIPoolingParameter roi_pooling_param = 8266711;</code>
-       */
-      public caffe.Caffe.ROIPoolingParameter getRoiPoolingParam() {
-        if (roiPoolingParamBuilder_ == null) {
-          return roiPoolingParam_ == null ? caffe.Caffe.ROIPoolingParameter.getDefaultInstance() : roiPoolingParam_;
-        } else {
-          return roiPoolingParamBuilder_.getMessage();
-        }
-      }
-      /**
-       * <code>optional .caffe.ROIPoolingParameter roi_pooling_param = 8266711;</code>
-       */
-      public Builder setRoiPoolingParam(caffe.Caffe.ROIPoolingParameter value) {
-        if (roiPoolingParamBuilder_ == null) {
-          if (value == null) {
-            throw new NullPointerException();
-          }
-          roiPoolingParam_ = value;
-          onChanged();
-        } else {
-          roiPoolingParamBuilder_.setMessage(value);
-        }
-        bitField1_ |= 0x04000000;
-        return this;
-      }
-      /**
-       * <code>optional .caffe.ROIPoolingParameter roi_pooling_param = 8266711;</code>
-       */
-      public Builder setRoiPoolingParam(
-          caffe.Caffe.ROIPoolingParameter.Builder builderForValue) {
-        if (roiPoolingParamBuilder_ == null) {
-          roiPoolingParam_ = builderForValue.build();
-          onChanged();
-        } else {
-          roiPoolingParamBuilder_.setMessage(builderForValue.build());
-        }
-        bitField1_ |= 0x04000000;
-        return this;
-      }
-      /**
-       * <code>optional .caffe.ROIPoolingParameter roi_pooling_param = 8266711;</code>
-       */
-      public Builder mergeRoiPoolingParam(caffe.Caffe.ROIPoolingParameter value) {
-        if (roiPoolingParamBuilder_ == null) {
-          if (((bitField1_ & 0x04000000) == 0x04000000) &&
-              roiPoolingParam_ != null &&
-              roiPoolingParam_ != caffe.Caffe.ROIPoolingParameter.getDefaultInstance()) {
-            roiPoolingParam_ =
-              caffe.Caffe.ROIPoolingParameter.newBuilder(roiPoolingParam_).mergeFrom(value).buildPartial();
-          } else {
-            roiPoolingParam_ = value;
-          }
-          onChanged();
-        } else {
-          roiPoolingParamBuilder_.mergeFrom(value);
-        }
-        bitField1_ |= 0x04000000;
-        return this;
-      }
-      /**
-       * <code>optional .caffe.ROIPoolingParameter roi_pooling_param = 8266711;</code>
-       */
-      public Builder clearRoiPoolingParam() {
-        if (roiPoolingParamBuilder_ == null) {
-          roiPoolingParam_ = null;
-          onChanged();
-        } else {
-          roiPoolingParamBuilder_.clear();
-        }
-        bitField1_ = (bitField1_ & ~0x04000000);
-        return this;
-      }
-      /**
-       * <code>optional .caffe.ROIPoolingParameter roi_pooling_param = 8266711;</code>
-       */
-      public caffe.Caffe.ROIPoolingParameter.Builder getRoiPoolingParamBuilder() {
-        bitField1_ |= 0x04000000;
-        onChanged();
-        return getRoiPoolingParamFieldBuilder().getBuilder();
-      }
-      /**
-       * <code>optional .caffe.ROIPoolingParameter roi_pooling_param = 8266711;</code>
-       */
-      public caffe.Caffe.ROIPoolingParameterOrBuilder getRoiPoolingParamOrBuilder() {
-        if (roiPoolingParamBuilder_ != null) {
-          return roiPoolingParamBuilder_.getMessageOrBuilder();
-        } else {
-          return roiPoolingParam_ == null ?
-              caffe.Caffe.ROIPoolingParameter.getDefaultInstance() : roiPoolingParam_;
-        }
-      }
-      /**
-       * <code>optional .caffe.ROIPoolingParameter roi_pooling_param = 8266711;</code>
-       */
-      private com.google.protobuf.SingleFieldBuilderV3<
-          caffe.Caffe.ROIPoolingParameter, caffe.Caffe.ROIPoolingParameter.Builder, caffe.Caffe.ROIPoolingParameterOrBuilder> 
-          getRoiPoolingParamFieldBuilder() {
-        if (roiPoolingParamBuilder_ == null) {
-          roiPoolingParamBuilder_ = new com.google.protobuf.SingleFieldBuilderV3<
-              caffe.Caffe.ROIPoolingParameter, caffe.Caffe.ROIPoolingParameter.Builder, caffe.Caffe.ROIPoolingParameterOrBuilder>(
-                  getRoiPoolingParam(),
-                  getParentForChildren(),
-                  isClean());
-          roiPoolingParam_ = null;
-        }
-        return roiPoolingParamBuilder_;
-      }
-
-      private caffe.Caffe.SmoothL1LossParameter smoothL1LossParam_ = null;
-      private com.google.protobuf.SingleFieldBuilderV3<
-          caffe.Caffe.SmoothL1LossParameter, caffe.Caffe.SmoothL1LossParameter.Builder, caffe.Caffe.SmoothL1LossParameterOrBuilder> smoothL1LossParamBuilder_;
-      /**
-       * <code>optional .caffe.SmoothL1LossParameter smooth_l1_loss_param = 8266712;</code>
-       */
-      public boolean hasSmoothL1LossParam() {
-        return ((bitField1_ & 0x08000000) == 0x08000000);
-      }
-      /**
-       * <code>optional .caffe.SmoothL1LossParameter smooth_l1_loss_param = 8266712;</code>
-       */
-      public caffe.Caffe.SmoothL1LossParameter getSmoothL1LossParam() {
-        if (smoothL1LossParamBuilder_ == null) {
-          return smoothL1LossParam_ == null ? caffe.Caffe.SmoothL1LossParameter.getDefaultInstance() : smoothL1LossParam_;
-        } else {
-          return smoothL1LossParamBuilder_.getMessage();
-        }
-      }
-      /**
-       * <code>optional .caffe.SmoothL1LossParameter smooth_l1_loss_param = 8266712;</code>
-       */
-      public Builder setSmoothL1LossParam(caffe.Caffe.SmoothL1LossParameter value) {
-        if (smoothL1LossParamBuilder_ == null) {
-          if (value == null) {
-            throw new NullPointerException();
-          }
-          smoothL1LossParam_ = value;
-          onChanged();
-        } else {
-          smoothL1LossParamBuilder_.setMessage(value);
-        }
-        bitField1_ |= 0x08000000;
-        return this;
-      }
-      /**
-       * <code>optional .caffe.SmoothL1LossParameter smooth_l1_loss_param = 8266712;</code>
-       */
-      public Builder setSmoothL1LossParam(
-          caffe.Caffe.SmoothL1LossParameter.Builder builderForValue) {
-        if (smoothL1LossParamBuilder_ == null) {
-          smoothL1LossParam_ = builderForValue.build();
-          onChanged();
-        } else {
-          smoothL1LossParamBuilder_.setMessage(builderForValue.build());
-        }
-        bitField1_ |= 0x08000000;
-        return this;
-      }
-      /**
-       * <code>optional .caffe.SmoothL1LossParameter smooth_l1_loss_param = 8266712;</code>
-       */
-      public Builder mergeSmoothL1LossParam(caffe.Caffe.SmoothL1LossParameter value) {
-        if (smoothL1LossParamBuilder_ == null) {
-          if (((bitField1_ & 0x08000000) == 0x08000000) &&
-              smoothL1LossParam_ != null &&
-              smoothL1LossParam_ != caffe.Caffe.SmoothL1LossParameter.getDefaultInstance()) {
-            smoothL1LossParam_ =
-              caffe.Caffe.SmoothL1LossParameter.newBuilder(smoothL1LossParam_).mergeFrom(value).buildPartial();
-          } else {
-            smoothL1LossParam_ = value;
-          }
-          onChanged();
-        } else {
-          smoothL1LossParamBuilder_.mergeFrom(value);
-        }
-        bitField1_ |= 0x08000000;
-        return this;
-      }
-      /**
-       * <code>optional .caffe.SmoothL1LossParameter smooth_l1_loss_param = 8266712;</code>
-       */
-      public Builder clearSmoothL1LossParam() {
-        if (smoothL1LossParamBuilder_ == null) {
-          smoothL1LossParam_ = null;
-          onChanged();
-        } else {
-          smoothL1LossParamBuilder_.clear();
-        }
-        bitField1_ = (bitField1_ & ~0x08000000);
-        return this;
-      }
-      /**
-       * <code>optional .caffe.SmoothL1LossParameter smooth_l1_loss_param = 8266712;</code>
-       */
-      public caffe.Caffe.SmoothL1LossParameter.Builder getSmoothL1LossParamBuilder() {
-        bitField1_ |= 0x08000000;
-        onChanged();
-        return getSmoothL1LossParamFieldBuilder().getBuilder();
-      }
-      /**
-       * <code>optional .caffe.SmoothL1LossParameter smooth_l1_loss_param = 8266712;</code>
-       */
-      public caffe.Caffe.SmoothL1LossParameterOrBuilder getSmoothL1LossParamOrBuilder() {
-        if (smoothL1LossParamBuilder_ != null) {
-          return smoothL1LossParamBuilder_.getMessageOrBuilder();
-        } else {
-          return smoothL1LossParam_ == null ?
-              caffe.Caffe.SmoothL1LossParameter.getDefaultInstance() : smoothL1LossParam_;
-        }
-      }
-      /**
-       * <code>optional .caffe.SmoothL1LossParameter smooth_l1_loss_param = 8266712;</code>
-       */
-      private com.google.protobuf.SingleFieldBuilderV3<
-          caffe.Caffe.SmoothL1LossParameter, caffe.Caffe.SmoothL1LossParameter.Builder, caffe.Caffe.SmoothL1LossParameterOrBuilder> 
-          getSmoothL1LossParamFieldBuilder() {
-        if (smoothL1LossParamBuilder_ == null) {
-          smoothL1LossParamBuilder_ = new com.google.protobuf.SingleFieldBuilderV3<
-              caffe.Caffe.SmoothL1LossParameter, caffe.Caffe.SmoothL1LossParameter.Builder, caffe.Caffe.SmoothL1LossParameterOrBuilder>(
-                  getSmoothL1LossParam(),
-                  getParentForChildren(),
-                  isClean());
-          smoothL1LossParam_ = null;
-        }
-        return smoothL1LossParamBuilder_;
-      }
-
-      private caffe.Caffe.ProposalParameter proposalParam_ = null;
-      private com.google.protobuf.SingleFieldBuilderV3<
-          caffe.Caffe.ProposalParameter, caffe.Caffe.ProposalParameter.Builder, caffe.Caffe.ProposalParameterOrBuilder> proposalParamBuilder_;
-      /**
-       * <code>optional .caffe.ProposalParameter proposal_param = 8266713;</code>
-       */
-      public boolean hasProposalParam() {
-        return ((bitField1_ & 0x10000000) == 0x10000000);
-      }
-      /**
-       * <code>optional .caffe.ProposalParameter proposal_param = 8266713;</code>
-       */
-      public caffe.Caffe.ProposalParameter getProposalParam() {
-        if (proposalParamBuilder_ == null) {
-          return proposalParam_ == null ? caffe.Caffe.ProposalParameter.getDefaultInstance() : proposalParam_;
-        } else {
-          return proposalParamBuilder_.getMessage();
-        }
-      }
-      /**
-       * <code>optional .caffe.ProposalParameter proposal_param = 8266713;</code>
-       */
-      public Builder setProposalParam(caffe.Caffe.ProposalParameter value) {
-        if (proposalParamBuilder_ == null) {
-          if (value == null) {
-            throw new NullPointerException();
-          }
-          proposalParam_ = value;
-          onChanged();
-        } else {
-          proposalParamBuilder_.setMessage(value);
-        }
-        bitField1_ |= 0x10000000;
-        return this;
-      }
-      /**
-       * <code>optional .caffe.ProposalParameter proposal_param = 8266713;</code>
-       */
-      public Builder setProposalParam(
-          caffe.Caffe.ProposalParameter.Builder builderForValue) {
-        if (proposalParamBuilder_ == null) {
-          proposalParam_ = builderForValue.build();
-          onChanged();
-        } else {
-          proposalParamBuilder_.setMessage(builderForValue.build());
-        }
-        bitField1_ |= 0x10000000;
-        return this;
-      }
-      /**
-       * <code>optional .caffe.ProposalParameter proposal_param = 8266713;</code>
-       */
-      public Builder mergeProposalParam(caffe.Caffe.ProposalParameter value) {
-        if (proposalParamBuilder_ == null) {
-          if (((bitField1_ & 0x10000000) == 0x10000000) &&
-              proposalParam_ != null &&
-              proposalParam_ != caffe.Caffe.ProposalParameter.getDefaultInstance()) {
-            proposalParam_ =
-              caffe.Caffe.ProposalParameter.newBuilder(proposalParam_).mergeFrom(value).buildPartial();
-          } else {
-            proposalParam_ = value;
-          }
-          onChanged();
-        } else {
-          proposalParamBuilder_.mergeFrom(value);
-        }
-        bitField1_ |= 0x10000000;
-        return this;
-      }
-      /**
-       * <code>optional .caffe.ProposalParameter proposal_param = 8266713;</code>
-       */
-      public Builder clearProposalParam() {
-        if (proposalParamBuilder_ == null) {
-          proposalParam_ = null;
-          onChanged();
-        } else {
-          proposalParamBuilder_.clear();
-        }
-        bitField1_ = (bitField1_ & ~0x10000000);
-        return this;
-      }
-      /**
-       * <code>optional .caffe.ProposalParameter proposal_param = 8266713;</code>
-       */
-      public caffe.Caffe.ProposalParameter.Builder getProposalParamBuilder() {
-        bitField1_ |= 0x10000000;
-        onChanged();
-        return getProposalParamFieldBuilder().getBuilder();
-      }
-      /**
-       * <code>optional .caffe.ProposalParameter proposal_param = 8266713;</code>
-       */
-      public caffe.Caffe.ProposalParameterOrBuilder getProposalParamOrBuilder() {
-        if (proposalParamBuilder_ != null) {
-          return proposalParamBuilder_.getMessageOrBuilder();
-        } else {
-          return proposalParam_ == null ?
-              caffe.Caffe.ProposalParameter.getDefaultInstance() : proposalParam_;
-        }
-      }
-      /**
-       * <code>optional .caffe.ProposalParameter proposal_param = 8266713;</code>
-       */
-      private com.google.protobuf.SingleFieldBuilderV3<
-          caffe.Caffe.ProposalParameter, caffe.Caffe.ProposalParameter.Builder, caffe.Caffe.ProposalParameterOrBuilder> 
-          getProposalParamFieldBuilder() {
-        if (proposalParamBuilder_ == null) {
-          proposalParamBuilder_ = new com.google.protobuf.SingleFieldBuilderV3<
-              caffe.Caffe.ProposalParameter, caffe.Caffe.ProposalParameter.Builder, caffe.Caffe.ProposalParameterOrBuilder>(
-                  getProposalParam(),
-                  getParentForChildren(),
-                  isClean());
-          proposalParam_ = null;
-        }
-        return proposalParamBuilder_;
-      }
       public final Builder setUnknownFields(
           final com.google.protobuf.UnknownFieldSet unknownFields) {
         return super.setUnknownFields(unknownFields);
@@ -35561,2514 +34486,6 @@ public final class Caffe {
     }
 
     public caffe.Caffe.LayerParameter getDefaultInstanceForType() {
-      return DEFAULT_INSTANCE;
-    }
-
-  }
-
-  public interface ROIPoolingParameterOrBuilder extends
-      // @@protoc_insertion_point(interface_extends:caffe.ROIPoolingParameter)
-      com.google.protobuf.MessageOrBuilder {
-
-    /**
-     * <pre>
-     * Pad, kernel size, and stride are all given as a single value for equal
-     * dimensions in height and width or as Y, X pairs.
-     * </pre>
-     *
-     * <code>optional uint32 pooled_h = 1 [default = 0];</code>
-     */
-    boolean hasPooledH();
-    /**
-     * <pre>
-     * Pad, kernel size, and stride are all given as a single value for equal
-     * dimensions in height and width or as Y, X pairs.
-     * </pre>
-     *
-     * <code>optional uint32 pooled_h = 1 [default = 0];</code>
-     */
-    int getPooledH();
-
-    /**
-     * <pre>
-     * The pooled output width
-     * </pre>
-     *
-     * <code>optional uint32 pooled_w = 2 [default = 0];</code>
-     */
-    boolean hasPooledW();
-    /**
-     * <pre>
-     * The pooled output width
-     * </pre>
-     *
-     * <code>optional uint32 pooled_w = 2 [default = 0];</code>
-     */
-    int getPooledW();
-
-    /**
-     * <pre>
-     * Multiplicative spatial scale factor to translate ROI coords from their
-     * input scale to the scale used when pooling
-     * </pre>
-     *
-     * <code>optional float spatial_scale = 3 [default = 1];</code>
-     */
-    boolean hasSpatialScale();
-    /**
-     * <pre>
-     * Multiplicative spatial scale factor to translate ROI coords from their
-     * input scale to the scale used when pooling
-     * </pre>
-     *
-     * <code>optional float spatial_scale = 3 [default = 1];</code>
-     */
-    float getSpatialScale();
-  }
-  /**
-   * <pre>
-   * Message that stores parameters used by ROIPoolingLayer
-   * </pre>
-   *
-   * Protobuf type {@code caffe.ROIPoolingParameter}
-   */
-  public  static final class ROIPoolingParameter extends
-      com.google.protobuf.GeneratedMessageV3 implements
-      // @@protoc_insertion_point(message_implements:caffe.ROIPoolingParameter)
-      ROIPoolingParameterOrBuilder {
-    // Use ROIPoolingParameter.newBuilder() to construct.
-    private ROIPoolingParameter(com.google.protobuf.GeneratedMessageV3.Builder<?> builder) {
-      super(builder);
-    }
-    private ROIPoolingParameter() {
-      pooledH_ = 0;
-      pooledW_ = 0;
-      spatialScale_ = 1F;
-    }
-
-    @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
-    private ROIPoolingParameter(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      this();
-      int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
-            case 8: {
-              bitField0_ |= 0x00000001;
-              pooledH_ = input.readUInt32();
-              break;
-            }
-            case 16: {
-              bitField0_ |= 0x00000002;
-              pooledW_ = input.readUInt32();
-              break;
-            }
-            case 29: {
-              bitField0_ |= 0x00000004;
-              spatialScale_ = input.readFloat();
-              break;
-            }
-          }
-        }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
-      } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
-            e).setUnfinishedMessage(this);
-      } finally {
-        this.unknownFields = unknownFields.build();
-        makeExtensionsImmutable();
-      }
-    }
-    public static final com.google.protobuf.Descriptors.Descriptor
-        getDescriptor() {
-      return caffe.Caffe.internal_static_caffe_ROIPoolingParameter_descriptor;
-    }
-
-    protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
-        internalGetFieldAccessorTable() {
-      return caffe.Caffe.internal_static_caffe_ROIPoolingParameter_fieldAccessorTable
-          .ensureFieldAccessorsInitialized(
-              caffe.Caffe.ROIPoolingParameter.class, caffe.Caffe.ROIPoolingParameter.Builder.class);
-    }
-
-    private int bitField0_;
-    public static final int POOLED_H_FIELD_NUMBER = 1;
-    private int pooledH_;
-    /**
-     * <pre>
-     * Pad, kernel size, and stride are all given as a single value for equal
-     * dimensions in height and width or as Y, X pairs.
-     * </pre>
-     *
-     * <code>optional uint32 pooled_h = 1 [default = 0];</code>
-     */
-    public boolean hasPooledH() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
-    }
-    /**
-     * <pre>
-     * Pad, kernel size, and stride are all given as a single value for equal
-     * dimensions in height and width or as Y, X pairs.
-     * </pre>
-     *
-     * <code>optional uint32 pooled_h = 1 [default = 0];</code>
-     */
-    public int getPooledH() {
-      return pooledH_;
-    }
-
-    public static final int POOLED_W_FIELD_NUMBER = 2;
-    private int pooledW_;
-    /**
-     * <pre>
-     * The pooled output width
-     * </pre>
-     *
-     * <code>optional uint32 pooled_w = 2 [default = 0];</code>
-     */
-    public boolean hasPooledW() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
-    }
-    /**
-     * <pre>
-     * The pooled output width
-     * </pre>
-     *
-     * <code>optional uint32 pooled_w = 2 [default = 0];</code>
-     */
-    public int getPooledW() {
-      return pooledW_;
-    }
-
-    public static final int SPATIAL_SCALE_FIELD_NUMBER = 3;
-    private float spatialScale_;
-    /**
-     * <pre>
-     * Multiplicative spatial scale factor to translate ROI coords from their
-     * input scale to the scale used when pooling
-     * </pre>
-     *
-     * <code>optional float spatial_scale = 3 [default = 1];</code>
-     */
-    public boolean hasSpatialScale() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
-    }
-    /**
-     * <pre>
-     * Multiplicative spatial scale factor to translate ROI coords from their
-     * input scale to the scale used when pooling
-     * </pre>
-     *
-     * <code>optional float spatial_scale = 3 [default = 1];</code>
-     */
-    public float getSpatialScale() {
-      return spatialScale_;
-    }
-
-    private byte memoizedIsInitialized = -1;
-    public final boolean isInitialized() {
-      byte isInitialized = memoizedIsInitialized;
-      if (isInitialized == 1) return true;
-      if (isInitialized == 0) return false;
-
-      memoizedIsInitialized = 1;
-      return true;
-    }
-
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeUInt32(1, pooledH_);
-      }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeUInt32(2, pooledW_);
-      }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeFloat(3, spatialScale_);
-      }
-      unknownFields.writeTo(output);
-    }
-
-    public int getSerializedSize() {
-      int size = memoizedSize;
-      if (size != -1) return size;
-
-      size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeUInt32Size(1, pooledH_);
-      }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeUInt32Size(2, pooledW_);
-      }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeFloatSize(3, spatialScale_);
-      }
-      size += unknownFields.getSerializedSize();
-      memoizedSize = size;
-      return size;
-    }
-
-    private static final long serialVersionUID = 0L;
-    @java.lang.Override
-    public boolean equals(final java.lang.Object obj) {
-      if (obj == this) {
-       return true;
-      }
-      if (!(obj instanceof caffe.Caffe.ROIPoolingParameter)) {
-        return super.equals(obj);
-      }
-      caffe.Caffe.ROIPoolingParameter other = (caffe.Caffe.ROIPoolingParameter) obj;
-
-      boolean result = true;
-      result = result && (hasPooledH() == other.hasPooledH());
-      if (hasPooledH()) {
-        result = result && (getPooledH()
-            == other.getPooledH());
-      }
-      result = result && (hasPooledW() == other.hasPooledW());
-      if (hasPooledW()) {
-        result = result && (getPooledW()
-            == other.getPooledW());
-      }
-      result = result && (hasSpatialScale() == other.hasSpatialScale());
-      if (hasSpatialScale()) {
-        result = result && (
-            java.lang.Float.floatToIntBits(getSpatialScale())
-            == java.lang.Float.floatToIntBits(
-                other.getSpatialScale()));
-      }
-      result = result && unknownFields.equals(other.unknownFields);
-      return result;
-    }
-
-    @java.lang.Override
-    public int hashCode() {
-      if (memoizedHashCode != 0) {
-        return memoizedHashCode;
-      }
-      int hash = 41;
-      hash = (19 * hash) + getDescriptorForType().hashCode();
-      if (hasPooledH()) {
-        hash = (37 * hash) + POOLED_H_FIELD_NUMBER;
-        hash = (53 * hash) + getPooledH();
-      }
-      if (hasPooledW()) {
-        hash = (37 * hash) + POOLED_W_FIELD_NUMBER;
-        hash = (53 * hash) + getPooledW();
-      }
-      if (hasSpatialScale()) {
-        hash = (37 * hash) + SPATIAL_SCALE_FIELD_NUMBER;
-        hash = (53 * hash) + java.lang.Float.floatToIntBits(
-            getSpatialScale());
-      }
-      hash = (29 * hash) + unknownFields.hashCode();
-      memoizedHashCode = hash;
-      return hash;
-    }
-
-    public static caffe.Caffe.ROIPoolingParameter parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data);
-    }
-    public static caffe.Caffe.ROIPoolingParameter parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data, extensionRegistry);
-    }
-    public static caffe.Caffe.ROIPoolingParameter parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data);
-    }
-    public static caffe.Caffe.ROIPoolingParameter parseFrom(
-        byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data, extensionRegistry);
-    }
-    public static caffe.Caffe.ROIPoolingParameter parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
-          .parseWithIOException(PARSER, input);
-    }
-    public static caffe.Caffe.ROIPoolingParameter parseFrom(
-        java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
-          .parseWithIOException(PARSER, input, extensionRegistry);
-    }
-    public static caffe.Caffe.ROIPoolingParameter parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
-          .parseDelimitedWithIOException(PARSER, input);
-    }
-    public static caffe.Caffe.ROIPoolingParameter parseDelimitedFrom(
-        java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
-          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
-    }
-    public static caffe.Caffe.ROIPoolingParameter parseFrom(
-        com.google.protobuf.CodedInputStream input)
-        throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
-          .parseWithIOException(PARSER, input);
-    }
-    public static caffe.Caffe.ROIPoolingParameter parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
-          .parseWithIOException(PARSER, input, extensionRegistry);
-    }
-
-    public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder() {
-      return DEFAULT_INSTANCE.toBuilder();
-    }
-    public static Builder newBuilder(caffe.Caffe.ROIPoolingParameter prototype) {
-      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
-    }
-    public Builder toBuilder() {
-      return this == DEFAULT_INSTANCE
-          ? new Builder() : new Builder().mergeFrom(this);
-    }
-
-    @java.lang.Override
-    protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
-      Builder builder = new Builder(parent);
-      return builder;
-    }
-    /**
-     * <pre>
-     * Message that stores parameters used by ROIPoolingLayer
-     * </pre>
-     *
-     * Protobuf type {@code caffe.ROIPoolingParameter}
-     */
-    public static final class Builder extends
-        com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
-        // @@protoc_insertion_point(builder_implements:caffe.ROIPoolingParameter)
-        caffe.Caffe.ROIPoolingParameterOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
-          getDescriptor() {
-        return caffe.Caffe.internal_static_caffe_ROIPoolingParameter_descriptor;
-      }
-
-      protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
-          internalGetFieldAccessorTable() {
-        return caffe.Caffe.internal_static_caffe_ROIPoolingParameter_fieldAccessorTable
-            .ensureFieldAccessorsInitialized(
-                caffe.Caffe.ROIPoolingParameter.class, caffe.Caffe.ROIPoolingParameter.Builder.class);
-      }
-
-      // Construct using caffe.Caffe.ROIPoolingParameter.newBuilder()
-      private Builder() {
-        maybeForceBuilderInitialization();
-      }
-
-      private Builder(
-          com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
-        super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessageV3
-                .alwaysUseFieldBuilders) {
-        }
-      }
-      public Builder clear() {
-        super.clear();
-        pooledH_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000001);
-        pooledW_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000002);
-        spatialScale_ = 1F;
-        bitField0_ = (bitField0_ & ~0x00000004);
-        return this;
-      }
-
-      public com.google.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
-        return caffe.Caffe.internal_static_caffe_ROIPoolingParameter_descriptor;
-      }
-
-      public caffe.Caffe.ROIPoolingParameter getDefaultInstanceForType() {
-        return caffe.Caffe.ROIPoolingParameter.getDefaultInstance();
-      }
-
-      public caffe.Caffe.ROIPoolingParameter build() {
-        caffe.Caffe.ROIPoolingParameter result = buildPartial();
-        if (!result.isInitialized()) {
-          throw newUninitializedMessageException(result);
-        }
-        return result;
-      }
-
-      public caffe.Caffe.ROIPoolingParameter buildPartial() {
-        caffe.Caffe.ROIPoolingParameter result = new caffe.Caffe.ROIPoolingParameter(this);
-        int from_bitField0_ = bitField0_;
-        int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
-          to_bitField0_ |= 0x00000001;
-        }
-        result.pooledH_ = pooledH_;
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
-          to_bitField0_ |= 0x00000002;
-        }
-        result.pooledW_ = pooledW_;
-        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
-          to_bitField0_ |= 0x00000004;
-        }
-        result.spatialScale_ = spatialScale_;
-        result.bitField0_ = to_bitField0_;
-        onBuilt();
-        return result;
-      }
-
-      public Builder clone() {
-        return (Builder) super.clone();
-      }
-      public Builder setField(
-          com.google.protobuf.Descriptors.FieldDescriptor field,
-          Object value) {
-        return (Builder) super.setField(field, value);
-      }
-      public Builder clearField(
-          com.google.protobuf.Descriptors.FieldDescriptor field) {
-        return (Builder) super.clearField(field);
-      }
-      public Builder clearOneof(
-          com.google.protobuf.Descriptors.OneofDescriptor oneof) {
-        return (Builder) super.clearOneof(oneof);
-      }
-      public Builder setRepeatedField(
-          com.google.protobuf.Descriptors.FieldDescriptor field,
-          int index, Object value) {
-        return (Builder) super.setRepeatedField(field, index, value);
-      }
-      public Builder addRepeatedField(
-          com.google.protobuf.Descriptors.FieldDescriptor field,
-          Object value) {
-        return (Builder) super.addRepeatedField(field, value);
-      }
-      public Builder mergeFrom(com.google.protobuf.Message other) {
-        if (other instanceof caffe.Caffe.ROIPoolingParameter) {
-          return mergeFrom((caffe.Caffe.ROIPoolingParameter)other);
-        } else {
-          super.mergeFrom(other);
-          return this;
-        }
-      }
-
-      public Builder mergeFrom(caffe.Caffe.ROIPoolingParameter other) {
-        if (other == caffe.Caffe.ROIPoolingParameter.getDefaultInstance()) return this;
-        if (other.hasPooledH()) {
-          setPooledH(other.getPooledH());
-        }
-        if (other.hasPooledW()) {
-          setPooledW(other.getPooledW());
-        }
-        if (other.hasSpatialScale()) {
-          setSpatialScale(other.getSpatialScale());
-        }
-        this.mergeUnknownFields(other.unknownFields);
-        onChanged();
-        return this;
-      }
-
-      public final boolean isInitialized() {
-        return true;
-      }
-
-      public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        caffe.Caffe.ROIPoolingParameter parsedMessage = null;
-        try {
-          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (caffe.Caffe.ROIPoolingParameter) e.getUnfinishedMessage();
-          throw e.unwrapIOException();
-        } finally {
-          if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
-        return this;
-      }
-      private int bitField0_;
-
-      private int pooledH_ ;
-      /**
-       * <pre>
-       * Pad, kernel size, and stride are all given as a single value for equal
-       * dimensions in height and width or as Y, X pairs.
-       * </pre>
-       *
-       * <code>optional uint32 pooled_h = 1 [default = 0];</code>
-       */
-      public boolean hasPooledH() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
-      }
-      /**
-       * <pre>
-       * Pad, kernel size, and stride are all given as a single value for equal
-       * dimensions in height and width or as Y, X pairs.
-       * </pre>
-       *
-       * <code>optional uint32 pooled_h = 1 [default = 0];</code>
-       */
-      public int getPooledH() {
-        return pooledH_;
-      }
-      /**
-       * <pre>
-       * Pad, kernel size, and stride are all given as a single value for equal
-       * dimensions in height and width or as Y, X pairs.
-       * </pre>
-       *
-       * <code>optional uint32 pooled_h = 1 [default = 0];</code>
-       */
-      public Builder setPooledH(int value) {
-        bitField0_ |= 0x00000001;
-        pooledH_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <pre>
-       * Pad, kernel size, and stride are all given as a single value for equal
-       * dimensions in height and width or as Y, X pairs.
-       * </pre>
-       *
-       * <code>optional uint32 pooled_h = 1 [default = 0];</code>
-       */
-      public Builder clearPooledH() {
-        bitField0_ = (bitField0_ & ~0x00000001);
-        pooledH_ = 0;
-        onChanged();
-        return this;
-      }
-
-      private int pooledW_ ;
-      /**
-       * <pre>
-       * The pooled output width
-       * </pre>
-       *
-       * <code>optional uint32 pooled_w = 2 [default = 0];</code>
-       */
-      public boolean hasPooledW() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
-      }
-      /**
-       * <pre>
-       * The pooled output width
-       * </pre>
-       *
-       * <code>optional uint32 pooled_w = 2 [default = 0];</code>
-       */
-      public int getPooledW() {
-        return pooledW_;
-      }
-      /**
-       * <pre>
-       * The pooled output width
-       * </pre>
-       *
-       * <code>optional uint32 pooled_w = 2 [default = 0];</code>
-       */
-      public Builder setPooledW(int value) {
-        bitField0_ |= 0x00000002;
-        pooledW_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <pre>
-       * The pooled output width
-       * </pre>
-       *
-       * <code>optional uint32 pooled_w = 2 [default = 0];</code>
-       */
-      public Builder clearPooledW() {
-        bitField0_ = (bitField0_ & ~0x00000002);
-        pooledW_ = 0;
-        onChanged();
-        return this;
-      }
-
-      private float spatialScale_ = 1F;
-      /**
-       * <pre>
-       * Multiplicative spatial scale factor to translate ROI coords from their
-       * input scale to the scale used when pooling
-       * </pre>
-       *
-       * <code>optional float spatial_scale = 3 [default = 1];</code>
-       */
-      public boolean hasSpatialScale() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
-      }
-      /**
-       * <pre>
-       * Multiplicative spatial scale factor to translate ROI coords from their
-       * input scale to the scale used when pooling
-       * </pre>
-       *
-       * <code>optional float spatial_scale = 3 [default = 1];</code>
-       */
-      public float getSpatialScale() {
-        return spatialScale_;
-      }
-      /**
-       * <pre>
-       * Multiplicative spatial scale factor to translate ROI coords from their
-       * input scale to the scale used when pooling
-       * </pre>
-       *
-       * <code>optional float spatial_scale = 3 [default = 1];</code>
-       */
-      public Builder setSpatialScale(float value) {
-        bitField0_ |= 0x00000004;
-        spatialScale_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <pre>
-       * Multiplicative spatial scale factor to translate ROI coords from their
-       * input scale to the scale used when pooling
-       * </pre>
-       *
-       * <code>optional float spatial_scale = 3 [default = 1];</code>
-       */
-      public Builder clearSpatialScale() {
-        bitField0_ = (bitField0_ & ~0x00000004);
-        spatialScale_ = 1F;
-        onChanged();
-        return this;
-      }
-      public final Builder setUnknownFields(
-          final com.google.protobuf.UnknownFieldSet unknownFields) {
-        return super.setUnknownFields(unknownFields);
-      }
-
-      public final Builder mergeUnknownFields(
-          final com.google.protobuf.UnknownFieldSet unknownFields) {
-        return super.mergeUnknownFields(unknownFields);
-      }
-
-
-      // @@protoc_insertion_point(builder_scope:caffe.ROIPoolingParameter)
-    }
-
-    // @@protoc_insertion_point(class_scope:caffe.ROIPoolingParameter)
-    private static final caffe.Caffe.ROIPoolingParameter DEFAULT_INSTANCE;
-    static {
-      DEFAULT_INSTANCE = new caffe.Caffe.ROIPoolingParameter();
-    }
-
-    public static caffe.Caffe.ROIPoolingParameter getDefaultInstance() {
-      return DEFAULT_INSTANCE;
-    }
-
-    @java.lang.Deprecated public static final com.google.protobuf.Parser<ROIPoolingParameter>
-        PARSER = new com.google.protobuf.AbstractParser<ROIPoolingParameter>() {
-      public ROIPoolingParameter parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
-          return new ROIPoolingParameter(input, extensionRegistry);
-      }
-    };
-
-    public static com.google.protobuf.Parser<ROIPoolingParameter> parser() {
-      return PARSER;
-    }
-
-    @java.lang.Override
-    public com.google.protobuf.Parser<ROIPoolingParameter> getParserForType() {
-      return PARSER;
-    }
-
-    public caffe.Caffe.ROIPoolingParameter getDefaultInstanceForType() {
-      return DEFAULT_INSTANCE;
-    }
-
-  }
-
-  public interface ProposalParameterOrBuilder extends
-      // @@protoc_insertion_point(interface_extends:caffe.ProposalParameter)
-      com.google.protobuf.MessageOrBuilder {
-
-    /**
-     * <code>optional uint32 feat_stride = 1 [default = 16];</code>
-     */
-    boolean hasFeatStride();
-    /**
-     * <code>optional uint32 feat_stride = 1 [default = 16];</code>
-     */
-    int getFeatStride();
-
-    /**
-     * <code>optional uint32 base_size = 2 [default = 16];</code>
-     */
-    boolean hasBaseSize();
-    /**
-     * <code>optional uint32 base_size = 2 [default = 16];</code>
-     */
-    int getBaseSize();
-
-    /**
-     * <code>optional uint32 min_size = 3 [default = 16];</code>
-     */
-    boolean hasMinSize();
-    /**
-     * <code>optional uint32 min_size = 3 [default = 16];</code>
-     */
-    int getMinSize();
-
-    /**
-     * <code>repeated float ratio = 4;</code>
-     */
-    java.util.List<java.lang.Float> getRatioList();
-    /**
-     * <code>repeated float ratio = 4;</code>
-     */
-    int getRatioCount();
-    /**
-     * <code>repeated float ratio = 4;</code>
-     */
-    float getRatio(int index);
-
-    /**
-     * <code>repeated float scale = 5;</code>
-     */
-    java.util.List<java.lang.Float> getScaleList();
-    /**
-     * <code>repeated float scale = 5;</code>
-     */
-    int getScaleCount();
-    /**
-     * <code>repeated float scale = 5;</code>
-     */
-    float getScale(int index);
-
-    /**
-     * <code>optional uint32 pre_nms_topn = 6 [default = 6000];</code>
-     */
-    boolean hasPreNmsTopn();
-    /**
-     * <code>optional uint32 pre_nms_topn = 6 [default = 6000];</code>
-     */
-    int getPreNmsTopn();
-
-    /**
-     * <code>optional uint32 post_nms_topn = 7 [default = 300];</code>
-     */
-    boolean hasPostNmsTopn();
-    /**
-     * <code>optional uint32 post_nms_topn = 7 [default = 300];</code>
-     */
-    int getPostNmsTopn();
-
-    /**
-     * <code>optional float nms_thresh = 8 [default = 0.7];</code>
-     */
-    boolean hasNmsThresh();
-    /**
-     * <code>optional float nms_thresh = 8 [default = 0.7];</code>
-     */
-    float getNmsThresh();
-  }
-  /**
-   * <pre>
-   * Message that stores parameters used by ProposalLayer
-   * </pre>
-   *
-   * Protobuf type {@code caffe.ProposalParameter}
-   */
-  public  static final class ProposalParameter extends
-      com.google.protobuf.GeneratedMessageV3 implements
-      // @@protoc_insertion_point(message_implements:caffe.ProposalParameter)
-      ProposalParameterOrBuilder {
-    // Use ProposalParameter.newBuilder() to construct.
-    private ProposalParameter(com.google.protobuf.GeneratedMessageV3.Builder<?> builder) {
-      super(builder);
-    }
-    private ProposalParameter() {
-      featStride_ = 16;
-      baseSize_ = 16;
-      minSize_ = 16;
-      ratio_ = java.util.Collections.emptyList();
-      scale_ = java.util.Collections.emptyList();
-      preNmsTopn_ = 6000;
-      postNmsTopn_ = 300;
-      nmsThresh_ = 0.7F;
-    }
-
-    @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
-    private ProposalParameter(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      this();
-      int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
-            case 8: {
-              bitField0_ |= 0x00000001;
-              featStride_ = input.readUInt32();
-              break;
-            }
-            case 16: {
-              bitField0_ |= 0x00000002;
-              baseSize_ = input.readUInt32();
-              break;
-            }
-            case 24: {
-              bitField0_ |= 0x00000004;
-              minSize_ = input.readUInt32();
-              break;
-            }
-            case 37: {
-              if (!((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
-                ratio_ = new java.util.ArrayList<java.lang.Float>();
-                mutable_bitField0_ |= 0x00000008;
-              }
-              ratio_.add(input.readFloat());
-              break;
-            }
-            case 34: {
-              int length = input.readRawVarint32();
-              int limit = input.pushLimit(length);
-              if (!((mutable_bitField0_ & 0x00000008) == 0x00000008) && input.getBytesUntilLimit() > 0) {
-                ratio_ = new java.util.ArrayList<java.lang.Float>();
-                mutable_bitField0_ |= 0x00000008;
-              }
-              while (input.getBytesUntilLimit() > 0) {
-                ratio_.add(input.readFloat());
-              }
-              input.popLimit(limit);
-              break;
-            }
-            case 45: {
-              if (!((mutable_bitField0_ & 0x00000010) == 0x00000010)) {
-                scale_ = new java.util.ArrayList<java.lang.Float>();
-                mutable_bitField0_ |= 0x00000010;
-              }
-              scale_.add(input.readFloat());
-              break;
-            }
-            case 42: {
-              int length = input.readRawVarint32();
-              int limit = input.pushLimit(length);
-              if (!((mutable_bitField0_ & 0x00000010) == 0x00000010) && input.getBytesUntilLimit() > 0) {
-                scale_ = new java.util.ArrayList<java.lang.Float>();
-                mutable_bitField0_ |= 0x00000010;
-              }
-              while (input.getBytesUntilLimit() > 0) {
-                scale_.add(input.readFloat());
-              }
-              input.popLimit(limit);
-              break;
-            }
-            case 48: {
-              bitField0_ |= 0x00000008;
-              preNmsTopn_ = input.readUInt32();
-              break;
-            }
-            case 56: {
-              bitField0_ |= 0x00000010;
-              postNmsTopn_ = input.readUInt32();
-              break;
-            }
-            case 69: {
-              bitField0_ |= 0x00000020;
-              nmsThresh_ = input.readFloat();
-              break;
-            }
-          }
-        }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
-      } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
-            e).setUnfinishedMessage(this);
-      } finally {
-        if (((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
-          ratio_ = java.util.Collections.unmodifiableList(ratio_);
-        }
-        if (((mutable_bitField0_ & 0x00000010) == 0x00000010)) {
-          scale_ = java.util.Collections.unmodifiableList(scale_);
-        }
-        this.unknownFields = unknownFields.build();
-        makeExtensionsImmutable();
-      }
-    }
-    public static final com.google.protobuf.Descriptors.Descriptor
-        getDescriptor() {
-      return caffe.Caffe.internal_static_caffe_ProposalParameter_descriptor;
-    }
-
-    protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
-        internalGetFieldAccessorTable() {
-      return caffe.Caffe.internal_static_caffe_ProposalParameter_fieldAccessorTable
-          .ensureFieldAccessorsInitialized(
-              caffe.Caffe.ProposalParameter.class, caffe.Caffe.ProposalParameter.Builder.class);
-    }
-
-    private int bitField0_;
-    public static final int FEAT_STRIDE_FIELD_NUMBER = 1;
-    private int featStride_;
-    /**
-     * <code>optional uint32 feat_stride = 1 [default = 16];</code>
-     */
-    public boolean hasFeatStride() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
-    }
-    /**
-     * <code>optional uint32 feat_stride = 1 [default = 16];</code>
-     */
-    public int getFeatStride() {
-      return featStride_;
-    }
-
-    public static final int BASE_SIZE_FIELD_NUMBER = 2;
-    private int baseSize_;
-    /**
-     * <code>optional uint32 base_size = 2 [default = 16];</code>
-     */
-    public boolean hasBaseSize() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
-    }
-    /**
-     * <code>optional uint32 base_size = 2 [default = 16];</code>
-     */
-    public int getBaseSize() {
-      return baseSize_;
-    }
-
-    public static final int MIN_SIZE_FIELD_NUMBER = 3;
-    private int minSize_;
-    /**
-     * <code>optional uint32 min_size = 3 [default = 16];</code>
-     */
-    public boolean hasMinSize() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
-    }
-    /**
-     * <code>optional uint32 min_size = 3 [default = 16];</code>
-     */
-    public int getMinSize() {
-      return minSize_;
-    }
-
-    public static final int RATIO_FIELD_NUMBER = 4;
-    private java.util.List<java.lang.Float> ratio_;
-    /**
-     * <code>repeated float ratio = 4;</code>
-     */
-    public java.util.List<java.lang.Float>
-        getRatioList() {
-      return ratio_;
-    }
-    /**
-     * <code>repeated float ratio = 4;</code>
-     */
-    public int getRatioCount() {
-      return ratio_.size();
-    }
-    /**
-     * <code>repeated float ratio = 4;</code>
-     */
-    public float getRatio(int index) {
-      return ratio_.get(index);
-    }
-
-    public static final int SCALE_FIELD_NUMBER = 5;
-    private java.util.List<java.lang.Float> scale_;
-    /**
-     * <code>repeated float scale = 5;</code>
-     */
-    public java.util.List<java.lang.Float>
-        getScaleList() {
-      return scale_;
-    }
-    /**
-     * <code>repeated float scale = 5;</code>
-     */
-    public int getScaleCount() {
-      return scale_.size();
-    }
-    /**
-     * <code>repeated float scale = 5;</code>
-     */
-    public float getScale(int index) {
-      return scale_.get(index);
-    }
-
-    public static final int PRE_NMS_TOPN_FIELD_NUMBER = 6;
-    private int preNmsTopn_;
-    /**
-     * <code>optional uint32 pre_nms_topn = 6 [default = 6000];</code>
-     */
-    public boolean hasPreNmsTopn() {
-      return ((bitField0_ & 0x00000008) == 0x00000008);
-    }
-    /**
-     * <code>optional uint32 pre_nms_topn = 6 [default = 6000];</code>
-     */
-    public int getPreNmsTopn() {
-      return preNmsTopn_;
-    }
-
-    public static final int POST_NMS_TOPN_FIELD_NUMBER = 7;
-    private int postNmsTopn_;
-    /**
-     * <code>optional uint32 post_nms_topn = 7 [default = 300];</code>
-     */
-    public boolean hasPostNmsTopn() {
-      return ((bitField0_ & 0x00000010) == 0x00000010);
-    }
-    /**
-     * <code>optional uint32 post_nms_topn = 7 [default = 300];</code>
-     */
-    public int getPostNmsTopn() {
-      return postNmsTopn_;
-    }
-
-    public static final int NMS_THRESH_FIELD_NUMBER = 8;
-    private float nmsThresh_;
-    /**
-     * <code>optional float nms_thresh = 8 [default = 0.7];</code>
-     */
-    public boolean hasNmsThresh() {
-      return ((bitField0_ & 0x00000020) == 0x00000020);
-    }
-    /**
-     * <code>optional float nms_thresh = 8 [default = 0.7];</code>
-     */
-    public float getNmsThresh() {
-      return nmsThresh_;
-    }
-
-    private byte memoizedIsInitialized = -1;
-    public final boolean isInitialized() {
-      byte isInitialized = memoizedIsInitialized;
-      if (isInitialized == 1) return true;
-      if (isInitialized == 0) return false;
-
-      memoizedIsInitialized = 1;
-      return true;
-    }
-
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeUInt32(1, featStride_);
-      }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeUInt32(2, baseSize_);
-      }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeUInt32(3, minSize_);
-      }
-      for (int i = 0; i < ratio_.size(); i++) {
-        output.writeFloat(4, ratio_.get(i));
-      }
-      for (int i = 0; i < scale_.size(); i++) {
-        output.writeFloat(5, scale_.get(i));
-      }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        output.writeUInt32(6, preNmsTopn_);
-      }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        output.writeUInt32(7, postNmsTopn_);
-      }
-      if (((bitField0_ & 0x00000020) == 0x00000020)) {
-        output.writeFloat(8, nmsThresh_);
-      }
-      unknownFields.writeTo(output);
-    }
-
-    public int getSerializedSize() {
-      int size = memoizedSize;
-      if (size != -1) return size;
-
-      size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeUInt32Size(1, featStride_);
-      }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeUInt32Size(2, baseSize_);
-      }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeUInt32Size(3, minSize_);
-      }
-      {
-        int dataSize = 0;
-        dataSize = 4 * getRatioList().size();
-        size += dataSize;
-        size += 1 * getRatioList().size();
-      }
-      {
-        int dataSize = 0;
-        dataSize = 4 * getScaleList().size();
-        size += dataSize;
-        size += 1 * getScaleList().size();
-      }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeUInt32Size(6, preNmsTopn_);
-      }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeUInt32Size(7, postNmsTopn_);
-      }
-      if (((bitField0_ & 0x00000020) == 0x00000020)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeFloatSize(8, nmsThresh_);
-      }
-      size += unknownFields.getSerializedSize();
-      memoizedSize = size;
-      return size;
-    }
-
-    private static final long serialVersionUID = 0L;
-    @java.lang.Override
-    public boolean equals(final java.lang.Object obj) {
-      if (obj == this) {
-       return true;
-      }
-      if (!(obj instanceof caffe.Caffe.ProposalParameter)) {
-        return super.equals(obj);
-      }
-      caffe.Caffe.ProposalParameter other = (caffe.Caffe.ProposalParameter) obj;
-
-      boolean result = true;
-      result = result && (hasFeatStride() == other.hasFeatStride());
-      if (hasFeatStride()) {
-        result = result && (getFeatStride()
-            == other.getFeatStride());
-      }
-      result = result && (hasBaseSize() == other.hasBaseSize());
-      if (hasBaseSize()) {
-        result = result && (getBaseSize()
-            == other.getBaseSize());
-      }
-      result = result && (hasMinSize() == other.hasMinSize());
-      if (hasMinSize()) {
-        result = result && (getMinSize()
-            == other.getMinSize());
-      }
-      result = result && getRatioList()
-          .equals(other.getRatioList());
-      result = result && getScaleList()
-          .equals(other.getScaleList());
-      result = result && (hasPreNmsTopn() == other.hasPreNmsTopn());
-      if (hasPreNmsTopn()) {
-        result = result && (getPreNmsTopn()
-            == other.getPreNmsTopn());
-      }
-      result = result && (hasPostNmsTopn() == other.hasPostNmsTopn());
-      if (hasPostNmsTopn()) {
-        result = result && (getPostNmsTopn()
-            == other.getPostNmsTopn());
-      }
-      result = result && (hasNmsThresh() == other.hasNmsThresh());
-      if (hasNmsThresh()) {
-        result = result && (
-            java.lang.Float.floatToIntBits(getNmsThresh())
-            == java.lang.Float.floatToIntBits(
-                other.getNmsThresh()));
-      }
-      result = result && unknownFields.equals(other.unknownFields);
-      return result;
-    }
-
-    @java.lang.Override
-    public int hashCode() {
-      if (memoizedHashCode != 0) {
-        return memoizedHashCode;
-      }
-      int hash = 41;
-      hash = (19 * hash) + getDescriptorForType().hashCode();
-      if (hasFeatStride()) {
-        hash = (37 * hash) + FEAT_STRIDE_FIELD_NUMBER;
-        hash = (53 * hash) + getFeatStride();
-      }
-      if (hasBaseSize()) {
-        hash = (37 * hash) + BASE_SIZE_FIELD_NUMBER;
-        hash = (53 * hash) + getBaseSize();
-      }
-      if (hasMinSize()) {
-        hash = (37 * hash) + MIN_SIZE_FIELD_NUMBER;
-        hash = (53 * hash) + getMinSize();
-      }
-      if (getRatioCount() > 0) {
-        hash = (37 * hash) + RATIO_FIELD_NUMBER;
-        hash = (53 * hash) + getRatioList().hashCode();
-      }
-      if (getScaleCount() > 0) {
-        hash = (37 * hash) + SCALE_FIELD_NUMBER;
-        hash = (53 * hash) + getScaleList().hashCode();
-      }
-      if (hasPreNmsTopn()) {
-        hash = (37 * hash) + PRE_NMS_TOPN_FIELD_NUMBER;
-        hash = (53 * hash) + getPreNmsTopn();
-      }
-      if (hasPostNmsTopn()) {
-        hash = (37 * hash) + POST_NMS_TOPN_FIELD_NUMBER;
-        hash = (53 * hash) + getPostNmsTopn();
-      }
-      if (hasNmsThresh()) {
-        hash = (37 * hash) + NMS_THRESH_FIELD_NUMBER;
-        hash = (53 * hash) + java.lang.Float.floatToIntBits(
-            getNmsThresh());
-      }
-      hash = (29 * hash) + unknownFields.hashCode();
-      memoizedHashCode = hash;
-      return hash;
-    }
-
-    public static caffe.Caffe.ProposalParameter parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data);
-    }
-    public static caffe.Caffe.ProposalParameter parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data, extensionRegistry);
-    }
-    public static caffe.Caffe.ProposalParameter parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data);
-    }
-    public static caffe.Caffe.ProposalParameter parseFrom(
-        byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data, extensionRegistry);
-    }
-    public static caffe.Caffe.ProposalParameter parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
-          .parseWithIOException(PARSER, input);
-    }
-    public static caffe.Caffe.ProposalParameter parseFrom(
-        java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
-          .parseWithIOException(PARSER, input, extensionRegistry);
-    }
-    public static caffe.Caffe.ProposalParameter parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
-          .parseDelimitedWithIOException(PARSER, input);
-    }
-    public static caffe.Caffe.ProposalParameter parseDelimitedFrom(
-        java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
-          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
-    }
-    public static caffe.Caffe.ProposalParameter parseFrom(
-        com.google.protobuf.CodedInputStream input)
-        throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
-          .parseWithIOException(PARSER, input);
-    }
-    public static caffe.Caffe.ProposalParameter parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
-          .parseWithIOException(PARSER, input, extensionRegistry);
-    }
-
-    public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder() {
-      return DEFAULT_INSTANCE.toBuilder();
-    }
-    public static Builder newBuilder(caffe.Caffe.ProposalParameter prototype) {
-      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
-    }
-    public Builder toBuilder() {
-      return this == DEFAULT_INSTANCE
-          ? new Builder() : new Builder().mergeFrom(this);
-    }
-
-    @java.lang.Override
-    protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
-      Builder builder = new Builder(parent);
-      return builder;
-    }
-    /**
-     * <pre>
-     * Message that stores parameters used by ProposalLayer
-     * </pre>
-     *
-     * Protobuf type {@code caffe.ProposalParameter}
-     */
-    public static final class Builder extends
-        com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
-        // @@protoc_insertion_point(builder_implements:caffe.ProposalParameter)
-        caffe.Caffe.ProposalParameterOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
-          getDescriptor() {
-        return caffe.Caffe.internal_static_caffe_ProposalParameter_descriptor;
-      }
-
-      protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
-          internalGetFieldAccessorTable() {
-        return caffe.Caffe.internal_static_caffe_ProposalParameter_fieldAccessorTable
-            .ensureFieldAccessorsInitialized(
-                caffe.Caffe.ProposalParameter.class, caffe.Caffe.ProposalParameter.Builder.class);
-      }
-
-      // Construct using caffe.Caffe.ProposalParameter.newBuilder()
-      private Builder() {
-        maybeForceBuilderInitialization();
-      }
-
-      private Builder(
-          com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
-        super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessageV3
-                .alwaysUseFieldBuilders) {
-        }
-      }
-      public Builder clear() {
-        super.clear();
-        featStride_ = 16;
-        bitField0_ = (bitField0_ & ~0x00000001);
-        baseSize_ = 16;
-        bitField0_ = (bitField0_ & ~0x00000002);
-        minSize_ = 16;
-        bitField0_ = (bitField0_ & ~0x00000004);
-        ratio_ = java.util.Collections.emptyList();
-        bitField0_ = (bitField0_ & ~0x00000008);
-        scale_ = java.util.Collections.emptyList();
-        bitField0_ = (bitField0_ & ~0x00000010);
-        preNmsTopn_ = 6000;
-        bitField0_ = (bitField0_ & ~0x00000020);
-        postNmsTopn_ = 300;
-        bitField0_ = (bitField0_ & ~0x00000040);
-        nmsThresh_ = 0.7F;
-        bitField0_ = (bitField0_ & ~0x00000080);
-        return this;
-      }
-
-      public com.google.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
-        return caffe.Caffe.internal_static_caffe_ProposalParameter_descriptor;
-      }
-
-      public caffe.Caffe.ProposalParameter getDefaultInstanceForType() {
-        return caffe.Caffe.ProposalParameter.getDefaultInstance();
-      }
-
-      public caffe.Caffe.ProposalParameter build() {
-        caffe.Caffe.ProposalParameter result = buildPartial();
-        if (!result.isInitialized()) {
-          throw newUninitializedMessageException(result);
-        }
-        return result;
-      }
-
-      public caffe.Caffe.ProposalParameter buildPartial() {
-        caffe.Caffe.ProposalParameter result = new caffe.Caffe.ProposalParameter(this);
-        int from_bitField0_ = bitField0_;
-        int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
-          to_bitField0_ |= 0x00000001;
-        }
-        result.featStride_ = featStride_;
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
-          to_bitField0_ |= 0x00000002;
-        }
-        result.baseSize_ = baseSize_;
-        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
-          to_bitField0_ |= 0x00000004;
-        }
-        result.minSize_ = minSize_;
-        if (((bitField0_ & 0x00000008) == 0x00000008)) {
-          ratio_ = java.util.Collections.unmodifiableList(ratio_);
-          bitField0_ = (bitField0_ & ~0x00000008);
-        }
-        result.ratio_ = ratio_;
-        if (((bitField0_ & 0x00000010) == 0x00000010)) {
-          scale_ = java.util.Collections.unmodifiableList(scale_);
-          bitField0_ = (bitField0_ & ~0x00000010);
-        }
-        result.scale_ = scale_;
-        if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
-          to_bitField0_ |= 0x00000008;
-        }
-        result.preNmsTopn_ = preNmsTopn_;
-        if (((from_bitField0_ & 0x00000040) == 0x00000040)) {
-          to_bitField0_ |= 0x00000010;
-        }
-        result.postNmsTopn_ = postNmsTopn_;
-        if (((from_bitField0_ & 0x00000080) == 0x00000080)) {
-          to_bitField0_ |= 0x00000020;
-        }
-        result.nmsThresh_ = nmsThresh_;
-        result.bitField0_ = to_bitField0_;
-        onBuilt();
-        return result;
-      }
-
-      public Builder clone() {
-        return (Builder) super.clone();
-      }
-      public Builder setField(
-          com.google.protobuf.Descriptors.FieldDescriptor field,
-          Object value) {
-        return (Builder) super.setField(field, value);
-      }
-      public Builder clearField(
-          com.google.protobuf.Descriptors.FieldDescriptor field) {
-        return (Builder) super.clearField(field);
-      }
-      public Builder clearOneof(
-          com.google.protobuf.Descriptors.OneofDescriptor oneof) {
-        return (Builder) super.clearOneof(oneof);
-      }
-      public Builder setRepeatedField(
-          com.google.protobuf.Descriptors.FieldDescriptor field,
-          int index, Object value) {
-        return (Builder) super.setRepeatedField(field, index, value);
-      }
-      public Builder addRepeatedField(
-          com.google.protobuf.Descriptors.FieldDescriptor field,
-          Object value) {
-        return (Builder) super.addRepeatedField(field, value);
-      }
-      public Builder mergeFrom(com.google.protobuf.Message other) {
-        if (other instanceof caffe.Caffe.ProposalParameter) {
-          return mergeFrom((caffe.Caffe.ProposalParameter)other);
-        } else {
-          super.mergeFrom(other);
-          return this;
-        }
-      }
-
-      public Builder mergeFrom(caffe.Caffe.ProposalParameter other) {
-        if (other == caffe.Caffe.ProposalParameter.getDefaultInstance()) return this;
-        if (other.hasFeatStride()) {
-          setFeatStride(other.getFeatStride());
-        }
-        if (other.hasBaseSize()) {
-          setBaseSize(other.getBaseSize());
-        }
-        if (other.hasMinSize()) {
-          setMinSize(other.getMinSize());
-        }
-        if (!other.ratio_.isEmpty()) {
-          if (ratio_.isEmpty()) {
-            ratio_ = other.ratio_;
-            bitField0_ = (bitField0_ & ~0x00000008);
-          } else {
-            ensureRatioIsMutable();
-            ratio_.addAll(other.ratio_);
-          }
-          onChanged();
-        }
-        if (!other.scale_.isEmpty()) {
-          if (scale_.isEmpty()) {
-            scale_ = other.scale_;
-            bitField0_ = (bitField0_ & ~0x00000010);
-          } else {
-            ensureScaleIsMutable();
-            scale_.addAll(other.scale_);
-          }
-          onChanged();
-        }
-        if (other.hasPreNmsTopn()) {
-          setPreNmsTopn(other.getPreNmsTopn());
-        }
-        if (other.hasPostNmsTopn()) {
-          setPostNmsTopn(other.getPostNmsTopn());
-        }
-        if (other.hasNmsThresh()) {
-          setNmsThresh(other.getNmsThresh());
-        }
-        this.mergeUnknownFields(other.unknownFields);
-        onChanged();
-        return this;
-      }
-
-      public final boolean isInitialized() {
-        return true;
-      }
-
-      public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        caffe.Caffe.ProposalParameter parsedMessage = null;
-        try {
-          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (caffe.Caffe.ProposalParameter) e.getUnfinishedMessage();
-          throw e.unwrapIOException();
-        } finally {
-          if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
-        return this;
-      }
-      private int bitField0_;
-
-      private int featStride_ = 16;
-      /**
-       * <code>optional uint32 feat_stride = 1 [default = 16];</code>
-       */
-      public boolean hasFeatStride() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
-      }
-      /**
-       * <code>optional uint32 feat_stride = 1 [default = 16];</code>
-       */
-      public int getFeatStride() {
-        return featStride_;
-      }
-      /**
-       * <code>optional uint32 feat_stride = 1 [default = 16];</code>
-       */
-      public Builder setFeatStride(int value) {
-        bitField0_ |= 0x00000001;
-        featStride_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional uint32 feat_stride = 1 [default = 16];</code>
-       */
-      public Builder clearFeatStride() {
-        bitField0_ = (bitField0_ & ~0x00000001);
-        featStride_ = 16;
-        onChanged();
-        return this;
-      }
-
-      private int baseSize_ = 16;
-      /**
-       * <code>optional uint32 base_size = 2 [default = 16];</code>
-       */
-      public boolean hasBaseSize() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
-      }
-      /**
-       * <code>optional uint32 base_size = 2 [default = 16];</code>
-       */
-      public int getBaseSize() {
-        return baseSize_;
-      }
-      /**
-       * <code>optional uint32 base_size = 2 [default = 16];</code>
-       */
-      public Builder setBaseSize(int value) {
-        bitField0_ |= 0x00000002;
-        baseSize_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional uint32 base_size = 2 [default = 16];</code>
-       */
-      public Builder clearBaseSize() {
-        bitField0_ = (bitField0_ & ~0x00000002);
-        baseSize_ = 16;
-        onChanged();
-        return this;
-      }
-
-      private int minSize_ = 16;
-      /**
-       * <code>optional uint32 min_size = 3 [default = 16];</code>
-       */
-      public boolean hasMinSize() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
-      }
-      /**
-       * <code>optional uint32 min_size = 3 [default = 16];</code>
-       */
-      public int getMinSize() {
-        return minSize_;
-      }
-      /**
-       * <code>optional uint32 min_size = 3 [default = 16];</code>
-       */
-      public Builder setMinSize(int value) {
-        bitField0_ |= 0x00000004;
-        minSize_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional uint32 min_size = 3 [default = 16];</code>
-       */
-      public Builder clearMinSize() {
-        bitField0_ = (bitField0_ & ~0x00000004);
-        minSize_ = 16;
-        onChanged();
-        return this;
-      }
-
-      private java.util.List<java.lang.Float> ratio_ = java.util.Collections.emptyList();
-      private void ensureRatioIsMutable() {
-        if (!((bitField0_ & 0x00000008) == 0x00000008)) {
-          ratio_ = new java.util.ArrayList<java.lang.Float>(ratio_);
-          bitField0_ |= 0x00000008;
-         }
-      }
-      /**
-       * <code>repeated float ratio = 4;</code>
-       */
-      public java.util.List<java.lang.Float>
-          getRatioList() {
-        return java.util.Collections.unmodifiableList(ratio_);
-      }
-      /**
-       * <code>repeated float ratio = 4;</code>
-       */
-      public int getRatioCount() {
-        return ratio_.size();
-      }
-      /**
-       * <code>repeated float ratio = 4;</code>
-       */
-      public float getRatio(int index) {
-        return ratio_.get(index);
-      }
-      /**
-       * <code>repeated float ratio = 4;</code>
-       */
-      public Builder setRatio(
-          int index, float value) {
-        ensureRatioIsMutable();
-        ratio_.set(index, value);
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>repeated float ratio = 4;</code>
-       */
-      public Builder addRatio(float value) {
-        ensureRatioIsMutable();
-        ratio_.add(value);
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>repeated float ratio = 4;</code>
-       */
-      public Builder addAllRatio(
-          java.lang.Iterable<? extends java.lang.Float> values) {
-        ensureRatioIsMutable();
-        com.google.protobuf.AbstractMessageLite.Builder.addAll(
-            values, ratio_);
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>repeated float ratio = 4;</code>
-       */
-      public Builder clearRatio() {
-        ratio_ = java.util.Collections.emptyList();
-        bitField0_ = (bitField0_ & ~0x00000008);
-        onChanged();
-        return this;
-      }
-
-      private java.util.List<java.lang.Float> scale_ = java.util.Collections.emptyList();
-      private void ensureScaleIsMutable() {
-        if (!((bitField0_ & 0x00000010) == 0x00000010)) {
-          scale_ = new java.util.ArrayList<java.lang.Float>(scale_);
-          bitField0_ |= 0x00000010;
-         }
-      }
-      /**
-       * <code>repeated float scale = 5;</code>
-       */
-      public java.util.List<java.lang.Float>
-          getScaleList() {
-        return java.util.Collections.unmodifiableList(scale_);
-      }
-      /**
-       * <code>repeated float scale = 5;</code>
-       */
-      public int getScaleCount() {
-        return scale_.size();
-      }
-      /**
-       * <code>repeated float scale = 5;</code>
-       */
-      public float getScale(int index) {
-        return scale_.get(index);
-      }
-      /**
-       * <code>repeated float scale = 5;</code>
-       */
-      public Builder setScale(
-          int index, float value) {
-        ensureScaleIsMutable();
-        scale_.set(index, value);
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>repeated float scale = 5;</code>
-       */
-      public Builder addScale(float value) {
-        ensureScaleIsMutable();
-        scale_.add(value);
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>repeated float scale = 5;</code>
-       */
-      public Builder addAllScale(
-          java.lang.Iterable<? extends java.lang.Float> values) {
-        ensureScaleIsMutable();
-        com.google.protobuf.AbstractMessageLite.Builder.addAll(
-            values, scale_);
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>repeated float scale = 5;</code>
-       */
-      public Builder clearScale() {
-        scale_ = java.util.Collections.emptyList();
-        bitField0_ = (bitField0_ & ~0x00000010);
-        onChanged();
-        return this;
-      }
-
-      private int preNmsTopn_ = 6000;
-      /**
-       * <code>optional uint32 pre_nms_topn = 6 [default = 6000];</code>
-       */
-      public boolean hasPreNmsTopn() {
-        return ((bitField0_ & 0x00000020) == 0x00000020);
-      }
-      /**
-       * <code>optional uint32 pre_nms_topn = 6 [default = 6000];</code>
-       */
-      public int getPreNmsTopn() {
-        return preNmsTopn_;
-      }
-      /**
-       * <code>optional uint32 pre_nms_topn = 6 [default = 6000];</code>
-       */
-      public Builder setPreNmsTopn(int value) {
-        bitField0_ |= 0x00000020;
-        preNmsTopn_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional uint32 pre_nms_topn = 6 [default = 6000];</code>
-       */
-      public Builder clearPreNmsTopn() {
-        bitField0_ = (bitField0_ & ~0x00000020);
-        preNmsTopn_ = 6000;
-        onChanged();
-        return this;
-      }
-
-      private int postNmsTopn_ = 300;
-      /**
-       * <code>optional uint32 post_nms_topn = 7 [default = 300];</code>
-       */
-      public boolean hasPostNmsTopn() {
-        return ((bitField0_ & 0x00000040) == 0x00000040);
-      }
-      /**
-       * <code>optional uint32 post_nms_topn = 7 [default = 300];</code>
-       */
-      public int getPostNmsTopn() {
-        return postNmsTopn_;
-      }
-      /**
-       * <code>optional uint32 post_nms_topn = 7 [default = 300];</code>
-       */
-      public Builder setPostNmsTopn(int value) {
-        bitField0_ |= 0x00000040;
-        postNmsTopn_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional uint32 post_nms_topn = 7 [default = 300];</code>
-       */
-      public Builder clearPostNmsTopn() {
-        bitField0_ = (bitField0_ & ~0x00000040);
-        postNmsTopn_ = 300;
-        onChanged();
-        return this;
-      }
-
-      private float nmsThresh_ = 0.7F;
-      /**
-       * <code>optional float nms_thresh = 8 [default = 0.7];</code>
-       */
-      public boolean hasNmsThresh() {
-        return ((bitField0_ & 0x00000080) == 0x00000080);
-      }
-      /**
-       * <code>optional float nms_thresh = 8 [default = 0.7];</code>
-       */
-      public float getNmsThresh() {
-        return nmsThresh_;
-      }
-      /**
-       * <code>optional float nms_thresh = 8 [default = 0.7];</code>
-       */
-      public Builder setNmsThresh(float value) {
-        bitField0_ |= 0x00000080;
-        nmsThresh_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional float nms_thresh = 8 [default = 0.7];</code>
-       */
-      public Builder clearNmsThresh() {
-        bitField0_ = (bitField0_ & ~0x00000080);
-        nmsThresh_ = 0.7F;
-        onChanged();
-        return this;
-      }
-      public final Builder setUnknownFields(
-          final com.google.protobuf.UnknownFieldSet unknownFields) {
-        return super.setUnknownFields(unknownFields);
-      }
-
-      public final Builder mergeUnknownFields(
-          final com.google.protobuf.UnknownFieldSet unknownFields) {
-        return super.mergeUnknownFields(unknownFields);
-      }
-
-
-      // @@protoc_insertion_point(builder_scope:caffe.ProposalParameter)
-    }
-
-    // @@protoc_insertion_point(class_scope:caffe.ProposalParameter)
-    private static final caffe.Caffe.ProposalParameter DEFAULT_INSTANCE;
-    static {
-      DEFAULT_INSTANCE = new caffe.Caffe.ProposalParameter();
-    }
-
-    public static caffe.Caffe.ProposalParameter getDefaultInstance() {
-      return DEFAULT_INSTANCE;
-    }
-
-    @java.lang.Deprecated public static final com.google.protobuf.Parser<ProposalParameter>
-        PARSER = new com.google.protobuf.AbstractParser<ProposalParameter>() {
-      public ProposalParameter parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
-          return new ProposalParameter(input, extensionRegistry);
-      }
-    };
-
-    public static com.google.protobuf.Parser<ProposalParameter> parser() {
-      return PARSER;
-    }
-
-    @java.lang.Override
-    public com.google.protobuf.Parser<ProposalParameter> getParserForType() {
-      return PARSER;
-    }
-
-    public caffe.Caffe.ProposalParameter getDefaultInstanceForType() {
-      return DEFAULT_INSTANCE;
-    }
-
-  }
-
-  public interface SmoothL1LossParameterOrBuilder extends
-      // @@protoc_insertion_point(interface_extends:caffe.SmoothL1LossParameter)
-      com.google.protobuf.MessageOrBuilder {
-
-    /**
-     * <pre>
-     * SmoothL1Loss(x) =
-     *   0.5 * (sigma * x) ** 2    -- if x &lt; 1.0 / sigma / sigma
-     *   |x| - 0.5 / sigma / sigma -- otherwise
-     * </pre>
-     *
-     * <code>optional float sigma = 1 [default = 1];</code>
-     */
-    boolean hasSigma();
-    /**
-     * <pre>
-     * SmoothL1Loss(x) =
-     *   0.5 * (sigma * x) ** 2    -- if x &lt; 1.0 / sigma / sigma
-     *   |x| - 0.5 / sigma / sigma -- otherwise
-     * </pre>
-     *
-     * <code>optional float sigma = 1 [default = 1];</code>
-     */
-    float getSigma();
-  }
-  /**
-   * Protobuf type {@code caffe.SmoothL1LossParameter}
-   */
-  public  static final class SmoothL1LossParameter extends
-      com.google.protobuf.GeneratedMessageV3 implements
-      // @@protoc_insertion_point(message_implements:caffe.SmoothL1LossParameter)
-      SmoothL1LossParameterOrBuilder {
-    // Use SmoothL1LossParameter.newBuilder() to construct.
-    private SmoothL1LossParameter(com.google.protobuf.GeneratedMessageV3.Builder<?> builder) {
-      super(builder);
-    }
-    private SmoothL1LossParameter() {
-      sigma_ = 1F;
-    }
-
-    @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
-    getUnknownFields() {
-      return this.unknownFields;
-    }
-    private SmoothL1LossParameter(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      this();
-      int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
-      try {
-        boolean done = false;
-        while (!done) {
-          int tag = input.readTag();
-          switch (tag) {
-            case 0:
-              done = true;
-              break;
-            default: {
-              if (!parseUnknownField(input, unknownFields,
-                                     extensionRegistry, tag)) {
-                done = true;
-              }
-              break;
-            }
-            case 13: {
-              bitField0_ |= 0x00000001;
-              sigma_ = input.readFloat();
-              break;
-            }
-          }
-        }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-        throw e.setUnfinishedMessage(this);
-      } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
-            e).setUnfinishedMessage(this);
-      } finally {
-        this.unknownFields = unknownFields.build();
-        makeExtensionsImmutable();
-      }
-    }
-    public static final com.google.protobuf.Descriptors.Descriptor
-        getDescriptor() {
-      return caffe.Caffe.internal_static_caffe_SmoothL1LossParameter_descriptor;
-    }
-
-    protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
-        internalGetFieldAccessorTable() {
-      return caffe.Caffe.internal_static_caffe_SmoothL1LossParameter_fieldAccessorTable
-          .ensureFieldAccessorsInitialized(
-              caffe.Caffe.SmoothL1LossParameter.class, caffe.Caffe.SmoothL1LossParameter.Builder.class);
-    }
-
-    private int bitField0_;
-    public static final int SIGMA_FIELD_NUMBER = 1;
-    private float sigma_;
-    /**
-     * <pre>
-     * SmoothL1Loss(x) =
-     *   0.5 * (sigma * x) ** 2    -- if x &lt; 1.0 / sigma / sigma
-     *   |x| - 0.5 / sigma / sigma -- otherwise
-     * </pre>
-     *
-     * <code>optional float sigma = 1 [default = 1];</code>
-     */
-    public boolean hasSigma() {
-      return ((bitField0_ & 0x00000001) == 0x00000001);
-    }
-    /**
-     * <pre>
-     * SmoothL1Loss(x) =
-     *   0.5 * (sigma * x) ** 2    -- if x &lt; 1.0 / sigma / sigma
-     *   |x| - 0.5 / sigma / sigma -- otherwise
-     * </pre>
-     *
-     * <code>optional float sigma = 1 [default = 1];</code>
-     */
-    public float getSigma() {
-      return sigma_;
-    }
-
-    private byte memoizedIsInitialized = -1;
-    public final boolean isInitialized() {
-      byte isInitialized = memoizedIsInitialized;
-      if (isInitialized == 1) return true;
-      if (isInitialized == 0) return false;
-
-      memoizedIsInitialized = 1;
-      return true;
-    }
-
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
-                        throws java.io.IOException {
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeFloat(1, sigma_);
-      }
-      unknownFields.writeTo(output);
-    }
-
-    public int getSerializedSize() {
-      int size = memoizedSize;
-      if (size != -1) return size;
-
-      size = 0;
-      if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeFloatSize(1, sigma_);
-      }
-      size += unknownFields.getSerializedSize();
-      memoizedSize = size;
-      return size;
-    }
-
-    private static final long serialVersionUID = 0L;
-    @java.lang.Override
-    public boolean equals(final java.lang.Object obj) {
-      if (obj == this) {
-       return true;
-      }
-      if (!(obj instanceof caffe.Caffe.SmoothL1LossParameter)) {
-        return super.equals(obj);
-      }
-      caffe.Caffe.SmoothL1LossParameter other = (caffe.Caffe.SmoothL1LossParameter) obj;
-
-      boolean result = true;
-      result = result && (hasSigma() == other.hasSigma());
-      if (hasSigma()) {
-        result = result && (
-            java.lang.Float.floatToIntBits(getSigma())
-            == java.lang.Float.floatToIntBits(
-                other.getSigma()));
-      }
-      result = result && unknownFields.equals(other.unknownFields);
-      return result;
-    }
-
-    @java.lang.Override
-    public int hashCode() {
-      if (memoizedHashCode != 0) {
-        return memoizedHashCode;
-      }
-      int hash = 41;
-      hash = (19 * hash) + getDescriptorForType().hashCode();
-      if (hasSigma()) {
-        hash = (37 * hash) + SIGMA_FIELD_NUMBER;
-        hash = (53 * hash) + java.lang.Float.floatToIntBits(
-            getSigma());
-      }
-      hash = (29 * hash) + unknownFields.hashCode();
-      memoizedHashCode = hash;
-      return hash;
-    }
-
-    public static caffe.Caffe.SmoothL1LossParameter parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data);
-    }
-    public static caffe.Caffe.SmoothL1LossParameter parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data, extensionRegistry);
-    }
-    public static caffe.Caffe.SmoothL1LossParameter parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data);
-    }
-    public static caffe.Caffe.SmoothL1LossParameter parseFrom(
-        byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
-      return PARSER.parseFrom(data, extensionRegistry);
-    }
-    public static caffe.Caffe.SmoothL1LossParameter parseFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
-          .parseWithIOException(PARSER, input);
-    }
-    public static caffe.Caffe.SmoothL1LossParameter parseFrom(
-        java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
-          .parseWithIOException(PARSER, input, extensionRegistry);
-    }
-    public static caffe.Caffe.SmoothL1LossParameter parseDelimitedFrom(java.io.InputStream input)
-        throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
-          .parseDelimitedWithIOException(PARSER, input);
-    }
-    public static caffe.Caffe.SmoothL1LossParameter parseDelimitedFrom(
-        java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
-          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
-    }
-    public static caffe.Caffe.SmoothL1LossParameter parseFrom(
-        com.google.protobuf.CodedInputStream input)
-        throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
-          .parseWithIOException(PARSER, input);
-    }
-    public static caffe.Caffe.SmoothL1LossParameter parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws java.io.IOException {
-      return com.google.protobuf.GeneratedMessageV3
-          .parseWithIOException(PARSER, input, extensionRegistry);
-    }
-
-    public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder() {
-      return DEFAULT_INSTANCE.toBuilder();
-    }
-    public static Builder newBuilder(caffe.Caffe.SmoothL1LossParameter prototype) {
-      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
-    }
-    public Builder toBuilder() {
-      return this == DEFAULT_INSTANCE
-          ? new Builder() : new Builder().mergeFrom(this);
-    }
-
-    @java.lang.Override
-    protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
-      Builder builder = new Builder(parent);
-      return builder;
-    }
-    /**
-     * Protobuf type {@code caffe.SmoothL1LossParameter}
-     */
-    public static final class Builder extends
-        com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
-        // @@protoc_insertion_point(builder_implements:caffe.SmoothL1LossParameter)
-        caffe.Caffe.SmoothL1LossParameterOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
-          getDescriptor() {
-        return caffe.Caffe.internal_static_caffe_SmoothL1LossParameter_descriptor;
-      }
-
-      protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
-          internalGetFieldAccessorTable() {
-        return caffe.Caffe.internal_static_caffe_SmoothL1LossParameter_fieldAccessorTable
-            .ensureFieldAccessorsInitialized(
-                caffe.Caffe.SmoothL1LossParameter.class, caffe.Caffe.SmoothL1LossParameter.Builder.class);
-      }
-
-      // Construct using caffe.Caffe.SmoothL1LossParameter.newBuilder()
-      private Builder() {
-        maybeForceBuilderInitialization();
-      }
-
-      private Builder(
-          com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
-        super(parent);
-        maybeForceBuilderInitialization();
-      }
-      private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessageV3
-                .alwaysUseFieldBuilders) {
-        }
-      }
-      public Builder clear() {
-        super.clear();
-        sigma_ = 1F;
-        bitField0_ = (bitField0_ & ~0x00000001);
-        return this;
-      }
-
-      public com.google.protobuf.Descriptors.Descriptor
-          getDescriptorForType() {
-        return caffe.Caffe.internal_static_caffe_SmoothL1LossParameter_descriptor;
-      }
-
-      public caffe.Caffe.SmoothL1LossParameter getDefaultInstanceForType() {
-        return caffe.Caffe.SmoothL1LossParameter.getDefaultInstance();
-      }
-
-      public caffe.Caffe.SmoothL1LossParameter build() {
-        caffe.Caffe.SmoothL1LossParameter result = buildPartial();
-        if (!result.isInitialized()) {
-          throw newUninitializedMessageException(result);
-        }
-        return result;
-      }
-
-      public caffe.Caffe.SmoothL1LossParameter buildPartial() {
-        caffe.Caffe.SmoothL1LossParameter result = new caffe.Caffe.SmoothL1LossParameter(this);
-        int from_bitField0_ = bitField0_;
-        int to_bitField0_ = 0;
-        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
-          to_bitField0_ |= 0x00000001;
-        }
-        result.sigma_ = sigma_;
-        result.bitField0_ = to_bitField0_;
-        onBuilt();
-        return result;
-      }
-
-      public Builder clone() {
-        return (Builder) super.clone();
-      }
-      public Builder setField(
-          com.google.protobuf.Descriptors.FieldDescriptor field,
-          Object value) {
-        return (Builder) super.setField(field, value);
-      }
-      public Builder clearField(
-          com.google.protobuf.Descriptors.FieldDescriptor field) {
-        return (Builder) super.clearField(field);
-      }
-      public Builder clearOneof(
-          com.google.protobuf.Descriptors.OneofDescriptor oneof) {
-        return (Builder) super.clearOneof(oneof);
-      }
-      public Builder setRepeatedField(
-          com.google.protobuf.Descriptors.FieldDescriptor field,
-          int index, Object value) {
-        return (Builder) super.setRepeatedField(field, index, value);
-      }
-      public Builder addRepeatedField(
-          com.google.protobuf.Descriptors.FieldDescriptor field,
-          Object value) {
-        return (Builder) super.addRepeatedField(field, value);
-      }
-      public Builder mergeFrom(com.google.protobuf.Message other) {
-        if (other instanceof caffe.Caffe.SmoothL1LossParameter) {
-          return mergeFrom((caffe.Caffe.SmoothL1LossParameter)other);
-        } else {
-          super.mergeFrom(other);
-          return this;
-        }
-      }
-
-      public Builder mergeFrom(caffe.Caffe.SmoothL1LossParameter other) {
-        if (other == caffe.Caffe.SmoothL1LossParameter.getDefaultInstance()) return this;
-        if (other.hasSigma()) {
-          setSigma(other.getSigma());
-        }
-        this.mergeUnknownFields(other.unknownFields);
-        onChanged();
-        return this;
-      }
-
-      public final boolean isInitialized() {
-        return true;
-      }
-
-      public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws java.io.IOException {
-        caffe.Caffe.SmoothL1LossParameter parsedMessage = null;
-        try {
-          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
-          parsedMessage = (caffe.Caffe.SmoothL1LossParameter) e.getUnfinishedMessage();
-          throw e.unwrapIOException();
-        } finally {
-          if (parsedMessage != null) {
-            mergeFrom(parsedMessage);
-          }
-        }
-        return this;
-      }
-      private int bitField0_;
-
-      private float sigma_ = 1F;
-      /**
-       * <pre>
-       * SmoothL1Loss(x) =
-       *   0.5 * (sigma * x) ** 2    -- if x &lt; 1.0 / sigma / sigma
-       *   |x| - 0.5 / sigma / sigma -- otherwise
-       * </pre>
-       *
-       * <code>optional float sigma = 1 [default = 1];</code>
-       */
-      public boolean hasSigma() {
-        return ((bitField0_ & 0x00000001) == 0x00000001);
-      }
-      /**
-       * <pre>
-       * SmoothL1Loss(x) =
-       *   0.5 * (sigma * x) ** 2    -- if x &lt; 1.0 / sigma / sigma
-       *   |x| - 0.5 / sigma / sigma -- otherwise
-       * </pre>
-       *
-       * <code>optional float sigma = 1 [default = 1];</code>
-       */
-      public float getSigma() {
-        return sigma_;
-      }
-      /**
-       * <pre>
-       * SmoothL1Loss(x) =
-       *   0.5 * (sigma * x) ** 2    -- if x &lt; 1.0 / sigma / sigma
-       *   |x| - 0.5 / sigma / sigma -- otherwise
-       * </pre>
-       *
-       * <code>optional float sigma = 1 [default = 1];</code>
-       */
-      public Builder setSigma(float value) {
-        bitField0_ |= 0x00000001;
-        sigma_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <pre>
-       * SmoothL1Loss(x) =
-       *   0.5 * (sigma * x) ** 2    -- if x &lt; 1.0 / sigma / sigma
-       *   |x| - 0.5 / sigma / sigma -- otherwise
-       * </pre>
-       *
-       * <code>optional float sigma = 1 [default = 1];</code>
-       */
-      public Builder clearSigma() {
-        bitField0_ = (bitField0_ & ~0x00000001);
-        sigma_ = 1F;
-        onChanged();
-        return this;
-      }
-      public final Builder setUnknownFields(
-          final com.google.protobuf.UnknownFieldSet unknownFields) {
-        return super.setUnknownFields(unknownFields);
-      }
-
-      public final Builder mergeUnknownFields(
-          final com.google.protobuf.UnknownFieldSet unknownFields) {
-        return super.mergeUnknownFields(unknownFields);
-      }
-
-
-      // @@protoc_insertion_point(builder_scope:caffe.SmoothL1LossParameter)
-    }
-
-    // @@protoc_insertion_point(class_scope:caffe.SmoothL1LossParameter)
-    private static final caffe.Caffe.SmoothL1LossParameter DEFAULT_INSTANCE;
-    static {
-      DEFAULT_INSTANCE = new caffe.Caffe.SmoothL1LossParameter();
-    }
-
-    public static caffe.Caffe.SmoothL1LossParameter getDefaultInstance() {
-      return DEFAULT_INSTANCE;
-    }
-
-    @java.lang.Deprecated public static final com.google.protobuf.Parser<SmoothL1LossParameter>
-        PARSER = new com.google.protobuf.AbstractParser<SmoothL1LossParameter>() {
-      public SmoothL1LossParameter parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
-          return new SmoothL1LossParameter(input, extensionRegistry);
-      }
-    };
-
-    public static com.google.protobuf.Parser<SmoothL1LossParameter> parser() {
-      return PARSER;
-    }
-
-    @java.lang.Override
-    public com.google.protobuf.Parser<SmoothL1LossParameter> getParserForType() {
-      return PARSER;
-    }
-
-    public caffe.Caffe.SmoothL1LossParameter getDefaultInstanceForType() {
       return DEFAULT_INSTANCE;
     }
 
@@ -101904,21 +98321,6 @@ public final class Caffe {
     com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
       internal_static_caffe_LayerParameter_fieldAccessorTable;
   private static final com.google.protobuf.Descriptors.Descriptor
-    internal_static_caffe_ROIPoolingParameter_descriptor;
-  private static final 
-    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
-      internal_static_caffe_ROIPoolingParameter_fieldAccessorTable;
-  private static final com.google.protobuf.Descriptors.Descriptor
-    internal_static_caffe_ProposalParameter_descriptor;
-  private static final 
-    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
-      internal_static_caffe_ProposalParameter_fieldAccessorTable;
-  private static final com.google.protobuf.Descriptors.Descriptor
-    internal_static_caffe_SmoothL1LossParameter_descriptor;
-  private static final 
-    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
-      internal_static_caffe_SmoothL1LossParameter_fieldAccessorTable;
-  private static final com.google.protobuf.Descriptors.Descriptor
     internal_static_caffe_TransformationParameter_descriptor;
   private static final 
     com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
@@ -102196,7 +98598,7 @@ public final class Caffe {
       "false\022\036\n\005state\030\006 \001(\0132\017.caffe.NetState\022\031\n" +
       "\ndebug_info\030\007 \001(\010:\005false\022$\n\005layer\030d \003(\0132" +
       "\025.caffe.LayerParameter\022\'\n\006layers\030\002 \003(\0132\027" +
-      ".caffe.V1LayerParameter\"\273\n\n\017SolverParame" +
+      ".caffe.V1LayerParameter\"\242\n\n\017SolverParame" +
       "ter\022\013\n\003net\030\030 \001(\t\022&\n\tnet_param\030\031 \001(\0132\023.ca" +
       "ffe.NetParameter\022\021\n\ttrain_net\030\001 \001(\t\022\020\n\010t" +
       "est_net\030\002 \003(\t\022,\n\017train_net_param\030\025 \001(\0132\023" +
@@ -102212,366 +98614,351 @@ public final class Caffe {
       "olicy\030\010 \001(\t\022\r\n\005gamma\030\t \001(\002\022\r\n\005power\030\n \001(" +
       "\002\022\020\n\010momentum\030\013 \001(\002\022\024\n\014weight_decay\030\014 \001(" +
       "\002\022\037\n\023regularization_type\030\035 \001(\t:\002L2\022\020\n\010st",
-      "epsize\030\r \001(\005\022\021\n\tstepvalue\030\" \003(\005\022\027\n\017plate" +
-      "au_winsize\030) \003(\005\022\032\n\016clip_gradients\030# \001(\002" +
-      ":\002-1\022\023\n\010snapshot\030\016 \001(\005:\0010\022\027\n\017snapshot_pr" +
-      "efix\030\017 \001(\t\022\034\n\rsnapshot_diff\030\020 \001(\010:\005false" +
-      "\022K\n\017snapshot_format\030% \001(\0162%.caffe.Solver" +
-      "Parameter.SnapshotFormat:\013BINARYPROTO\022;\n" +
-      "\013solver_mode\030\021 \001(\0162!.caffe.SolverParamet" +
-      "er.SolverMode:\003GPU\022\024\n\tdevice_id\030\022 \001(\005:\0010" +
-      "\022\027\n\013random_seed\030\024 \001(\003:\002-1\022\021\n\004type\030( \001(\t:" +
-      "\003SGD\022\024\n\005delta\030\037 \001(\002:\0051e-08\022\030\n\tmomentum2\030",
-      "\' \001(\002:\0050.999\022\027\n\trms_decay\030& \001(\002:\0040.99\022\031\n" +
-      "\ndebug_info\030\027 \001(\010:\005false\022\"\n\024snapshot_aft" +
-      "er_train\030\034 \001(\010:\004true\022;\n\013solver_type\030\036 \001(" +
-      "\0162!.caffe.SolverParameter.SolverType:\003SG" +
-      "D\"+\n\016SnapshotFormat\022\010\n\004HDF5\020\000\022\017\n\013BINARYP" +
-      "ROTO\020\001\"\036\n\nSolverMode\022\007\n\003CPU\020\000\022\007\n\003GPU\020\001\"U" +
-      "\n\nSolverType\022\007\n\003SGD\020\000\022\014\n\010NESTEROV\020\001\022\013\n\007A" +
-      "DAGRAD\020\002\022\013\n\007RMSPROP\020\003\022\014\n\010ADADELTA\020\004\022\010\n\004A" +
-      "DAM\020\005\"\245\001\n\013SolverState\022\014\n\004iter\030\001 \001(\005\022\023\n\013l" +
-      "earned_net\030\002 \001(\t\022!\n\007history\030\003 \003(\0132\020.caff",
-      "e.BlobProto\022\027\n\014current_step\030\004 \001(\005:\0010\022\033\n\014" +
-      "minimum_loss\030\005 \001(\002:\0051e+38\022\032\n\017iter_last_e" +
-      "vent\030\006 \001(\005:\0010\"N\n\010NetState\022!\n\005phase\030\001 \001(\016" +
-      "2\014.caffe.Phase:\004TEST\022\020\n\005level\030\002 \001(\005:\0010\022\r" +
-      "\n\005stage\030\003 \003(\t\"s\n\014NetStateRule\022\033\n\005phase\030\001" +
-      " \001(\0162\014.caffe.Phase\022\021\n\tmin_level\030\002 \001(\005\022\021\n" +
-      "\tmax_level\030\003 \001(\005\022\r\n\005stage\030\004 \003(\t\022\021\n\tnot_s" +
-      "tage\030\005 \003(\t\"\243\001\n\tParamSpec\022\014\n\004name\030\001 \001(\t\0221" +
-      "\n\nshare_mode\030\002 \001(\0162\035.caffe.ParamSpec.Dim" +
-      "CheckMode\022\022\n\007lr_mult\030\003 \001(\002:\0011\022\025\n\ndecay_m",
-      "ult\030\004 \001(\002:\0011\"*\n\014DimCheckMode\022\n\n\006STRICT\020\000" +
-      "\022\016\n\nPERMISSIVE\020\001\"\260\025\n\016LayerParameter\022\014\n\004n" +
-      "ame\030\001 \001(\t\022\014\n\004type\030\002 \001(\t\022\016\n\006bottom\030\003 \003(\t\022" +
-      "\013\n\003top\030\004 \003(\t\022\033\n\005phase\030\n \001(\0162\014.caffe.Phas" +
-      "e\022\023\n\013loss_weight\030\005 \003(\002\022\037\n\005param\030\006 \003(\0132\020." +
-      "caffe.ParamSpec\022\037\n\005blobs\030\007 \003(\0132\020.caffe.B" +
-      "lobProto\022\026\n\016propagate_down\030\013 \003(\010\022$\n\007incl" +
-      "ude\030\010 \003(\0132\023.caffe.NetStateRule\022$\n\007exclud" +
-      "e\030\t \003(\0132\023.caffe.NetStateRule\0227\n\017transfor" +
-      "m_param\030d \001(\0132\036.caffe.TransformationPara",
-      "meter\022(\n\nloss_param\030e \001(\0132\024.caffe.LossPa" +
-      "rameter\0220\n\016accuracy_param\030f \001(\0132\030.caffe." +
-      "AccuracyParameter\022,\n\014argmax_param\030g \001(\0132" +
-      "\026.caffe.ArgMaxParameter\0224\n\020batch_norm_pa" +
-      "ram\030\213\001 \001(\0132\031.caffe.BatchNormParameter\022)\n" +
-      "\nbias_param\030\215\001 \001(\0132\024.caffe.BiasParameter" +
-      "\022,\n\014concat_param\030h \001(\0132\026.caffe.ConcatPar" +
-      "ameter\022?\n\026contrastive_loss_param\030i \001(\0132\037" +
-      ".caffe.ContrastiveLossParameter\0226\n\021convo" +
-      "lution_param\030j \001(\0132\033.caffe.ConvolutionPa",
-      "rameter\022)\n\ncrop_param\030\220\001 \001(\0132\024.caffe.Cro" +
-      "pParameter\022(\n\ndata_param\030k \001(\0132\024.caffe.D" +
-      "ataParameter\022.\n\rdropout_param\030l \001(\0132\027.ca" +
-      "ffe.DropoutParameter\0223\n\020dummy_data_param" +
-      "\030m \001(\0132\031.caffe.DummyDataParameter\022.\n\relt" +
-      "wise_param\030n \001(\0132\027.caffe.EltwiseParamete" +
-      "r\022\'\n\telu_param\030\214\001 \001(\0132\023.caffe.ELUParamet" +
-      "er\022+\n\013embed_param\030\211\001 \001(\0132\025.caffe.EmbedPa" +
-      "rameter\022&\n\texp_param\030o \001(\0132\023.caffe.ExpPa" +
-      "rameter\022/\n\rflatten_param\030\207\001 \001(\0132\027.caffe.",
-      "FlattenParameter\0221\n\017hdf5_data_param\030p \001(" +
-      "\0132\030.caffe.HDF5DataParameter\0225\n\021hdf5_outp" +
-      "ut_param\030q \001(\0132\032.caffe.HDF5OutputParamet" +
-      "er\0223\n\020hinge_loss_param\030r \001(\0132\031.caffe.Hin" +
-      "geLossParameter\0223\n\020image_data_param\030s \001(" +
-      "\0132\031.caffe.ImageDataParameter\0229\n\023infogain" +
-      "_loss_param\030t \001(\0132\034.caffe.InfogainLossPa" +
-      "rameter\0229\n\023inner_product_param\030u \001(\0132\034.c" +
-      "affe.InnerProductParameter\022+\n\013input_para" +
-      "m\030\217\001 \001(\0132\025.caffe.InputParameter\022\'\n\tlog_p",
-      "aram\030\206\001 \001(\0132\023.caffe.LogParameter\022&\n\tlrn_" +
-      "param\030v \001(\0132\023.caffe.LRNParameter\0225\n\021memo" +
-      "ry_data_param\030w \001(\0132\032.caffe.MemoryDataPa" +
-      "rameter\022&\n\tmvn_param\030x \001(\0132\023.caffe.MVNPa" +
-      "rameter\0223\n\017parameter_param\030\221\001 \001(\0132\031.caff" +
-      "e.ParameterParameter\022.\n\rpooling_param\030y " +
-      "\001(\0132\027.caffe.PoolingParameter\022*\n\013power_pa" +
-      "ram\030z \001(\0132\025.caffe.PowerParameter\022+\n\013prel" +
-      "u_param\030\203\001 \001(\0132\025.caffe.PReLUParameter\022-\n" +
-      "\014python_param\030\202\001 \001(\0132\026.caffe.PythonParam",
-      "eter\0223\n\017recurrent_param\030\222\001 \001(\0132\031.caffe.R" +
-      "ecurrentParameter\0223\n\017reduction_param\030\210\001 " +
-      "\001(\0132\031.caffe.ReductionParameter\022(\n\nrelu_p" +
-      "aram\030{ \001(\0132\024.caffe.ReLUParameter\022/\n\rresh" +
-      "ape_param\030\205\001 \001(\0132\027.caffe.ReshapeParamete" +
-      "r\022+\n\013scale_param\030\216\001 \001(\0132\025.caffe.ScalePar" +
-      "ameter\022.\n\rsigmoid_param\030| \001(\0132\027.caffe.Si" +
-      "gmoidParameter\022.\n\rsoftmax_param\030} \001(\0132\027." +
-      "caffe.SoftmaxParameter\022\'\n\tspp_param\030\204\001 \001" +
-      "(\0132\023.caffe.SPPParameter\022*\n\013slice_param\030~",
-      " \001(\0132\025.caffe.SliceParameter\022(\n\ntanh_para" +
-      "m\030\177 \001(\0132\024.caffe.TanHParameter\0223\n\017thresho" +
-      "ld_param\030\200\001 \001(\0132\031.caffe.ThresholdParamet" +
-      "er\022)\n\ntile_param\030\212\001 \001(\0132\024.caffe.TilePara" +
-      "meter\0226\n\021window_data_param\030\201\001 \001(\0132\032.caff" +
-      "e.WindowDataParameter\0228\n\021roi_pooling_par" +
-      "am\030\327\307\370\003 \001(\0132\032.caffe.ROIPoolingParameter\022" +
-      "=\n\024smooth_l1_loss_param\030\330\307\370\003 \001(\0132\034.caffe" +
-      ".SmoothL1LossParameter\0223\n\016proposal_param" +
-      "\030\331\307\370\003 \001(\0132\030.caffe.ProposalParameter\"Y\n\023R",
-      "OIPoolingParameter\022\023\n\010pooled_h\030\001 \001(\r:\0010\022" +
-      "\023\n\010pooled_w\030\002 \001(\r:\0010\022\030\n\rspatial_scale\030\003 " +
-      "\001(\002:\0011\"\310\001\n\021ProposalParameter\022\027\n\013feat_str" +
-      "ide\030\001 \001(\r:\00216\022\025\n\tbase_size\030\002 \001(\r:\00216\022\024\n\010" +
-      "min_size\030\003 \001(\r:\00216\022\r\n\005ratio\030\004 \003(\002\022\r\n\005sca" +
-      "le\030\005 \003(\002\022\032\n\014pre_nms_topn\030\006 \001(\r:\0046000\022\032\n\r" +
-      "post_nms_topn\030\007 \001(\r:\003300\022\027\n\nnms_thresh\030\010" +
-      " \001(\002:\0030.7\")\n\025SmoothL1LossParameter\022\020\n\005si" +
-      "gma\030\001 \001(\002:\0011\"\266\001\n\027TransformationParameter" +
-      "\022\020\n\005scale\030\001 \001(\002:\0011\022\025\n\006mirror\030\002 \001(\010:\005fals",
-      "e\022\024\n\tcrop_size\030\003 \001(\r:\0010\022\021\n\tmean_file\030\004 \001" +
-      "(\t\022\022\n\nmean_value\030\005 \003(\002\022\032\n\013force_color\030\006 " +
-      "\001(\010:\005false\022\031\n\nforce_gray\030\007 \001(\010:\005false\"\302\001" +
-      "\n\rLossParameter\022\024\n\014ignore_label\030\001 \001(\005\022D\n" +
-      "\rnormalization\030\003 \001(\0162&.caffe.LossParamet" +
-      "er.NormalizationMode:\005VALID\022\021\n\tnormalize" +
-      "\030\002 \001(\010\"B\n\021NormalizationMode\022\010\n\004FULL\020\000\022\t\n" +
-      "\005VALID\020\001\022\016\n\nBATCH_SIZE\020\002\022\010\n\004NONE\020\003\"L\n\021Ac" +
-      "curacyParameter\022\020\n\005top_k\030\001 \001(\r:\0011\022\017\n\004axi" +
-      "s\030\002 \001(\005:\0011\022\024\n\014ignore_label\030\003 \001(\005\"M\n\017ArgM",
-      "axParameter\022\032\n\013out_max_val\030\001 \001(\010:\005false\022" +
-      "\020\n\005top_k\030\002 \001(\r:\0011\022\014\n\004axis\030\003 \001(\005\"9\n\017Conca" +
-      "tParameter\022\017\n\004axis\030\002 \001(\005:\0011\022\025\n\nconcat_di" +
-      "m\030\001 \001(\r:\0011\"j\n\022BatchNormParameter\022\030\n\020use_" +
-      "global_stats\030\001 \001(\010\022&\n\027moving_average_fra" +
-      "ction\030\002 \001(\002:\0050.999\022\022\n\003eps\030\003 \001(\002:\0051e-05\"]" +
-      "\n\rBiasParameter\022\017\n\004axis\030\001 \001(\005:\0011\022\023\n\010num_" +
-      "axes\030\002 \001(\005:\0011\022&\n\006filler\030\003 \001(\0132\026.caffe.Fi" +
-      "llerParameter\"L\n\030ContrastiveLossParamete" +
-      "r\022\021\n\006margin\030\001 \001(\002:\0011\022\035\n\016legacy_version\030\002",
-      " \001(\010:\005false\"\374\003\n\024ConvolutionParameter\022\022\n\n" +
-      "num_output\030\001 \001(\r\022\027\n\tbias_term\030\002 \001(\010:\004tru" +
-      "e\022\013\n\003pad\030\003 \003(\r\022\023\n\013kernel_size\030\004 \003(\r\022\016\n\006s" +
-      "tride\030\006 \003(\r\022\020\n\010dilation\030\022 \003(\r\022\020\n\005pad_h\030\t" +
-      " \001(\r:\0010\022\020\n\005pad_w\030\n \001(\r:\0010\022\020\n\010kernel_h\030\013 " +
-      "\001(\r\022\020\n\010kernel_w\030\014 \001(\r\022\020\n\010stride_h\030\r \001(\r\022" +
-      "\020\n\010stride_w\030\016 \001(\r\022\020\n\005group\030\005 \001(\r:\0011\022-\n\rw" +
-      "eight_filler\030\007 \001(\0132\026.caffe.FillerParamet" +
-      "er\022+\n\013bias_filler\030\010 \001(\0132\026.caffe.FillerPa" +
-      "rameter\022;\n\006engine\030\017 \001(\0162\".caffe.Convolut",
-      "ionParameter.Engine:\007DEFAULT\022\017\n\004axis\030\020 \001" +
-      "(\005:\0011\022\036\n\017force_nd_im2col\030\021 \001(\010:\005false\"+\n" +
-      "\006Engine\022\013\n\007DEFAULT\020\000\022\t\n\005CAFFE\020\001\022\t\n\005CUDNN" +
-      "\020\002\"0\n\rCropParameter\022\017\n\004axis\030\001 \001(\005:\0012\022\016\n\006" +
-      "offset\030\002 \003(\r\"\244\002\n\rDataParameter\022\016\n\006source" +
-      "\030\001 \001(\t\022\022\n\nbatch_size\030\004 \001(\r\022\024\n\trand_skip\030" +
-      "\007 \001(\r:\0010\0221\n\007backend\030\010 \001(\0162\027.caffe.DataPa" +
-      "rameter.DB:\007LEVELDB\022\020\n\005scale\030\002 \001(\002:\0011\022\021\n" +
-      "\tmean_file\030\003 \001(\t\022\024\n\tcrop_size\030\005 \001(\r:\0010\022\025" +
-      "\n\006mirror\030\006 \001(\010:\005false\022\"\n\023force_encoded_c",
-      "olor\030\t \001(\010:\005false\022\023\n\010prefetch\030\n \001(\r:\0014\"\033" +
-      "\n\002DB\022\013\n\007LEVELDB\020\000\022\010\n\004LMDB\020\001\".\n\020DropoutPa" +
-      "rameter\022\032\n\rdropout_ratio\030\001 \001(\002:\0030.5\"\240\001\n\022" +
-      "DummyDataParameter\022+\n\013data_filler\030\001 \003(\0132" +
-      "\026.caffe.FillerParameter\022\037\n\005shape\030\006 \003(\0132\020" +
-      ".caffe.BlobShape\022\013\n\003num\030\002 \003(\r\022\020\n\010channel" +
-      "s\030\003 \003(\r\022\016\n\006height\030\004 \003(\r\022\r\n\005width\030\005 \003(\r\"\245" +
-      "\001\n\020EltwiseParameter\0229\n\toperation\030\001 \001(\0162!" +
-      ".caffe.EltwiseParameter.EltwiseOp:\003SUM\022\r" +
-      "\n\005coeff\030\002 \003(\002\022\036\n\020stable_prod_grad\030\003 \001(\010:",
-      "\004true\"\'\n\tEltwiseOp\022\010\n\004PROD\020\000\022\007\n\003SUM\020\001\022\007\n" +
-      "\003MAX\020\002\" \n\014ELUParameter\022\020\n\005alpha\030\001 \001(\002:\0011" +
-      "\"\254\001\n\016EmbedParameter\022\022\n\nnum_output\030\001 \001(\r\022" +
-      "\021\n\tinput_dim\030\002 \001(\r\022\027\n\tbias_term\030\003 \001(\010:\004t" +
-      "rue\022-\n\rweight_filler\030\004 \001(\0132\026.caffe.Fille" +
-      "rParameter\022+\n\013bias_filler\030\005 \001(\0132\026.caffe." +
-      "FillerParameter\"D\n\014ExpParameter\022\020\n\004base\030" +
-      "\001 \001(\002:\002-1\022\020\n\005scale\030\002 \001(\002:\0011\022\020\n\005shift\030\003 \001" +
-      "(\002:\0010\"9\n\020FlattenParameter\022\017\n\004axis\030\001 \001(\005:" +
-      "\0011\022\024\n\010end_axis\030\002 \001(\005:\002-1\"O\n\021HDF5DataPara",
-      "meter\022\016\n\006source\030\001 \001(\t\022\022\n\nbatch_size\030\002 \001(" +
-      "\r\022\026\n\007shuffle\030\003 \001(\010:\005false\"(\n\023HDF5OutputP" +
-      "arameter\022\021\n\tfile_name\030\001 \001(\t\"^\n\022HingeLoss" +
-      "Parameter\0220\n\004norm\030\001 \001(\0162\036.caffe.HingeLos" +
-      "sParameter.Norm:\002L1\"\026\n\004Norm\022\006\n\002L1\020\001\022\006\n\002L" +
-      "2\020\002\"\227\002\n\022ImageDataParameter\022\016\n\006source\030\001 \001" +
-      "(\t\022\025\n\nbatch_size\030\004 \001(\r:\0011\022\024\n\trand_skip\030\007" +
-      " \001(\r:\0010\022\026\n\007shuffle\030\010 \001(\010:\005false\022\025\n\nnew_h" +
-      "eight\030\t \001(\r:\0010\022\024\n\tnew_width\030\n \001(\r:\0010\022\026\n\010" +
-      "is_color\030\013 \001(\010:\004true\022\020\n\005scale\030\002 \001(\002:\0011\022\021",
-      "\n\tmean_file\030\003 \001(\t\022\024\n\tcrop_size\030\005 \001(\r:\0010\022" +
-      "\025\n\006mirror\030\006 \001(\010:\005false\022\025\n\013root_folder\030\014 " +
-      "\001(\t:\000\"\'\n\025InfogainLossParameter\022\016\n\006source" +
-      "\030\001 \001(\t\"\313\001\n\025InnerProductParameter\022\022\n\nnum_" +
-      "output\030\001 \001(\r\022\027\n\tbias_term\030\002 \001(\010:\004true\022-\n" +
-      "\rweight_filler\030\003 \001(\0132\026.caffe.FillerParam" +
-      "eter\022+\n\013bias_filler\030\004 \001(\0132\026.caffe.Filler" +
-      "Parameter\022\017\n\004axis\030\005 \001(\005:\0011\022\030\n\ttranspose\030" +
-      "\006 \001(\010:\005false\"1\n\016InputParameter\022\037\n\005shape\030" +
-      "\001 \003(\0132\020.caffe.BlobShape\"D\n\014LogParameter\022",
-      "\020\n\004base\030\001 \001(\002:\002-1\022\020\n\005scale\030\002 \001(\002:\0011\022\020\n\005s" +
-      "hift\030\003 \001(\002:\0010\"\270\002\n\014LRNParameter\022\025\n\nlocal_" +
-      "size\030\001 \001(\r:\0015\022\020\n\005alpha\030\002 \001(\002:\0011\022\022\n\004beta\030" +
-      "\003 \001(\002:\0040.75\022D\n\013norm_region\030\004 \001(\0162\036.caffe" +
-      ".LRNParameter.NormRegion:\017ACROSS_CHANNEL" +
-      "S\022\014\n\001k\030\005 \001(\002:\0011\0223\n\006engine\030\006 \001(\0162\032.caffe." +
-      "LRNParameter.Engine:\007DEFAULT\"5\n\nNormRegi" +
-      "on\022\023\n\017ACROSS_CHANNELS\020\000\022\022\n\016WITHIN_CHANNE" +
-      "L\020\001\"+\n\006Engine\022\013\n\007DEFAULT\020\000\022\t\n\005CAFFE\020\001\022\t\n" +
-      "\005CUDNN\020\002\"Z\n\023MemoryDataParameter\022\022\n\nbatch",
-      "_size\030\001 \001(\r\022\020\n\010channels\030\002 \001(\r\022\016\n\006height\030" +
-      "\003 \001(\r\022\r\n\005width\030\004 \001(\r\"d\n\014MVNParameter\022 \n\022" +
-      "normalize_variance\030\001 \001(\010:\004true\022\036\n\017across" +
-      "_channels\030\002 \001(\010:\005false\022\022\n\003eps\030\003 \001(\002:\0051e-" +
-      "09\"5\n\022ParameterParameter\022\037\n\005shape\030\001 \001(\0132" +
-      "\020.caffe.BlobShape\"\242\003\n\020PoolingParameter\0225" +
-      "\n\004pool\030\001 \001(\0162\".caffe.PoolingParameter.Po" +
-      "olMethod:\003MAX\022\016\n\003pad\030\004 \001(\r:\0010\022\020\n\005pad_h\030\t" +
-      " \001(\r:\0010\022\020\n\005pad_w\030\n \001(\r:\0010\022\023\n\013kernel_size" +
-      "\030\002 \001(\r\022\020\n\010kernel_h\030\005 \001(\r\022\020\n\010kernel_w\030\006 \001",
-      "(\r\022\021\n\006stride\030\003 \001(\r:\0011\022\020\n\010stride_h\030\007 \001(\r\022" +
-      "\020\n\010stride_w\030\010 \001(\r\0227\n\006engine\030\013 \001(\0162\036.caff" +
-      "e.PoolingParameter.Engine:\007DEFAULT\022\035\n\016gl" +
-      "obal_pooling\030\014 \001(\010:\005false\".\n\nPoolMethod\022" +
-      "\007\n\003MAX\020\000\022\007\n\003AVE\020\001\022\016\n\nSTOCHASTIC\020\002\"+\n\006Eng" +
-      "ine\022\013\n\007DEFAULT\020\000\022\t\n\005CAFFE\020\001\022\t\n\005CUDNN\020\002\"F" +
-      "\n\016PowerParameter\022\020\n\005power\030\001 \001(\002:\0011\022\020\n\005sc" +
-      "ale\030\002 \001(\002:\0011\022\020\n\005shift\030\003 \001(\002:\0010\"g\n\017Python" +
-      "Parameter\022\016\n\006module\030\001 \001(\t\022\r\n\005layer\030\002 \001(\t" +
-      "\022\023\n\tparam_str\030\003 \001(\t:\000\022 \n\021share_in_parall",
-      "el\030\004 \001(\010:\005false\"\300\001\n\022RecurrentParameter\022\025" +
-      "\n\nnum_output\030\001 \001(\r:\0010\022-\n\rweight_filler\030\002" +
-      " \001(\0132\026.caffe.FillerParameter\022+\n\013bias_fil" +
-      "ler\030\003 \001(\0132\026.caffe.FillerParameter\022\031\n\ndeb" +
-      "ug_info\030\004 \001(\010:\005false\022\034\n\rexpose_hidden\030\005 " +
-      "\001(\010:\005false\"\255\001\n\022ReductionParameter\022=\n\tope" +
-      "ration\030\001 \001(\0162%.caffe.ReductionParameter." +
-      "ReductionOp:\003SUM\022\017\n\004axis\030\002 \001(\005:\0010\022\020\n\005coe" +
-      "ff\030\003 \001(\002:\0011\"5\n\013ReductionOp\022\007\n\003SUM\020\001\022\010\n\004A" +
-      "SUM\020\002\022\t\n\005SUMSQ\020\003\022\010\n\004MEAN\020\004\"\215\001\n\rReLUParam",
-      "eter\022\031\n\016negative_slope\030\001 \001(\002:\0010\0224\n\006engin" +
-      "e\030\002 \001(\0162\033.caffe.ReLUParameter.Engine:\007DE" +
-      "FAULT\"+\n\006Engine\022\013\n\007DEFAULT\020\000\022\t\n\005CAFFE\020\001\022" +
-      "\t\n\005CUDNN\020\002\"Z\n\020ReshapeParameter\022\037\n\005shape\030" +
-      "\001 \001(\0132\020.caffe.BlobShape\022\017\n\004axis\030\002 \001(\005:\0010" +
-      "\022\024\n\010num_axes\030\003 \001(\005:\002-1\"\245\001\n\016ScaleParamete" +
-      "r\022\017\n\004axis\030\001 \001(\005:\0011\022\023\n\010num_axes\030\002 \001(\005:\0011\022" +
-      "&\n\006filler\030\003 \001(\0132\026.caffe.FillerParameter\022" +
-      "\030\n\tbias_term\030\004 \001(\010:\005false\022+\n\013bias_filler" +
-      "\030\005 \001(\0132\026.caffe.FillerParameter\"x\n\020Sigmoi",
-      "dParameter\0227\n\006engine\030\001 \001(\0162\036.caffe.Sigmo" +
-      "idParameter.Engine:\007DEFAULT\"+\n\006Engine\022\013\n" +
-      "\007DEFAULT\020\000\022\t\n\005CAFFE\020\001\022\t\n\005CUDNN\020\002\"L\n\016Slic" +
-      "eParameter\022\017\n\004axis\030\003 \001(\005:\0011\022\023\n\013slice_poi" +
-      "nt\030\002 \003(\r\022\024\n\tslice_dim\030\001 \001(\r:\0011\"\211\001\n\020Softm" +
-      "axParameter\0227\n\006engine\030\001 \001(\0162\036.caffe.Soft" +
-      "maxParameter.Engine:\007DEFAULT\022\017\n\004axis\030\002 \001" +
-      "(\005:\0011\"+\n\006Engine\022\013\n\007DEFAULT\020\000\022\t\n\005CAFFE\020\001\022" +
-      "\t\n\005CUDNN\020\002\"r\n\rTanHParameter\0224\n\006engine\030\001 " +
-      "\001(\0162\033.caffe.TanHParameter.Engine:\007DEFAUL",
-      "T\"+\n\006Engine\022\013\n\007DEFAULT\020\000\022\t\n\005CAFFE\020\001\022\t\n\005C" +
-      "UDNN\020\002\"/\n\rTileParameter\022\017\n\004axis\030\001 \001(\005:\0011" +
-      "\022\r\n\005tiles\030\002 \001(\005\"*\n\022ThresholdParameter\022\024\n" +
-      "\tthreshold\030\001 \001(\002:\0010\"\301\002\n\023WindowDataParame" +
-      "ter\022\016\n\006source\030\001 \001(\t\022\020\n\005scale\030\002 \001(\002:\0011\022\021\n" +
-      "\tmean_file\030\003 \001(\t\022\022\n\nbatch_size\030\004 \001(\r\022\024\n\t" +
-      "crop_size\030\005 \001(\r:\0010\022\025\n\006mirror\030\006 \001(\010:\005fals" +
-      "e\022\031\n\014fg_threshold\030\007 \001(\002:\0030.5\022\031\n\014bg_thres" +
-      "hold\030\010 \001(\002:\0030.5\022\031\n\013fg_fraction\030\t \001(\002:\0040." +
-      "25\022\026\n\013context_pad\030\n \001(\r:\0010\022\027\n\tcrop_mode\030",
-      "\013 \001(\t:\004warp\022\033\n\014cache_images\030\014 \001(\010:\005false" +
-      "\022\025\n\013root_folder\030\r \001(\t:\000\"\353\001\n\014SPPParameter" +
-      "\022\026\n\016pyramid_height\030\001 \001(\r\0221\n\004pool\030\002 \001(\0162\036" +
-      ".caffe.SPPParameter.PoolMethod:\003MAX\0223\n\006e" +
-      "ngine\030\006 \001(\0162\032.caffe.SPPParameter.Engine:" +
-      "\007DEFAULT\".\n\nPoolMethod\022\007\n\003MAX\020\000\022\007\n\003AVE\020\001" +
-      "\022\016\n\nSTOCHASTIC\020\002\"+\n\006Engine\022\013\n\007DEFAULT\020\000\022" +
-      "\t\n\005CAFFE\020\001\022\t\n\005CUDNN\020\002\"\340\023\n\020V1LayerParamet" +
-      "er\022\016\n\006bottom\030\002 \003(\t\022\013\n\003top\030\003 \003(\t\022\014\n\004name\030" +
-      "\004 \001(\t\022$\n\007include\030  \003(\0132\023.caffe.NetStateR",
-      "ule\022$\n\007exclude\030! \003(\0132\023.caffe.NetStateRul" +
-      "e\022/\n\004type\030\005 \001(\0162!.caffe.V1LayerParameter" +
-      ".LayerType\022\037\n\005blobs\030\006 \003(\0132\020.caffe.BlobPr" +
-      "oto\022\016\n\005param\030\351\007 \003(\t\022>\n\017blob_share_mode\030\352" +
-      "\007 \003(\0162$.caffe.V1LayerParameter.DimCheckM" +
-      "ode\022\020\n\010blobs_lr\030\007 \003(\002\022\024\n\014weight_decay\030\010 " +
-      "\003(\002\022\023\n\013loss_weight\030# \003(\002\0220\n\016accuracy_par" +
-      "am\030\033 \001(\0132\030.caffe.AccuracyParameter\022,\n\014ar" +
-      "gmax_param\030\027 \001(\0132\026.caffe.ArgMaxParameter" +
-      "\022,\n\014concat_param\030\t \001(\0132\026.caffe.ConcatPar",
-      "ameter\022?\n\026contrastive_loss_param\030( \001(\0132\037" +
-      ".caffe.ContrastiveLossParameter\0226\n\021convo" +
-      "lution_param\030\n \001(\0132\033.caffe.ConvolutionPa" +
-      "rameter\022(\n\ndata_param\030\013 \001(\0132\024.caffe.Data" +
-      "Parameter\022.\n\rdropout_param\030\014 \001(\0132\027.caffe" +
-      ".DropoutParameter\0223\n\020dummy_data_param\030\032 " +
+      "epsize\030\r \001(\005\022\021\n\tstepvalue\030\" \003(\005\022\032\n\016clip_" +
+      "gradients\030# \001(\002:\002-1\022\023\n\010snapshot\030\016 \001(\005:\0010" +
+      "\022\027\n\017snapshot_prefix\030\017 \001(\t\022\034\n\rsnapshot_di" +
+      "ff\030\020 \001(\010:\005false\022K\n\017snapshot_format\030% \001(\016" +
+      "2%.caffe.SolverParameter.SnapshotFormat:" +
+      "\013BINARYPROTO\022;\n\013solver_mode\030\021 \001(\0162!.caff" +
+      "e.SolverParameter.SolverMode:\003GPU\022\024\n\tdev" +
+      "ice_id\030\022 \001(\005:\0010\022\027\n\013random_seed\030\024 \001(\003:\002-1" +
+      "\022\021\n\004type\030( \001(\t:\003SGD\022\024\n\005delta\030\037 \001(\002:\0051e-0" +
+      "8\022\030\n\tmomentum2\030\' \001(\002:\0050.999\022\027\n\trms_decay",
+      "\030& \001(\002:\0040.99\022\031\n\ndebug_info\030\027 \001(\010:\005false\022" +
+      "\"\n\024snapshot_after_train\030\034 \001(\010:\004true\022;\n\013s" +
+      "olver_type\030\036 \001(\0162!.caffe.SolverParameter" +
+      ".SolverType:\003SGD\"+\n\016SnapshotFormat\022\010\n\004HD" +
+      "F5\020\000\022\017\n\013BINARYPROTO\020\001\"\036\n\nSolverMode\022\007\n\003C" +
+      "PU\020\000\022\007\n\003GPU\020\001\"U\n\nSolverType\022\007\n\003SGD\020\000\022\014\n\010" +
+      "NESTEROV\020\001\022\013\n\007ADAGRAD\020\002\022\013\n\007RMSPROP\020\003\022\014\n\010" +
+      "ADADELTA\020\004\022\010\n\004ADAM\020\005\"l\n\013SolverState\022\014\n\004i" +
+      "ter\030\001 \001(\005\022\023\n\013learned_net\030\002 \001(\t\022!\n\007histor" +
+      "y\030\003 \003(\0132\020.caffe.BlobProto\022\027\n\014current_ste",
+      "p\030\004 \001(\005:\0010\"N\n\010NetState\022!\n\005phase\030\001 \001(\0162\014." +
+      "caffe.Phase:\004TEST\022\020\n\005level\030\002 \001(\005:\0010\022\r\n\005s" +
+      "tage\030\003 \003(\t\"s\n\014NetStateRule\022\033\n\005phase\030\001 \001(" +
+      "\0162\014.caffe.Phase\022\021\n\tmin_level\030\002 \001(\005\022\021\n\tma" +
+      "x_level\030\003 \001(\005\022\r\n\005stage\030\004 \003(\t\022\021\n\tnot_stag" +
+      "e\030\005 \003(\t\"\243\001\n\tParamSpec\022\014\n\004name\030\001 \001(\t\0221\n\ns" +
+      "hare_mode\030\002 \001(\0162\035.caffe.ParamSpec.DimChe" +
+      "ckMode\022\022\n\007lr_mult\030\003 \001(\002:\0011\022\025\n\ndecay_mult" +
+      "\030\004 \001(\002:\0011\"*\n\014DimCheckMode\022\n\n\006STRICT\020\000\022\016\n" +
+      "\nPERMISSIVE\020\001\"\202\024\n\016LayerParameter\022\014\n\004name",
+      "\030\001 \001(\t\022\014\n\004type\030\002 \001(\t\022\016\n\006bottom\030\003 \003(\t\022\013\n\003" +
+      "top\030\004 \003(\t\022\033\n\005phase\030\n \001(\0162\014.caffe.Phase\022\023" +
+      "\n\013loss_weight\030\005 \003(\002\022\037\n\005param\030\006 \003(\0132\020.caf" +
+      "fe.ParamSpec\022\037\n\005blobs\030\007 \003(\0132\020.caffe.Blob" +
+      "Proto\022\026\n\016propagate_down\030\013 \003(\010\022$\n\007include" +
+      "\030\010 \003(\0132\023.caffe.NetStateRule\022$\n\007exclude\030\t" +
+      " \003(\0132\023.caffe.NetStateRule\0227\n\017transform_p" +
+      "aram\030d \001(\0132\036.caffe.TransformationParamet" +
+      "er\022(\n\nloss_param\030e \001(\0132\024.caffe.LossParam" +
+      "eter\0220\n\016accuracy_param\030f \001(\0132\030.caffe.Acc",
+      "uracyParameter\022,\n\014argmax_param\030g \001(\0132\026.c" +
+      "affe.ArgMaxParameter\0224\n\020batch_norm_param" +
+      "\030\213\001 \001(\0132\031.caffe.BatchNormParameter\022)\n\nbi" +
+      "as_param\030\215\001 \001(\0132\024.caffe.BiasParameter\022,\n" +
+      "\014concat_param\030h \001(\0132\026.caffe.ConcatParame" +
+      "ter\022?\n\026contrastive_loss_param\030i \001(\0132\037.ca" +
+      "ffe.ContrastiveLossParameter\0226\n\021convolut" +
+      "ion_param\030j \001(\0132\033.caffe.ConvolutionParam" +
+      "eter\022)\n\ncrop_param\030\220\001 \001(\0132\024.caffe.CropPa" +
+      "rameter\022(\n\ndata_param\030k \001(\0132\024.caffe.Data",
+      "Parameter\022.\n\rdropout_param\030l \001(\0132\027.caffe" +
+      ".DropoutParameter\0223\n\020dummy_data_param\030m " +
       "\001(\0132\031.caffe.DummyDataParameter\022.\n\reltwis" +
-      "e_param\030\030 \001(\0132\027.caffe.EltwiseParameter\022&" +
-      "\n\texp_param\030) \001(\0132\023.caffe.ExpParameter\0221" +
-      "\n\017hdf5_data_param\030\r \001(\0132\030.caffe.HDF5Data",
-      "Parameter\0225\n\021hdf5_output_param\030\016 \001(\0132\032.c" +
-      "affe.HDF5OutputParameter\0223\n\020hinge_loss_p" +
-      "aram\030\035 \001(\0132\031.caffe.HingeLossParameter\0223\n" +
-      "\020image_data_param\030\017 \001(\0132\031.caffe.ImageDat" +
-      "aParameter\0229\n\023infogain_loss_param\030\020 \001(\0132" +
-      "\034.caffe.InfogainLossParameter\0229\n\023inner_p" +
-      "roduct_param\030\021 \001(\0132\034.caffe.InnerProductP" +
-      "arameter\022&\n\tlrn_param\030\022 \001(\0132\023.caffe.LRNP" +
-      "arameter\0225\n\021memory_data_param\030\026 \001(\0132\032.ca" +
-      "ffe.MemoryDataParameter\022&\n\tmvn_param\030\" \001",
-      "(\0132\023.caffe.MVNParameter\022.\n\rpooling_param" +
-      "\030\023 \001(\0132\027.caffe.PoolingParameter\022*\n\013power" +
-      "_param\030\025 \001(\0132\025.caffe.PowerParameter\022(\n\nr" +
-      "elu_param\030\036 \001(\0132\024.caffe.ReLUParameter\022.\n" +
-      "\rsigmoid_param\030& \001(\0132\027.caffe.SigmoidPara" +
-      "meter\022.\n\rsoftmax_param\030\' \001(\0132\027.caffe.Sof" +
-      "tmaxParameter\022*\n\013slice_param\030\037 \001(\0132\025.caf" +
-      "fe.SliceParameter\022(\n\ntanh_param\030% \001(\0132\024." +
-      "caffe.TanHParameter\0222\n\017threshold_param\030\031" +
-      " \001(\0132\031.caffe.ThresholdParameter\0225\n\021windo",
-      "w_data_param\030\024 \001(\0132\032.caffe.WindowDataPar" +
-      "ameter\0227\n\017transform_param\030$ \001(\0132\036.caffe." +
-      "TransformationParameter\022(\n\nloss_param\030* " +
-      "\001(\0132\024.caffe.LossParameter\022&\n\005layer\030\001 \001(\013" +
-      "2\027.caffe.V0LayerParameter\"\330\004\n\tLayerType\022" +
-      "\010\n\004NONE\020\000\022\n\n\006ABSVAL\020#\022\014\n\010ACCURACY\020\001\022\n\n\006A" +
-      "RGMAX\020\036\022\010\n\004BNLL\020\002\022\n\n\006CONCAT\020\003\022\024\n\020CONTRAS" +
-      "TIVE_LOSS\020%\022\017\n\013CONVOLUTION\020\004\022\010\n\004DATA\020\005\022\021" +
-      "\n\rDECONVOLUTION\020\'\022\013\n\007DROPOUT\020\006\022\016\n\nDUMMY_" +
-      "DATA\020 \022\022\n\016EUCLIDEAN_LOSS\020\007\022\013\n\007ELTWISE\020\031\022",
-      "\007\n\003EXP\020&\022\013\n\007FLATTEN\020\010\022\r\n\tHDF5_DATA\020\t\022\017\n\013" +
-      "HDF5_OUTPUT\020\n\022\016\n\nHINGE_LOSS\020\034\022\n\n\006IM2COL\020" +
-      "\013\022\016\n\nIMAGE_DATA\020\014\022\021\n\rINFOGAIN_LOSS\020\r\022\021\n\r" +
-      "INNER_PRODUCT\020\016\022\007\n\003LRN\020\017\022\017\n\013MEMORY_DATA\020" +
-      "\035\022\035\n\031MULTINOMIAL_LOGISTIC_LOSS\020\020\022\007\n\003MVN\020" +
-      "\"\022\013\n\007POOLING\020\021\022\t\n\005POWER\020\032\022\010\n\004RELU\020\022\022\013\n\007S" +
-      "IGMOID\020\023\022\036\n\032SIGMOID_CROSS_ENTROPY_LOSS\020\033" +
-      "\022\013\n\007SILENCE\020$\022\013\n\007SOFTMAX\020\024\022\020\n\014SOFTMAX_LO" +
-      "SS\020\025\022\t\n\005SPLIT\020\026\022\t\n\005SLICE\020!\022\010\n\004TANH\020\027\022\017\n\013" +
-      "WINDOW_DATA\020\030\022\r\n\tTHRESHOLD\020\037\"*\n\014DimCheck",
-      "Mode\022\n\n\006STRICT\020\000\022\016\n\nPERMISSIVE\020\001\"\375\007\n\020V0L" +
-      "ayerParameter\022\014\n\004name\030\001 \001(\t\022\014\n\004type\030\002 \001(" +
-      "\t\022\022\n\nnum_output\030\003 \001(\r\022\026\n\010biasterm\030\004 \001(\010:" +
-      "\004true\022-\n\rweight_filler\030\005 \001(\0132\026.caffe.Fil" +
-      "lerParameter\022+\n\013bias_filler\030\006 \001(\0132\026.caff" +
-      "e.FillerParameter\022\016\n\003pad\030\007 \001(\r:\0010\022\022\n\nker" +
-      "nelsize\030\010 \001(\r\022\020\n\005group\030\t \001(\r:\0011\022\021\n\006strid" +
-      "e\030\n \001(\r:\0011\0225\n\004pool\030\013 \001(\0162\".caffe.V0Layer" +
-      "Parameter.PoolMethod:\003MAX\022\032\n\rdropout_rat" +
-      "io\030\014 \001(\002:\0030.5\022\025\n\nlocal_size\030\r \001(\r:\0015\022\020\n\005",
-      "alpha\030\016 \001(\002:\0011\022\022\n\004beta\030\017 \001(\002:\0040.75\022\014\n\001k\030" +
-      "\026 \001(\002:\0011\022\016\n\006source\030\020 \001(\t\022\020\n\005scale\030\021 \001(\002:" +
-      "\0011\022\020\n\010meanfile\030\022 \001(\t\022\021\n\tbatchsize\030\023 \001(\r\022" +
-      "\023\n\010cropsize\030\024 \001(\r:\0010\022\025\n\006mirror\030\025 \001(\010:\005fa" +
-      "lse\022\037\n\005blobs\0302 \003(\0132\020.caffe.BlobProto\022\020\n\010" +
-      "blobs_lr\0303 \003(\002\022\024\n\014weight_decay\0304 \003(\002\022\024\n\t" +
-      "rand_skip\0305 \001(\r:\0010\022\035\n\020det_fg_threshold\0306" +
-      " \001(\002:\0030.5\022\035\n\020det_bg_threshold\0307 \001(\002:\0030.5" +
-      "\022\035\n\017det_fg_fraction\0308 \001(\002:\0040.25\022\032\n\017det_c" +
-      "ontext_pad\030: \001(\r:\0010\022\033\n\rdet_crop_mode\030; \001",
-      "(\t:\004warp\022\022\n\007new_num\030< \001(\005:\0010\022\027\n\014new_chan" +
-      "nels\030= \001(\005:\0010\022\025\n\nnew_height\030> \001(\005:\0010\022\024\n\t" +
-      "new_width\030? \001(\005:\0010\022\035\n\016shuffle_images\030@ \001" +
-      "(\010:\005false\022\025\n\nconcat_dim\030A \001(\r:\0011\0226\n\021hdf5" +
-      "_output_param\030\351\007 \001(\0132\032.caffe.HDF5OutputP" +
-      "arameter\".\n\nPoolMethod\022\007\n\003MAX\020\000\022\007\n\003AVE\020\001" +
-      "\022\016\n\nSTOCHASTIC\020\002\"W\n\016PReLUParameter\022&\n\006fi" +
-      "ller\030\001 \001(\0132\026.caffe.FillerParameter\022\035\n\016ch" +
-      "annel_shared\030\002 \001(\010:\005false*\034\n\005Phase\022\t\n\005TR" +
-      "AIN\020\000\022\010\n\004TEST\020\001"
+      "e_param\030n \001(\0132\027.caffe.EltwiseParameter\022\'" +
+      "\n\telu_param\030\214\001 \001(\0132\023.caffe.ELUParameter\022" +
+      "+\n\013embed_param\030\211\001 \001(\0132\025.caffe.EmbedParam" +
+      "eter\022&\n\texp_param\030o \001(\0132\023.caffe.ExpParam" +
+      "eter\022/\n\rflatten_param\030\207\001 \001(\0132\027.caffe.Fla" +
+      "ttenParameter\0221\n\017hdf5_data_param\030p \001(\0132\030" +
+      ".caffe.HDF5DataParameter\0225\n\021hdf5_output_",
+      "param\030q \001(\0132\032.caffe.HDF5OutputParameter\022" +
+      "3\n\020hinge_loss_param\030r \001(\0132\031.caffe.HingeL" +
+      "ossParameter\0223\n\020image_data_param\030s \001(\0132\031" +
+      ".caffe.ImageDataParameter\0229\n\023infogain_lo" +
+      "ss_param\030t \001(\0132\034.caffe.InfogainLossParam" +
+      "eter\0229\n\023inner_product_param\030u \001(\0132\034.caff" +
+      "e.InnerProductParameter\022+\n\013input_param\030\217" +
+      "\001 \001(\0132\025.caffe.InputParameter\022\'\n\tlog_para" +
+      "m\030\206\001 \001(\0132\023.caffe.LogParameter\022&\n\tlrn_par" +
+      "am\030v \001(\0132\023.caffe.LRNParameter\0225\n\021memory_",
+      "data_param\030w \001(\0132\032.caffe.MemoryDataParam" +
+      "eter\022&\n\tmvn_param\030x \001(\0132\023.caffe.MVNParam" +
+      "eter\0223\n\017parameter_param\030\221\001 \001(\0132\031.caffe.P" +
+      "arameterParameter\022.\n\rpooling_param\030y \001(\013" +
+      "2\027.caffe.PoolingParameter\022*\n\013power_param" +
+      "\030z \001(\0132\025.caffe.PowerParameter\022+\n\013prelu_p" +
+      "aram\030\203\001 \001(\0132\025.caffe.PReLUParameter\022-\n\014py" +
+      "thon_param\030\202\001 \001(\0132\026.caffe.PythonParamete" +
+      "r\0223\n\017recurrent_param\030\222\001 \001(\0132\031.caffe.Recu" +
+      "rrentParameter\0223\n\017reduction_param\030\210\001 \001(\013",
+      "2\031.caffe.ReductionParameter\022(\n\nrelu_para" +
+      "m\030{ \001(\0132\024.caffe.ReLUParameter\022/\n\rreshape" +
+      "_param\030\205\001 \001(\0132\027.caffe.ReshapeParameter\022+" +
+      "\n\013scale_param\030\216\001 \001(\0132\025.caffe.ScaleParame" +
+      "ter\022.\n\rsigmoid_param\030| \001(\0132\027.caffe.Sigmo" +
+      "idParameter\022.\n\rsoftmax_param\030} \001(\0132\027.caf" +
+      "fe.SoftmaxParameter\022\'\n\tspp_param\030\204\001 \001(\0132" +
+      "\023.caffe.SPPParameter\022*\n\013slice_param\030~ \001(" +
+      "\0132\025.caffe.SliceParameter\022(\n\ntanh_param\030\177" +
+      " \001(\0132\024.caffe.TanHParameter\0223\n\017threshold_",
+      "param\030\200\001 \001(\0132\031.caffe.ThresholdParameter\022" +
+      ")\n\ntile_param\030\212\001 \001(\0132\024.caffe.TileParamet" +
+      "er\0226\n\021window_data_param\030\201\001 \001(\0132\032.caffe.W" +
+      "indowDataParameter\"\266\001\n\027TransformationPar" +
+      "ameter\022\020\n\005scale\030\001 \001(\002:\0011\022\025\n\006mirror\030\002 \001(\010" +
+      ":\005false\022\024\n\tcrop_size\030\003 \001(\r:\0010\022\021\n\tmean_fi" +
+      "le\030\004 \001(\t\022\022\n\nmean_value\030\005 \003(\002\022\032\n\013force_co" +
+      "lor\030\006 \001(\010:\005false\022\031\n\nforce_gray\030\007 \001(\010:\005fa" +
+      "lse\"\302\001\n\rLossParameter\022\024\n\014ignore_label\030\001 " +
+      "\001(\005\022D\n\rnormalization\030\003 \001(\0162&.caffe.LossP",
+      "arameter.NormalizationMode:\005VALID\022\021\n\tnor" +
+      "malize\030\002 \001(\010\"B\n\021NormalizationMode\022\010\n\004FUL" +
+      "L\020\000\022\t\n\005VALID\020\001\022\016\n\nBATCH_SIZE\020\002\022\010\n\004NONE\020\003" +
+      "\"L\n\021AccuracyParameter\022\020\n\005top_k\030\001 \001(\r:\0011\022" +
+      "\017\n\004axis\030\002 \001(\005:\0011\022\024\n\014ignore_label\030\003 \001(\005\"M" +
+      "\n\017ArgMaxParameter\022\032\n\013out_max_val\030\001 \001(\010:\005" +
+      "false\022\020\n\005top_k\030\002 \001(\r:\0011\022\014\n\004axis\030\003 \001(\005\"9\n" +
+      "\017ConcatParameter\022\017\n\004axis\030\002 \001(\005:\0011\022\025\n\ncon" +
+      "cat_dim\030\001 \001(\r:\0011\"j\n\022BatchNormParameter\022\030" +
+      "\n\020use_global_stats\030\001 \001(\010\022&\n\027moving_avera",
+      "ge_fraction\030\002 \001(\002:\0050.999\022\022\n\003eps\030\003 \001(\002:\0051" +
+      "e-05\"]\n\rBiasParameter\022\017\n\004axis\030\001 \001(\005:\0011\022\023" +
+      "\n\010num_axes\030\002 \001(\005:\0011\022&\n\006filler\030\003 \001(\0132\026.ca" +
+      "ffe.FillerParameter\"L\n\030ContrastiveLossPa" +
+      "rameter\022\021\n\006margin\030\001 \001(\002:\0011\022\035\n\016legacy_ver" +
+      "sion\030\002 \001(\010:\005false\"\374\003\n\024ConvolutionParamet" +
+      "er\022\022\n\nnum_output\030\001 \001(\r\022\027\n\tbias_term\030\002 \001(" +
+      "\010:\004true\022\013\n\003pad\030\003 \003(\r\022\023\n\013kernel_size\030\004 \003(" +
+      "\r\022\016\n\006stride\030\006 \003(\r\022\020\n\010dilation\030\022 \003(\r\022\020\n\005p" +
+      "ad_h\030\t \001(\r:\0010\022\020\n\005pad_w\030\n \001(\r:\0010\022\020\n\010kerne",
+      "l_h\030\013 \001(\r\022\020\n\010kernel_w\030\014 \001(\r\022\020\n\010stride_h\030" +
+      "\r \001(\r\022\020\n\010stride_w\030\016 \001(\r\022\020\n\005group\030\005 \001(\r:\001" +
+      "1\022-\n\rweight_filler\030\007 \001(\0132\026.caffe.FillerP" +
+      "arameter\022+\n\013bias_filler\030\010 \001(\0132\026.caffe.Fi" +
+      "llerParameter\022;\n\006engine\030\017 \001(\0162\".caffe.Co" +
+      "nvolutionParameter.Engine:\007DEFAULT\022\017\n\004ax" +
+      "is\030\020 \001(\005:\0011\022\036\n\017force_nd_im2col\030\021 \001(\010:\005fa" +
+      "lse\"+\n\006Engine\022\013\n\007DEFAULT\020\000\022\t\n\005CAFFE\020\001\022\t\n" +
+      "\005CUDNN\020\002\"0\n\rCropParameter\022\017\n\004axis\030\001 \001(\005:" +
+      "\0012\022\016\n\006offset\030\002 \003(\r\"\244\002\n\rDataParameter\022\016\n\006",
+      "source\030\001 \001(\t\022\022\n\nbatch_size\030\004 \001(\r\022\024\n\trand" +
+      "_skip\030\007 \001(\r:\0010\0221\n\007backend\030\010 \001(\0162\027.caffe." +
+      "DataParameter.DB:\007LEVELDB\022\020\n\005scale\030\002 \001(\002" +
+      ":\0011\022\021\n\tmean_file\030\003 \001(\t\022\024\n\tcrop_size\030\005 \001(" +
+      "\r:\0010\022\025\n\006mirror\030\006 \001(\010:\005false\022\"\n\023force_enc" +
+      "oded_color\030\t \001(\010:\005false\022\023\n\010prefetch\030\n \001(" +
+      "\r:\0014\"\033\n\002DB\022\013\n\007LEVELDB\020\000\022\010\n\004LMDB\020\001\".\n\020Dro" +
+      "poutParameter\022\032\n\rdropout_ratio\030\001 \001(\002:\0030." +
+      "5\"\240\001\n\022DummyDataParameter\022+\n\013data_filler\030" +
+      "\001 \003(\0132\026.caffe.FillerParameter\022\037\n\005shape\030\006",
+      " \003(\0132\020.caffe.BlobShape\022\013\n\003num\030\002 \003(\r\022\020\n\010c" +
+      "hannels\030\003 \003(\r\022\016\n\006height\030\004 \003(\r\022\r\n\005width\030\005" +
+      " \003(\r\"\245\001\n\020EltwiseParameter\0229\n\toperation\030\001" +
+      " \001(\0162!.caffe.EltwiseParameter.EltwiseOp:" +
+      "\003SUM\022\r\n\005coeff\030\002 \003(\002\022\036\n\020stable_prod_grad\030" +
+      "\003 \001(\010:\004true\"\'\n\tEltwiseOp\022\010\n\004PROD\020\000\022\007\n\003SU" +
+      "M\020\001\022\007\n\003MAX\020\002\" \n\014ELUParameter\022\020\n\005alpha\030\001 " +
+      "\001(\002:\0011\"\254\001\n\016EmbedParameter\022\022\n\nnum_output\030" +
+      "\001 \001(\r\022\021\n\tinput_dim\030\002 \001(\r\022\027\n\tbias_term\030\003 " +
+      "\001(\010:\004true\022-\n\rweight_filler\030\004 \001(\0132\026.caffe",
+      ".FillerParameter\022+\n\013bias_filler\030\005 \001(\0132\026." +
+      "caffe.FillerParameter\"D\n\014ExpParameter\022\020\n" +
+      "\004base\030\001 \001(\002:\002-1\022\020\n\005scale\030\002 \001(\002:\0011\022\020\n\005shi" +
+      "ft\030\003 \001(\002:\0010\"9\n\020FlattenParameter\022\017\n\004axis\030" +
+      "\001 \001(\005:\0011\022\024\n\010end_axis\030\002 \001(\005:\002-1\"O\n\021HDF5Da" +
+      "taParameter\022\016\n\006source\030\001 \001(\t\022\022\n\nbatch_siz" +
+      "e\030\002 \001(\r\022\026\n\007shuffle\030\003 \001(\010:\005false\"(\n\023HDF5O" +
+      "utputParameter\022\021\n\tfile_name\030\001 \001(\t\"^\n\022Hin" +
+      "geLossParameter\0220\n\004norm\030\001 \001(\0162\036.caffe.Hi" +
+      "ngeLossParameter.Norm:\002L1\"\026\n\004Norm\022\006\n\002L1\020",
+      "\001\022\006\n\002L2\020\002\"\227\002\n\022ImageDataParameter\022\016\n\006sour" +
+      "ce\030\001 \001(\t\022\025\n\nbatch_size\030\004 \001(\r:\0011\022\024\n\trand_" +
+      "skip\030\007 \001(\r:\0010\022\026\n\007shuffle\030\010 \001(\010:\005false\022\025\n" +
+      "\nnew_height\030\t \001(\r:\0010\022\024\n\tnew_width\030\n \001(\r:" +
+      "\0010\022\026\n\010is_color\030\013 \001(\010:\004true\022\020\n\005scale\030\002 \001(" +
+      "\002:\0011\022\021\n\tmean_file\030\003 \001(\t\022\024\n\tcrop_size\030\005 \001" +
+      "(\r:\0010\022\025\n\006mirror\030\006 \001(\010:\005false\022\025\n\013root_fol" +
+      "der\030\014 \001(\t:\000\"\'\n\025InfogainLossParameter\022\016\n\006" +
+      "source\030\001 \001(\t\"\313\001\n\025InnerProductParameter\022\022" +
+      "\n\nnum_output\030\001 \001(\r\022\027\n\tbias_term\030\002 \001(\010:\004t",
+      "rue\022-\n\rweight_filler\030\003 \001(\0132\026.caffe.Fille" +
+      "rParameter\022+\n\013bias_filler\030\004 \001(\0132\026.caffe." +
+      "FillerParameter\022\017\n\004axis\030\005 \001(\005:\0011\022\030\n\ttran" +
+      "spose\030\006 \001(\010:\005false\"1\n\016InputParameter\022\037\n\005" +
+      "shape\030\001 \003(\0132\020.caffe.BlobShape\"D\n\014LogPara" +
+      "meter\022\020\n\004base\030\001 \001(\002:\002-1\022\020\n\005scale\030\002 \001(\002:\001" +
+      "1\022\020\n\005shift\030\003 \001(\002:\0010\"\270\002\n\014LRNParameter\022\025\n\n" +
+      "local_size\030\001 \001(\r:\0015\022\020\n\005alpha\030\002 \001(\002:\0011\022\022\n" +
+      "\004beta\030\003 \001(\002:\0040.75\022D\n\013norm_region\030\004 \001(\0162\036" +
+      ".caffe.LRNParameter.NormRegion:\017ACROSS_C",
+      "HANNELS\022\014\n\001k\030\005 \001(\002:\0011\0223\n\006engine\030\006 \001(\0162\032." +
+      "caffe.LRNParameter.Engine:\007DEFAULT\"5\n\nNo" +
+      "rmRegion\022\023\n\017ACROSS_CHANNELS\020\000\022\022\n\016WITHIN_" +
+      "CHANNEL\020\001\"+\n\006Engine\022\013\n\007DEFAULT\020\000\022\t\n\005CAFF" +
+      "E\020\001\022\t\n\005CUDNN\020\002\"Z\n\023MemoryDataParameter\022\022\n" +
+      "\nbatch_size\030\001 \001(\r\022\020\n\010channels\030\002 \001(\r\022\016\n\006h" +
+      "eight\030\003 \001(\r\022\r\n\005width\030\004 \001(\r\"d\n\014MVNParamet" +
+      "er\022 \n\022normalize_variance\030\001 \001(\010:\004true\022\036\n\017" +
+      "across_channels\030\002 \001(\010:\005false\022\022\n\003eps\030\003 \001(" +
+      "\002:\0051e-09\"5\n\022ParameterParameter\022\037\n\005shape\030",
+      "\001 \001(\0132\020.caffe.BlobShape\"\242\003\n\020PoolingParam" +
+      "eter\0225\n\004pool\030\001 \001(\0162\".caffe.PoolingParame" +
+      "ter.PoolMethod:\003MAX\022\016\n\003pad\030\004 \001(\r:\0010\022\020\n\005p" +
+      "ad_h\030\t \001(\r:\0010\022\020\n\005pad_w\030\n \001(\r:\0010\022\023\n\013kerne" +
+      "l_size\030\002 \001(\r\022\020\n\010kernel_h\030\005 \001(\r\022\020\n\010kernel" +
+      "_w\030\006 \001(\r\022\021\n\006stride\030\003 \001(\r:\0011\022\020\n\010stride_h\030" +
+      "\007 \001(\r\022\020\n\010stride_w\030\010 \001(\r\0227\n\006engine\030\013 \001(\0162" +
+      "\036.caffe.PoolingParameter.Engine:\007DEFAULT" +
+      "\022\035\n\016global_pooling\030\014 \001(\010:\005false\".\n\nPoolM" +
+      "ethod\022\007\n\003MAX\020\000\022\007\n\003AVE\020\001\022\016\n\nSTOCHASTIC\020\002\"",
+      "+\n\006Engine\022\013\n\007DEFAULT\020\000\022\t\n\005CAFFE\020\001\022\t\n\005CUD" +
+      "NN\020\002\"F\n\016PowerParameter\022\020\n\005power\030\001 \001(\002:\0011" +
+      "\022\020\n\005scale\030\002 \001(\002:\0011\022\020\n\005shift\030\003 \001(\002:\0010\"g\n\017" +
+      "PythonParameter\022\016\n\006module\030\001 \001(\t\022\r\n\005layer" +
+      "\030\002 \001(\t\022\023\n\tparam_str\030\003 \001(\t:\000\022 \n\021share_in_" +
+      "parallel\030\004 \001(\010:\005false\"\300\001\n\022RecurrentParam" +
+      "eter\022\025\n\nnum_output\030\001 \001(\r:\0010\022-\n\rweight_fi" +
+      "ller\030\002 \001(\0132\026.caffe.FillerParameter\022+\n\013bi" +
+      "as_filler\030\003 \001(\0132\026.caffe.FillerParameter\022" +
+      "\031\n\ndebug_info\030\004 \001(\010:\005false\022\034\n\rexpose_hid",
+      "den\030\005 \001(\010:\005false\"\255\001\n\022ReductionParameter\022" +
+      "=\n\toperation\030\001 \001(\0162%.caffe.ReductionPara" +
+      "meter.ReductionOp:\003SUM\022\017\n\004axis\030\002 \001(\005:\0010\022" +
+      "\020\n\005coeff\030\003 \001(\002:\0011\"5\n\013ReductionOp\022\007\n\003SUM\020" +
+      "\001\022\010\n\004ASUM\020\002\022\t\n\005SUMSQ\020\003\022\010\n\004MEAN\020\004\"\215\001\n\rReL" +
+      "UParameter\022\031\n\016negative_slope\030\001 \001(\002:\0010\0224\n" +
+      "\006engine\030\002 \001(\0162\033.caffe.ReLUParameter.Engi" +
+      "ne:\007DEFAULT\"+\n\006Engine\022\013\n\007DEFAULT\020\000\022\t\n\005CA" +
+      "FFE\020\001\022\t\n\005CUDNN\020\002\"Z\n\020ReshapeParameter\022\037\n\005" +
+      "shape\030\001 \001(\0132\020.caffe.BlobShape\022\017\n\004axis\030\002 ",
+      "\001(\005:\0010\022\024\n\010num_axes\030\003 \001(\005:\002-1\"\245\001\n\016ScalePa" +
+      "rameter\022\017\n\004axis\030\001 \001(\005:\0011\022\023\n\010num_axes\030\002 \001" +
+      "(\005:\0011\022&\n\006filler\030\003 \001(\0132\026.caffe.FillerPara" +
+      "meter\022\030\n\tbias_term\030\004 \001(\010:\005false\022+\n\013bias_" +
+      "filler\030\005 \001(\0132\026.caffe.FillerParameter\"x\n\020" +
+      "SigmoidParameter\0227\n\006engine\030\001 \001(\0162\036.caffe" +
+      ".SigmoidParameter.Engine:\007DEFAULT\"+\n\006Eng" +
+      "ine\022\013\n\007DEFAULT\020\000\022\t\n\005CAFFE\020\001\022\t\n\005CUDNN\020\002\"L" +
+      "\n\016SliceParameter\022\017\n\004axis\030\003 \001(\005:\0011\022\023\n\013sli" +
+      "ce_point\030\002 \003(\r\022\024\n\tslice_dim\030\001 \001(\r:\0011\"\211\001\n",
+      "\020SoftmaxParameter\0227\n\006engine\030\001 \001(\0162\036.caff" +
+      "e.SoftmaxParameter.Engine:\007DEFAULT\022\017\n\004ax" +
+      "is\030\002 \001(\005:\0011\"+\n\006Engine\022\013\n\007DEFAULT\020\000\022\t\n\005CA" +
+      "FFE\020\001\022\t\n\005CUDNN\020\002\"r\n\rTanHParameter\0224\n\006eng" +
+      "ine\030\001 \001(\0162\033.caffe.TanHParameter.Engine:\007" +
+      "DEFAULT\"+\n\006Engine\022\013\n\007DEFAULT\020\000\022\t\n\005CAFFE\020" +
+      "\001\022\t\n\005CUDNN\020\002\"/\n\rTileParameter\022\017\n\004axis\030\001 " +
+      "\001(\005:\0011\022\r\n\005tiles\030\002 \001(\005\"*\n\022ThresholdParame" +
+      "ter\022\024\n\tthreshold\030\001 \001(\002:\0010\"\301\002\n\023WindowData" +
+      "Parameter\022\016\n\006source\030\001 \001(\t\022\020\n\005scale\030\002 \001(\002",
+      ":\0011\022\021\n\tmean_file\030\003 \001(\t\022\022\n\nbatch_size\030\004 \001" +
+      "(\r\022\024\n\tcrop_size\030\005 \001(\r:\0010\022\025\n\006mirror\030\006 \001(\010" +
+      ":\005false\022\031\n\014fg_threshold\030\007 \001(\002:\0030.5\022\031\n\014bg" +
+      "_threshold\030\010 \001(\002:\0030.5\022\031\n\013fg_fraction\030\t \001" +
+      "(\002:\0040.25\022\026\n\013context_pad\030\n \001(\r:\0010\022\027\n\tcrop" +
+      "_mode\030\013 \001(\t:\004warp\022\033\n\014cache_images\030\014 \001(\010:" +
+      "\005false\022\025\n\013root_folder\030\r \001(\t:\000\"\353\001\n\014SPPPar" +
+      "ameter\022\026\n\016pyramid_height\030\001 \001(\r\0221\n\004pool\030\002" +
+      " \001(\0162\036.caffe.SPPParameter.PoolMethod:\003MA" +
+      "X\0223\n\006engine\030\006 \001(\0162\032.caffe.SPPParameter.E",
+      "ngine:\007DEFAULT\".\n\nPoolMethod\022\007\n\003MAX\020\000\022\007\n" +
+      "\003AVE\020\001\022\016\n\nSTOCHASTIC\020\002\"+\n\006Engine\022\013\n\007DEFA" +
+      "ULT\020\000\022\t\n\005CAFFE\020\001\022\t\n\005CUDNN\020\002\"\340\023\n\020V1LayerP" +
+      "arameter\022\016\n\006bottom\030\002 \003(\t\022\013\n\003top\030\003 \003(\t\022\014\n" +
+      "\004name\030\004 \001(\t\022$\n\007include\030  \003(\0132\023.caffe.Net" +
+      "StateRule\022$\n\007exclude\030! \003(\0132\023.caffe.NetSt" +
+      "ateRule\022/\n\004type\030\005 \001(\0162!.caffe.V1LayerPar" +
+      "ameter.LayerType\022\037\n\005blobs\030\006 \003(\0132\020.caffe." +
+      "BlobProto\022\016\n\005param\030\351\007 \003(\t\022>\n\017blob_share_" +
+      "mode\030\352\007 \003(\0162$.caffe.V1LayerParameter.Dim",
+      "CheckMode\022\020\n\010blobs_lr\030\007 \003(\002\022\024\n\014weight_de" +
+      "cay\030\010 \003(\002\022\023\n\013loss_weight\030# \003(\002\0220\n\016accura" +
+      "cy_param\030\033 \001(\0132\030.caffe.AccuracyParameter" +
+      "\022,\n\014argmax_param\030\027 \001(\0132\026.caffe.ArgMaxPar" +
+      "ameter\022,\n\014concat_param\030\t \001(\0132\026.caffe.Con" +
+      "catParameter\022?\n\026contrastive_loss_param\030(" +
+      " \001(\0132\037.caffe.ContrastiveLossParameter\0226\n" +
+      "\021convolution_param\030\n \001(\0132\033.caffe.Convolu" +
+      "tionParameter\022(\n\ndata_param\030\013 \001(\0132\024.caff" +
+      "e.DataParameter\022.\n\rdropout_param\030\014 \001(\0132\027",
+      ".caffe.DropoutParameter\0223\n\020dummy_data_pa" +
+      "ram\030\032 \001(\0132\031.caffe.DummyDataParameter\022.\n\r" +
+      "eltwise_param\030\030 \001(\0132\027.caffe.EltwiseParam" +
+      "eter\022&\n\texp_param\030) \001(\0132\023.caffe.ExpParam" +
+      "eter\0221\n\017hdf5_data_param\030\r \001(\0132\030.caffe.HD" +
+      "F5DataParameter\0225\n\021hdf5_output_param\030\016 \001" +
+      "(\0132\032.caffe.HDF5OutputParameter\0223\n\020hinge_" +
+      "loss_param\030\035 \001(\0132\031.caffe.HingeLossParame" +
+      "ter\0223\n\020image_data_param\030\017 \001(\0132\031.caffe.Im" +
+      "ageDataParameter\0229\n\023infogain_loss_param\030",
+      "\020 \001(\0132\034.caffe.InfogainLossParameter\0229\n\023i" +
+      "nner_product_param\030\021 \001(\0132\034.caffe.InnerPr" +
+      "oductParameter\022&\n\tlrn_param\030\022 \001(\0132\023.caff" +
+      "e.LRNParameter\0225\n\021memory_data_param\030\026 \001(" +
+      "\0132\032.caffe.MemoryDataParameter\022&\n\tmvn_par" +
+      "am\030\" \001(\0132\023.caffe.MVNParameter\022.\n\rpooling" +
+      "_param\030\023 \001(\0132\027.caffe.PoolingParameter\022*\n" +
+      "\013power_param\030\025 \001(\0132\025.caffe.PowerParamete" +
+      "r\022(\n\nrelu_param\030\036 \001(\0132\024.caffe.ReLUParame" +
+      "ter\022.\n\rsigmoid_param\030& \001(\0132\027.caffe.Sigmo",
+      "idParameter\022.\n\rsoftmax_param\030\' \001(\0132\027.caf" +
+      "fe.SoftmaxParameter\022*\n\013slice_param\030\037 \001(\013" +
+      "2\025.caffe.SliceParameter\022(\n\ntanh_param\030% " +
+      "\001(\0132\024.caffe.TanHParameter\0222\n\017threshold_p" +
+      "aram\030\031 \001(\0132\031.caffe.ThresholdParameter\0225\n" +
+      "\021window_data_param\030\024 \001(\0132\032.caffe.WindowD" +
+      "ataParameter\0227\n\017transform_param\030$ \001(\0132\036." +
+      "caffe.TransformationParameter\022(\n\nloss_pa" +
+      "ram\030* \001(\0132\024.caffe.LossParameter\022&\n\005layer" +
+      "\030\001 \001(\0132\027.caffe.V0LayerParameter\"\330\004\n\tLaye",
+      "rType\022\010\n\004NONE\020\000\022\n\n\006ABSVAL\020#\022\014\n\010ACCURACY\020" +
+      "\001\022\n\n\006ARGMAX\020\036\022\010\n\004BNLL\020\002\022\n\n\006CONCAT\020\003\022\024\n\020C" +
+      "ONTRASTIVE_LOSS\020%\022\017\n\013CONVOLUTION\020\004\022\010\n\004DA" +
+      "TA\020\005\022\021\n\rDECONVOLUTION\020\'\022\013\n\007DROPOUT\020\006\022\016\n\n" +
+      "DUMMY_DATA\020 \022\022\n\016EUCLIDEAN_LOSS\020\007\022\013\n\007ELTW" +
+      "ISE\020\031\022\007\n\003EXP\020&\022\013\n\007FLATTEN\020\010\022\r\n\tHDF5_DATA" +
+      "\020\t\022\017\n\013HDF5_OUTPUT\020\n\022\016\n\nHINGE_LOSS\020\034\022\n\n\006I" +
+      "M2COL\020\013\022\016\n\nIMAGE_DATA\020\014\022\021\n\rINFOGAIN_LOSS" +
+      "\020\r\022\021\n\rINNER_PRODUCT\020\016\022\007\n\003LRN\020\017\022\017\n\013MEMORY" +
+      "_DATA\020\035\022\035\n\031MULTINOMIAL_LOGISTIC_LOSS\020\020\022\007",
+      "\n\003MVN\020\"\022\013\n\007POOLING\020\021\022\t\n\005POWER\020\032\022\010\n\004RELU\020" +
+      "\022\022\013\n\007SIGMOID\020\023\022\036\n\032SIGMOID_CROSS_ENTROPY_" +
+      "LOSS\020\033\022\013\n\007SILENCE\020$\022\013\n\007SOFTMAX\020\024\022\020\n\014SOFT" +
+      "MAX_LOSS\020\025\022\t\n\005SPLIT\020\026\022\t\n\005SLICE\020!\022\010\n\004TANH" +
+      "\020\027\022\017\n\013WINDOW_DATA\020\030\022\r\n\tTHRESHOLD\020\037\"*\n\014Di" +
+      "mCheckMode\022\n\n\006STRICT\020\000\022\016\n\nPERMISSIVE\020\001\"\375" +
+      "\007\n\020V0LayerParameter\022\014\n\004name\030\001 \001(\t\022\014\n\004typ" +
+      "e\030\002 \001(\t\022\022\n\nnum_output\030\003 \001(\r\022\026\n\010biasterm\030" +
+      "\004 \001(\010:\004true\022-\n\rweight_filler\030\005 \001(\0132\026.caf" +
+      "fe.FillerParameter\022+\n\013bias_filler\030\006 \001(\0132",
+      "\026.caffe.FillerParameter\022\016\n\003pad\030\007 \001(\r:\0010\022" +
+      "\022\n\nkernelsize\030\010 \001(\r\022\020\n\005group\030\t \001(\r:\0011\022\021\n" +
+      "\006stride\030\n \001(\r:\0011\0225\n\004pool\030\013 \001(\0162\".caffe.V" +
+      "0LayerParameter.PoolMethod:\003MAX\022\032\n\rdropo" +
+      "ut_ratio\030\014 \001(\002:\0030.5\022\025\n\nlocal_size\030\r \001(\r:" +
+      "\0015\022\020\n\005alpha\030\016 \001(\002:\0011\022\022\n\004beta\030\017 \001(\002:\0040.75" +
+      "\022\014\n\001k\030\026 \001(\002:\0011\022\016\n\006source\030\020 \001(\t\022\020\n\005scale\030" +
+      "\021 \001(\002:\0011\022\020\n\010meanfile\030\022 \001(\t\022\021\n\tbatchsize\030" +
+      "\023 \001(\r\022\023\n\010cropsize\030\024 \001(\r:\0010\022\025\n\006mirror\030\025 \001" +
+      "(\010:\005false\022\037\n\005blobs\0302 \003(\0132\020.caffe.BlobPro",
+      "to\022\020\n\010blobs_lr\0303 \003(\002\022\024\n\014weight_decay\0304 \003" +
+      "(\002\022\024\n\trand_skip\0305 \001(\r:\0010\022\035\n\020det_fg_thres" +
+      "hold\0306 \001(\002:\0030.5\022\035\n\020det_bg_threshold\0307 \001(" +
+      "\002:\0030.5\022\035\n\017det_fg_fraction\0308 \001(\002:\0040.25\022\032\n" +
+      "\017det_context_pad\030: \001(\r:\0010\022\033\n\rdet_crop_mo" +
+      "de\030; \001(\t:\004warp\022\022\n\007new_num\030< \001(\005:\0010\022\027\n\014ne" +
+      "w_channels\030= \001(\005:\0010\022\025\n\nnew_height\030> \001(\005:" +
+      "\0010\022\024\n\tnew_width\030? \001(\005:\0010\022\035\n\016shuffle_imag" +
+      "es\030@ \001(\010:\005false\022\025\n\nconcat_dim\030A \001(\r:\0011\0226" +
+      "\n\021hdf5_output_param\030\351\007 \001(\0132\032.caffe.HDF5O",
+      "utputParameter\".\n\nPoolMethod\022\007\n\003MAX\020\000\022\007\n" +
+      "\003AVE\020\001\022\016\n\nSTOCHASTIC\020\002\"W\n\016PReLUParameter" +
+      "\022&\n\006filler\030\001 \001(\0132\026.caffe.FillerParameter" +
+      "\022\035\n\016channel_shared\030\002 \001(\010:\005false*\034\n\005Phase" +
+      "\022\t\n\005TRAIN\020\000\022\010\n\004TEST\020\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.    InternalDescriptorAssigner() {
@@ -102626,13 +99013,13 @@ public final class Caffe {
     internal_static_caffe_SolverParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_SolverParameter_descriptor,
-        new java.lang.String[] { "Net", "NetParam", "TrainNet", "TestNet", "TrainNetParam", "TestNetParam", "TrainState", "TestState", "TestIter", "TestInterval", "TestComputeLoss", "TestInitialization", "BaseLr", "Display", "AverageLoss", "MaxIter", "IterSize", "LrPolicy", "Gamma", "Power", "Momentum", "WeightDecay", "RegularizationType", "Stepsize", "Stepvalue", "PlateauWinsize", "ClipGradients", "Snapshot", "SnapshotPrefix", "SnapshotDiff", "SnapshotFormat", "SolverMode", "DeviceId", "RandomSeed", "Type", "Delta", "Momentum2", "RmsDecay", "DebugInfo", "SnapshotAfterTrain", "SolverType", });
+        new java.lang.String[] { "Net", "NetParam", "TrainNet", "TestNet", "TrainNetParam", "TestNetParam", "TrainState", "TestState", "TestIter", "TestInterval", "TestComputeLoss", "TestInitialization", "BaseLr", "Display", "AverageLoss", "MaxIter", "IterSize", "LrPolicy", "Gamma", "Power", "Momentum", "WeightDecay", "RegularizationType", "Stepsize", "Stepvalue", "ClipGradients", "Snapshot", "SnapshotPrefix", "SnapshotDiff", "SnapshotFormat", "SolverMode", "DeviceId", "RandomSeed", "Type", "Delta", "Momentum2", "RmsDecay", "DebugInfo", "SnapshotAfterTrain", "SolverType", });
     internal_static_caffe_SolverState_descriptor =
       getDescriptor().getMessageTypes().get(7);
     internal_static_caffe_SolverState_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_SolverState_descriptor,
-        new java.lang.String[] { "Iter", "LearnedNet", "History", "CurrentStep", "MinimumLoss", "IterLastEvent", });
+        new java.lang.String[] { "Iter", "LearnedNet", "History", "CurrentStep", });
     internal_static_caffe_NetState_descriptor =
       getDescriptor().getMessageTypes().get(8);
     internal_static_caffe_NetState_fieldAccessorTable = new
@@ -102656,315 +99043,297 @@ public final class Caffe {
     internal_static_caffe_LayerParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_LayerParameter_descriptor,
-        new java.lang.String[] { "Name", "Type", "Bottom", "Top", "Phase", "LossWeight", "Param", "Blobs", "PropagateDown", "Include", "Exclude", "TransformParam", "LossParam", "AccuracyParam", "ArgmaxParam", "BatchNormParam", "BiasParam", "ConcatParam", "ContrastiveLossParam", "ConvolutionParam", "CropParam", "DataParam", "DropoutParam", "DummyDataParam", "EltwiseParam", "EluParam", "EmbedParam", "ExpParam", "FlattenParam", "Hdf5DataParam", "Hdf5OutputParam", "HingeLossParam", "ImageDataParam", "InfogainLossParam", "InnerProductParam", "InputParam", "LogParam", "LrnParam", "MemoryDataParam", "MvnParam", "ParameterParam", "PoolingParam", "PowerParam", "PreluParam", "PythonParam", "RecurrentParam", "ReductionParam", "ReluParam", "ReshapeParam", "ScaleParam", "SigmoidParam", "SoftmaxParam", "SppParam", "SliceParam", "TanhParam", "ThresholdParam", "TileParam", "WindowDataParam", "RoiPoolingParam", "SmoothL1LossParam", "ProposalParam", });
-    internal_static_caffe_ROIPoolingParameter_descriptor =
-      getDescriptor().getMessageTypes().get(12);
-    internal_static_caffe_ROIPoolingParameter_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_caffe_ROIPoolingParameter_descriptor,
-        new java.lang.String[] { "PooledH", "PooledW", "SpatialScale", });
-    internal_static_caffe_ProposalParameter_descriptor =
-      getDescriptor().getMessageTypes().get(13);
-    internal_static_caffe_ProposalParameter_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_caffe_ProposalParameter_descriptor,
-        new java.lang.String[] { "FeatStride", "BaseSize", "MinSize", "Ratio", "Scale", "PreNmsTopn", "PostNmsTopn", "NmsThresh", });
-    internal_static_caffe_SmoothL1LossParameter_descriptor =
-      getDescriptor().getMessageTypes().get(14);
-    internal_static_caffe_SmoothL1LossParameter_fieldAccessorTable = new
-      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
-        internal_static_caffe_SmoothL1LossParameter_descriptor,
-        new java.lang.String[] { "Sigma", });
+        new java.lang.String[] { "Name", "Type", "Bottom", "Top", "Phase", "LossWeight", "Param", "Blobs", "PropagateDown", "Include", "Exclude", "TransformParam", "LossParam", "AccuracyParam", "ArgmaxParam", "BatchNormParam", "BiasParam", "ConcatParam", "ContrastiveLossParam", "ConvolutionParam", "CropParam", "DataParam", "DropoutParam", "DummyDataParam", "EltwiseParam", "EluParam", "EmbedParam", "ExpParam", "FlattenParam", "Hdf5DataParam", "Hdf5OutputParam", "HingeLossParam", "ImageDataParam", "InfogainLossParam", "InnerProductParam", "InputParam", "LogParam", "LrnParam", "MemoryDataParam", "MvnParam", "ParameterParam", "PoolingParam", "PowerParam", "PreluParam", "PythonParam", "RecurrentParam", "ReductionParam", "ReluParam", "ReshapeParam", "ScaleParam", "SigmoidParam", "SoftmaxParam", "SppParam", "SliceParam", "TanhParam", "ThresholdParam", "TileParam", "WindowDataParam", });
     internal_static_caffe_TransformationParameter_descriptor =
-      getDescriptor().getMessageTypes().get(15);
+      getDescriptor().getMessageTypes().get(12);
     internal_static_caffe_TransformationParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_TransformationParameter_descriptor,
         new java.lang.String[] { "Scale", "Mirror", "CropSize", "MeanFile", "MeanValue", "ForceColor", "ForceGray", });
     internal_static_caffe_LossParameter_descriptor =
-      getDescriptor().getMessageTypes().get(16);
+      getDescriptor().getMessageTypes().get(13);
     internal_static_caffe_LossParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_LossParameter_descriptor,
         new java.lang.String[] { "IgnoreLabel", "Normalization", "Normalize", });
     internal_static_caffe_AccuracyParameter_descriptor =
-      getDescriptor().getMessageTypes().get(17);
+      getDescriptor().getMessageTypes().get(14);
     internal_static_caffe_AccuracyParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_AccuracyParameter_descriptor,
         new java.lang.String[] { "TopK", "Axis", "IgnoreLabel", });
     internal_static_caffe_ArgMaxParameter_descriptor =
-      getDescriptor().getMessageTypes().get(18);
+      getDescriptor().getMessageTypes().get(15);
     internal_static_caffe_ArgMaxParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_ArgMaxParameter_descriptor,
         new java.lang.String[] { "OutMaxVal", "TopK", "Axis", });
     internal_static_caffe_ConcatParameter_descriptor =
-      getDescriptor().getMessageTypes().get(19);
+      getDescriptor().getMessageTypes().get(16);
     internal_static_caffe_ConcatParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_ConcatParameter_descriptor,
         new java.lang.String[] { "Axis", "ConcatDim", });
     internal_static_caffe_BatchNormParameter_descriptor =
-      getDescriptor().getMessageTypes().get(20);
+      getDescriptor().getMessageTypes().get(17);
     internal_static_caffe_BatchNormParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_BatchNormParameter_descriptor,
         new java.lang.String[] { "UseGlobalStats", "MovingAverageFraction", "Eps", });
     internal_static_caffe_BiasParameter_descriptor =
-      getDescriptor().getMessageTypes().get(21);
+      getDescriptor().getMessageTypes().get(18);
     internal_static_caffe_BiasParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_BiasParameter_descriptor,
         new java.lang.String[] { "Axis", "NumAxes", "Filler", });
     internal_static_caffe_ContrastiveLossParameter_descriptor =
-      getDescriptor().getMessageTypes().get(22);
+      getDescriptor().getMessageTypes().get(19);
     internal_static_caffe_ContrastiveLossParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_ContrastiveLossParameter_descriptor,
         new java.lang.String[] { "Margin", "LegacyVersion", });
     internal_static_caffe_ConvolutionParameter_descriptor =
-      getDescriptor().getMessageTypes().get(23);
+      getDescriptor().getMessageTypes().get(20);
     internal_static_caffe_ConvolutionParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_ConvolutionParameter_descriptor,
         new java.lang.String[] { "NumOutput", "BiasTerm", "Pad", "KernelSize", "Stride", "Dilation", "PadH", "PadW", "KernelH", "KernelW", "StrideH", "StrideW", "Group", "WeightFiller", "BiasFiller", "Engine", "Axis", "ForceNdIm2Col", });
     internal_static_caffe_CropParameter_descriptor =
-      getDescriptor().getMessageTypes().get(24);
+      getDescriptor().getMessageTypes().get(21);
     internal_static_caffe_CropParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_CropParameter_descriptor,
         new java.lang.String[] { "Axis", "Offset", });
     internal_static_caffe_DataParameter_descriptor =
-      getDescriptor().getMessageTypes().get(25);
+      getDescriptor().getMessageTypes().get(22);
     internal_static_caffe_DataParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_DataParameter_descriptor,
         new java.lang.String[] { "Source", "BatchSize", "RandSkip", "Backend", "Scale", "MeanFile", "CropSize", "Mirror", "ForceEncodedColor", "Prefetch", });
     internal_static_caffe_DropoutParameter_descriptor =
-      getDescriptor().getMessageTypes().get(26);
+      getDescriptor().getMessageTypes().get(23);
     internal_static_caffe_DropoutParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_DropoutParameter_descriptor,
         new java.lang.String[] { "DropoutRatio", });
     internal_static_caffe_DummyDataParameter_descriptor =
-      getDescriptor().getMessageTypes().get(27);
+      getDescriptor().getMessageTypes().get(24);
     internal_static_caffe_DummyDataParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_DummyDataParameter_descriptor,
         new java.lang.String[] { "DataFiller", "Shape", "Num", "Channels", "Height", "Width", });
     internal_static_caffe_EltwiseParameter_descriptor =
-      getDescriptor().getMessageTypes().get(28);
+      getDescriptor().getMessageTypes().get(25);
     internal_static_caffe_EltwiseParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_EltwiseParameter_descriptor,
         new java.lang.String[] { "Operation", "Coeff", "StableProdGrad", });
     internal_static_caffe_ELUParameter_descriptor =
-      getDescriptor().getMessageTypes().get(29);
+      getDescriptor().getMessageTypes().get(26);
     internal_static_caffe_ELUParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_ELUParameter_descriptor,
         new java.lang.String[] { "Alpha", });
     internal_static_caffe_EmbedParameter_descriptor =
-      getDescriptor().getMessageTypes().get(30);
+      getDescriptor().getMessageTypes().get(27);
     internal_static_caffe_EmbedParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_EmbedParameter_descriptor,
         new java.lang.String[] { "NumOutput", "InputDim", "BiasTerm", "WeightFiller", "BiasFiller", });
     internal_static_caffe_ExpParameter_descriptor =
-      getDescriptor().getMessageTypes().get(31);
+      getDescriptor().getMessageTypes().get(28);
     internal_static_caffe_ExpParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_ExpParameter_descriptor,
         new java.lang.String[] { "Base", "Scale", "Shift", });
     internal_static_caffe_FlattenParameter_descriptor =
-      getDescriptor().getMessageTypes().get(32);
+      getDescriptor().getMessageTypes().get(29);
     internal_static_caffe_FlattenParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_FlattenParameter_descriptor,
         new java.lang.String[] { "Axis", "EndAxis", });
     internal_static_caffe_HDF5DataParameter_descriptor =
-      getDescriptor().getMessageTypes().get(33);
+      getDescriptor().getMessageTypes().get(30);
     internal_static_caffe_HDF5DataParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_HDF5DataParameter_descriptor,
         new java.lang.String[] { "Source", "BatchSize", "Shuffle", });
     internal_static_caffe_HDF5OutputParameter_descriptor =
-      getDescriptor().getMessageTypes().get(34);
+      getDescriptor().getMessageTypes().get(31);
     internal_static_caffe_HDF5OutputParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_HDF5OutputParameter_descriptor,
         new java.lang.String[] { "FileName", });
     internal_static_caffe_HingeLossParameter_descriptor =
-      getDescriptor().getMessageTypes().get(35);
+      getDescriptor().getMessageTypes().get(32);
     internal_static_caffe_HingeLossParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_HingeLossParameter_descriptor,
         new java.lang.String[] { "Norm", });
     internal_static_caffe_ImageDataParameter_descriptor =
-      getDescriptor().getMessageTypes().get(36);
+      getDescriptor().getMessageTypes().get(33);
     internal_static_caffe_ImageDataParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_ImageDataParameter_descriptor,
         new java.lang.String[] { "Source", "BatchSize", "RandSkip", "Shuffle", "NewHeight", "NewWidth", "IsColor", "Scale", "MeanFile", "CropSize", "Mirror", "RootFolder", });
     internal_static_caffe_InfogainLossParameter_descriptor =
-      getDescriptor().getMessageTypes().get(37);
+      getDescriptor().getMessageTypes().get(34);
     internal_static_caffe_InfogainLossParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_InfogainLossParameter_descriptor,
         new java.lang.String[] { "Source", });
     internal_static_caffe_InnerProductParameter_descriptor =
-      getDescriptor().getMessageTypes().get(38);
+      getDescriptor().getMessageTypes().get(35);
     internal_static_caffe_InnerProductParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_InnerProductParameter_descriptor,
         new java.lang.String[] { "NumOutput", "BiasTerm", "WeightFiller", "BiasFiller", "Axis", "Transpose", });
     internal_static_caffe_InputParameter_descriptor =
-      getDescriptor().getMessageTypes().get(39);
+      getDescriptor().getMessageTypes().get(36);
     internal_static_caffe_InputParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_InputParameter_descriptor,
         new java.lang.String[] { "Shape", });
     internal_static_caffe_LogParameter_descriptor =
-      getDescriptor().getMessageTypes().get(40);
+      getDescriptor().getMessageTypes().get(37);
     internal_static_caffe_LogParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_LogParameter_descriptor,
         new java.lang.String[] { "Base", "Scale", "Shift", });
     internal_static_caffe_LRNParameter_descriptor =
-      getDescriptor().getMessageTypes().get(41);
+      getDescriptor().getMessageTypes().get(38);
     internal_static_caffe_LRNParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_LRNParameter_descriptor,
         new java.lang.String[] { "LocalSize", "Alpha", "Beta", "NormRegion", "K", "Engine", });
     internal_static_caffe_MemoryDataParameter_descriptor =
-      getDescriptor().getMessageTypes().get(42);
+      getDescriptor().getMessageTypes().get(39);
     internal_static_caffe_MemoryDataParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_MemoryDataParameter_descriptor,
         new java.lang.String[] { "BatchSize", "Channels", "Height", "Width", });
     internal_static_caffe_MVNParameter_descriptor =
-      getDescriptor().getMessageTypes().get(43);
+      getDescriptor().getMessageTypes().get(40);
     internal_static_caffe_MVNParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_MVNParameter_descriptor,
         new java.lang.String[] { "NormalizeVariance", "AcrossChannels", "Eps", });
     internal_static_caffe_ParameterParameter_descriptor =
-      getDescriptor().getMessageTypes().get(44);
+      getDescriptor().getMessageTypes().get(41);
     internal_static_caffe_ParameterParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_ParameterParameter_descriptor,
         new java.lang.String[] { "Shape", });
     internal_static_caffe_PoolingParameter_descriptor =
-      getDescriptor().getMessageTypes().get(45);
+      getDescriptor().getMessageTypes().get(42);
     internal_static_caffe_PoolingParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_PoolingParameter_descriptor,
         new java.lang.String[] { "Pool", "Pad", "PadH", "PadW", "KernelSize", "KernelH", "KernelW", "Stride", "StrideH", "StrideW", "Engine", "GlobalPooling", });
     internal_static_caffe_PowerParameter_descriptor =
-      getDescriptor().getMessageTypes().get(46);
+      getDescriptor().getMessageTypes().get(43);
     internal_static_caffe_PowerParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_PowerParameter_descriptor,
         new java.lang.String[] { "Power", "Scale", "Shift", });
     internal_static_caffe_PythonParameter_descriptor =
-      getDescriptor().getMessageTypes().get(47);
+      getDescriptor().getMessageTypes().get(44);
     internal_static_caffe_PythonParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_PythonParameter_descriptor,
         new java.lang.String[] { "Module", "Layer", "ParamStr", "ShareInParallel", });
     internal_static_caffe_RecurrentParameter_descriptor =
-      getDescriptor().getMessageTypes().get(48);
+      getDescriptor().getMessageTypes().get(45);
     internal_static_caffe_RecurrentParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_RecurrentParameter_descriptor,
         new java.lang.String[] { "NumOutput", "WeightFiller", "BiasFiller", "DebugInfo", "ExposeHidden", });
     internal_static_caffe_ReductionParameter_descriptor =
-      getDescriptor().getMessageTypes().get(49);
+      getDescriptor().getMessageTypes().get(46);
     internal_static_caffe_ReductionParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_ReductionParameter_descriptor,
         new java.lang.String[] { "Operation", "Axis", "Coeff", });
     internal_static_caffe_ReLUParameter_descriptor =
-      getDescriptor().getMessageTypes().get(50);
+      getDescriptor().getMessageTypes().get(47);
     internal_static_caffe_ReLUParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_ReLUParameter_descriptor,
         new java.lang.String[] { "NegativeSlope", "Engine", });
     internal_static_caffe_ReshapeParameter_descriptor =
-      getDescriptor().getMessageTypes().get(51);
+      getDescriptor().getMessageTypes().get(48);
     internal_static_caffe_ReshapeParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_ReshapeParameter_descriptor,
         new java.lang.String[] { "Shape", "Axis", "NumAxes", });
     internal_static_caffe_ScaleParameter_descriptor =
-      getDescriptor().getMessageTypes().get(52);
+      getDescriptor().getMessageTypes().get(49);
     internal_static_caffe_ScaleParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_ScaleParameter_descriptor,
         new java.lang.String[] { "Axis", "NumAxes", "Filler", "BiasTerm", "BiasFiller", });
     internal_static_caffe_SigmoidParameter_descriptor =
-      getDescriptor().getMessageTypes().get(53);
+      getDescriptor().getMessageTypes().get(50);
     internal_static_caffe_SigmoidParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_SigmoidParameter_descriptor,
         new java.lang.String[] { "Engine", });
     internal_static_caffe_SliceParameter_descriptor =
-      getDescriptor().getMessageTypes().get(54);
+      getDescriptor().getMessageTypes().get(51);
     internal_static_caffe_SliceParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_SliceParameter_descriptor,
         new java.lang.String[] { "Axis", "SlicePoint", "SliceDim", });
     internal_static_caffe_SoftmaxParameter_descriptor =
-      getDescriptor().getMessageTypes().get(55);
+      getDescriptor().getMessageTypes().get(52);
     internal_static_caffe_SoftmaxParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_SoftmaxParameter_descriptor,
         new java.lang.String[] { "Engine", "Axis", });
     internal_static_caffe_TanHParameter_descriptor =
-      getDescriptor().getMessageTypes().get(56);
+      getDescriptor().getMessageTypes().get(53);
     internal_static_caffe_TanHParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_TanHParameter_descriptor,
         new java.lang.String[] { "Engine", });
     internal_static_caffe_TileParameter_descriptor =
-      getDescriptor().getMessageTypes().get(57);
+      getDescriptor().getMessageTypes().get(54);
     internal_static_caffe_TileParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_TileParameter_descriptor,
         new java.lang.String[] { "Axis", "Tiles", });
     internal_static_caffe_ThresholdParameter_descriptor =
-      getDescriptor().getMessageTypes().get(58);
+      getDescriptor().getMessageTypes().get(55);
     internal_static_caffe_ThresholdParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_ThresholdParameter_descriptor,
         new java.lang.String[] { "Threshold", });
     internal_static_caffe_WindowDataParameter_descriptor =
-      getDescriptor().getMessageTypes().get(59);
+      getDescriptor().getMessageTypes().get(56);
     internal_static_caffe_WindowDataParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_WindowDataParameter_descriptor,
         new java.lang.String[] { "Source", "Scale", "MeanFile", "BatchSize", "CropSize", "Mirror", "FgThreshold", "BgThreshold", "FgFraction", "ContextPad", "CropMode", "CacheImages", "RootFolder", });
     internal_static_caffe_SPPParameter_descriptor =
-      getDescriptor().getMessageTypes().get(60);
+      getDescriptor().getMessageTypes().get(57);
     internal_static_caffe_SPPParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_SPPParameter_descriptor,
         new java.lang.String[] { "PyramidHeight", "Pool", "Engine", });
     internal_static_caffe_V1LayerParameter_descriptor =
-      getDescriptor().getMessageTypes().get(61);
+      getDescriptor().getMessageTypes().get(58);
     internal_static_caffe_V1LayerParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_V1LayerParameter_descriptor,
         new java.lang.String[] { "Bottom", "Top", "Name", "Include", "Exclude", "Type", "Blobs", "Param", "BlobShareMode", "BlobsLr", "WeightDecay", "LossWeight", "AccuracyParam", "ArgmaxParam", "ConcatParam", "ContrastiveLossParam", "ConvolutionParam", "DataParam", "DropoutParam", "DummyDataParam", "EltwiseParam", "ExpParam", "Hdf5DataParam", "Hdf5OutputParam", "HingeLossParam", "ImageDataParam", "InfogainLossParam", "InnerProductParam", "LrnParam", "MemoryDataParam", "MvnParam", "PoolingParam", "PowerParam", "ReluParam", "SigmoidParam", "SoftmaxParam", "SliceParam", "TanhParam", "ThresholdParam", "WindowDataParam", "TransformParam", "LossParam", "Layer", });
     internal_static_caffe_V0LayerParameter_descriptor =
-      getDescriptor().getMessageTypes().get(62);
+      getDescriptor().getMessageTypes().get(59);
     internal_static_caffe_V0LayerParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_V0LayerParameter_descriptor,
         new java.lang.String[] { "Name", "Type", "NumOutput", "Biasterm", "WeightFiller", "BiasFiller", "Pad", "Kernelsize", "Group", "Stride", "Pool", "DropoutRatio", "LocalSize", "Alpha", "Beta", "K", "Source", "Scale", "Meanfile", "Batchsize", "Cropsize", "Mirror", "Blobs", "BlobsLr", "WeightDecay", "RandSkip", "DetFgThreshold", "DetBgThreshold", "DetFgFraction", "DetContextPad", "DetCropMode", "NewNum", "NewChannels", "NewHeight", "NewWidth", "ShuffleImages", "ConcatDim", "Hdf5OutputParam", });
     internal_static_caffe_PReLUParameter_descriptor =
-      getDescriptor().getMessageTypes().get(63);
+      getDescriptor().getMessageTypes().get(60);
     internal_static_caffe_PReLUParameter_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_caffe_PReLUParameter_descriptor,
