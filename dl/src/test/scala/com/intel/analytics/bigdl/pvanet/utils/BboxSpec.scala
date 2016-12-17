@@ -19,6 +19,7 @@ package com.intel.analytics.bigdl.pvanet.utils
 
 import breeze.linalg.{DenseMatrix, convert}
 import breeze.numerics.abs
+import com.intel.analytics.bigdl.pvanet.TestUtil
 import com.intel.analytics.bigdl.tensor.Tensor
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -100,13 +101,19 @@ class BboxSpec extends FlatSpec with Matchers {
     )
 
     val res = Bbox.bboxTransformInv(convert(boxes, Float), convert(deltas, Float))
-
+    val res2 = Bbox.bboxTransformInv(Tensor(convert(boxes, Float)), Tensor(convert(deltas, Float)))
     assert(res.rows == expectedResults.rows && res.cols == expectedResults.cols)
     for (i <- 0 until res.rows) {
       for (j <- 0 until res.rows) {
         assert(abs(res(i, j) - expectedResults(i, j)) < 1e-6)
       }
     }
+    TestUtil.assertMatrixEqualTM(res2, expectedResults, 1e-6)
+
+    val bboxRes = Bbox.bboxTransform(convert(expectedResults, Float), convert(deltas, Float))
+    val bboxRes2 = Bbox.bboxTransform(Tensor(convert(boxes, Float)), Tensor(convert(deltas, Float)))
+
+    TestUtil.assertMatrixEqualTM2(bboxRes2, bboxRes, 1e-6)
   }
 
 
@@ -133,12 +140,14 @@ class BboxSpec extends FlatSpec with Matchers {
     )
 
     val res = Bbox.clipBoxes(convert(boxes, Float), 10, 20)
+    val res2 = Bbox.clipBoxes(Tensor(convert(boxes, Float)), 10, 20)
     assert(res.rows == expectedResults.rows && res.cols == expectedResults.cols)
     for (i <- 0 until res.rows) {
       for (j <- 0 until res.cols) {
         assert(abs(res(i, j) - expectedResults(i, j)) < 1e-6)
       }
     }
+    TestUtil.assertMatrixEqualTM(res2, expectedResults, 1e-6)
   }
 
   "bbox overlap" should "have the same result for brzmatrix and tensor" in {

@@ -140,6 +140,18 @@ object Bbox {
     }
   }
 
+  /**
+   * copy value to corresponding cols of mat, the start col ind is cid, with step
+   *
+   */
+  private def setCols(mat: Tensor[Float], cid: Int, step: Int, value: Tensor[Float]) = {
+    var ind = 1
+    for (i <- cid to mat.size(2) by step) {
+      (1 to mat.size(1)).foreach(rid => mat.setValue(rid, i, value.valueAt(rid, ind)))
+      ind += 1
+    }
+  }
+
   def bboxTransform(exRois: DenseMatrix[Float], gtRois: DenseMatrix[Float]): DenseMatrix[Float] = {
     val exWidths = MatrixUtil.selectCol(exRois, 2) - MatrixUtil.selectCol(exRois, 0) + 1.0f
     val exHeights = MatrixUtil.selectCol(exRois, 3) - MatrixUtil.selectCol(exRois, 1) + 1.0f
@@ -158,6 +170,26 @@ object Bbox {
 
     val res = DenseMatrix.vertcat(targetsDx, targetsDy, targetsDw, targetsDh)
     res.reshape(res.size / 4, 4)
+  }
+
+  def bboxTransform(exRois: Tensor[Float], gtRois: Tensor[Float]): Tensor[Float] = {
+    val exWidths = MatrixUtil.selectCol(exRois, 3) - MatrixUtil.selectCol(exRois, 1) + 1.0f
+    val exHeights = MatrixUtil.selectCol(exRois, 4) - MatrixUtil.selectCol(exRois, 2) + 1.0f
+    val exCtrX = MatrixUtil.selectCol(exRois, 1) + exWidths * 0.5f
+    val exCtrY = MatrixUtil.selectCol(exRois, 2) + exHeights * 0.5f
+
+    val gtWidths = MatrixUtil.selectCol(gtRois, 3) - MatrixUtil.selectCol(gtRois, 1) + 1.0f
+    val gtHeights = MatrixUtil.selectCol(gtRois, 4) - MatrixUtil.selectCol(gtRois, 2) + 1.0f
+    val gtCtrX = MatrixUtil.selectCol(gtRois, 1) + gtWidths * 0.5f
+    val gtCtrY = MatrixUtil.selectCol(gtRois, 2) + gtHeights * 0.5f
+
+    val targetsDx = (gtCtrX - exCtrX) / exWidths
+    val targetsDy = (gtCtrY - exCtrY) / exHeights
+    val targetsDw = gtWidths.cdiv(exWidths).log()
+    val targetsDh = gtHeights.cdiv(exHeights).log()
+
+    val res = TensorUtil.concat(targetsDx, targetsDy, targetsDw, targetsDh)
+    res.resize(res.nElement() / 4, 4)
   }
 
 
@@ -203,6 +235,39 @@ object Bbox {
     predBoxes
   }
 
+  def bboxTransformInv(boxes: Tensor[Float], deltas: Tensor[Float]): Tensor[Float] = {
+    if (boxes.size(1) == 0) {
+      return Tensor[Float](0, deltas.size(2))
+    }
+    val widths = MatrixUtil.selectCol(boxes, 3) - MatrixUtil.selectCol(boxes, 1) + 1.0f
+    val heights = MatrixUtil.selectCol(boxes, 4) - MatrixUtil.selectCol(boxes, 2) + 1.0f
+    val ctrX = MatrixUtil.selectCol(boxes, 1) + widths * 0.5f
+    val ctrY = MatrixUtil.selectCol(boxes, 2) + heights * 0.5f
+
+    val dx = MatrixUtil.selectCols(deltas, 1, 4)
+    val dy = MatrixUtil.selectCols(deltas, 2, 4)
+    var dw = MatrixUtil.selectCols(deltas, 3, 4)
+    var dh = MatrixUtil.selectCols(deltas, 4, 4)
+
+    MatrixUtil.mulVecToMatCols(dx, widths)
+    MatrixUtil.addVecToMatCols(dx, ctrX)
+    MatrixUtil.mulVecToMatCols(dy, heights)
+    MatrixUtil.addVecToMatCols(dy, ctrY)
+    dw = dw.exp()
+    MatrixUtil.mulVecToMatCols(dw, widths)
+    dh = dh.exp()
+    MatrixUtil.mulVecToMatCols(dh, heights)
+
+    val predBoxes = Tensor[Float](deltas.size(1), deltas.size(2))
+
+    setCols(predBoxes, 1, 4, dx - dw * 0.5f)
+    setCols(predBoxes, 2, 4, dy - dh * 0.5f)
+    setCols(predBoxes, 3, 4, dx + dw * 0.5f)
+    setCols(predBoxes, 4, 4, dy + dh * 0.5f)
+
+    predBoxes
+  }
+
   /**
    * Clip boxes to image boundaries.
    *
@@ -215,6 +280,23 @@ object Bbox {
         boxes(r, c + 1) = Math.max(Math.min(boxes(r, c + 1), height - 1f), 0)
         boxes(r, c + 2) = Math.max(min(boxes(r, c + 2), width - 1f), 0)
         boxes(r, c + 3) = Math.max(min(boxes(r, c + 3), height - 1f), 0)
+      }
+    }
+    boxes
+  }
+
+  /**
+   * Clip boxes to image boundaries.
+   *
+   * @return
+   */
+  def clipBoxes(boxes: Tensor[Float], height: Float, width: Float): Tensor[Float] = {
+    for (r <- 1 to boxes.size(1)) {
+      for (c <- 1 to boxes.size(2) by 4) {
+        boxes.setValue(r, c, Math.max(Math.min(boxes.valueAt(r, c), width - 1f), 0))
+        boxes.setValue(r, c + 1, Math.max(Math.min(boxes.valueAt(r, c + 1), height - 1f), 0))
+        boxes.setValue(r, c + 2, Math.max(min(boxes.valueAt(r, c + 2), width - 1f), 0))
+        boxes.setValue(r, c + 3, Math.max(min(boxes.valueAt(r, c + 3), height - 1f), 0))
       }
     }
     boxes

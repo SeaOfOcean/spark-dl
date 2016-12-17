@@ -43,7 +43,27 @@ object TestUtil {
         }
       }
     }
+  }
 
+  def assertMatrixEqualTM2(actual: Tensor[Float],
+    expected: DenseMatrix[Float], diff: Double): Unit = {
+    if (actual.dim() == 1) {
+      assert(actual.nElement() == expected.size)
+      var d = 1
+      for (r <- 0 until expected.rows) {
+        for (c <- 0 until expected.cols) {
+          assert(abs(expected(r, c) - actual.valueAt(d)) < diff)
+          d += 1
+        }
+      }
+    } else {
+      assert(actual.size(1) == expected.rows && actual.size(2) == expected.cols)
+      for (r <- 0 until expected.rows) {
+        for (c <- 0 until expected.cols) {
+          assert(abs(expected(r, c) - actual.valueAt(r + 1, c + 1)) < diff)
+        }
+      }
+    }
   }
 
 

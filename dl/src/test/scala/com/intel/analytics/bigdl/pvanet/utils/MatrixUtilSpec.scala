@@ -18,6 +18,7 @@
 package com.intel.analytics.bigdl.pvanet.utils
 
 import breeze.linalg.{DenseMatrix, convert}
+import com.intel.analytics.bigdl.pvanet.TestUtil
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -32,20 +33,36 @@ class MatrixUtilSpec extends FlatSpec with Matchers {
 
   behavior of "MatrixUtilSpec"
 
-  it should "argmax" in {
+  it should "argmax2" in {
     MatrixUtil.argmax2(ar, 0) should be(Array[Int](1, 2, 2, 0))
     MatrixUtil.argmax2(ar, 1) should be(Array[Int](3, 0, 1))
+
+    MatrixUtil.argmax2(Tensor(ar), 1) should be(Array[Int](2, 3, 3, 1))
+    MatrixUtil.argmax2(Tensor(ar), 2) should be(Array[Int](4, 1, 2))
   }
 
-  "select " should "work properly" in {
+  it should "max2" in {
+    val res11 = MatrixUtil.max2(ar, 0)
+    val res12 = MatrixUtil.max2(ar, 1)
+
+    val res21 = MatrixUtil.max2(Tensor(ar), 1)
+    val res22 = MatrixUtil.max2(Tensor(ar), 2)
+
+    res11 should be(res21)
+    res12 should be(res22)
+  }
+
+  "selectMatrix" should "work properly" in {
     val gt = DenseMatrix((0.39796564, 0.09962627, 0.38716339, 0.78216441),
       (0.35269534, 0.7103468, 0.5326144, 0.03050023))
     MatrixUtil.selectMatrix(ar, Array(0, 2), 0) should be(convert(gt, Float))
+    MatrixUtil.selectMatrix(Tensor(ar), Array(1, 3), 0) should be(Tensor(convert(gt, Float)))
 
     val gt2 = DenseMatrix((0.39796564, 0.38716339, 0.78216441),
       (0.8748918, 0.34264925, 0.28663851),
       (0.35269534, 0.5326144, 0.03050023))
     MatrixUtil.selectMatrix(ar, Array(0, 2, 3), 1) should be(convert(gt2, Float))
+    MatrixUtil.selectMatrix(Tensor(ar), Array(1, 3, 4), 1) should be(Tensor(convert(gt2, Float)))
   }
 
   it should "selectCols" in {
@@ -62,6 +79,7 @@ class MatrixUtilSpec extends FlatSpec with Matchers {
       (72, 73, 74, 75, 76, 77, 78, 79))
     val mat2 = mat.map(x => x.toFloat)
     val res1 = MatrixUtil.selectCols(mat2, 0, 4)
+    val res1tensor = MatrixUtil.selectCols(Tensor(mat2), 1, 4)
 
     val expectedRes = DenseMatrix(
       (0.0, 4.0),
@@ -75,8 +93,10 @@ class MatrixUtilSpec extends FlatSpec with Matchers {
       (64.0, 68.0),
       (72.0, 76.0))
     assert(res1 === expectedRes)
+    TestUtil.assertMatrixEqualTM(res1tensor, expectedRes, 1e-8)
 
     val res2 = MatrixUtil.selectCols(mat2, 2, 4)
+    val res2tensor = MatrixUtil.selectCols(Tensor(mat2), 3, 4)
 
     val expectedRes2 = DenseMatrix(
       (2.0, 6.0),
@@ -90,6 +110,7 @@ class MatrixUtilSpec extends FlatSpec with Matchers {
       (66.0, 70.0),
       (74.0, 78.0))
     assert(res2 === expectedRes2)
+    TestUtil.assertMatrixEqualTM(res2tensor, expectedRes2, 1e-8)
   }
 
   "meshgrid " should "work properly" in {
@@ -102,6 +123,22 @@ class MatrixUtilSpec extends FlatSpec with Matchers {
 
     r1._1 should be(expectedx1)
     r1._2 should be(expectedx2)
+  }
+
+  "selectMatrix2" should "work properly" in {
+    val arr = Tensor[Float](30, 40)
+    val rows = Array(3, 5, 7, 9, 14)
+    val cols = Array(3, 5, 7, 9, 14, 36)
+    val res1 = MatrixUtil.selectMatrix2(arr.toBreezeMatrix(), rows, cols)
+    val res2 = MatrixUtil.selectMatrix2(arr, rows.map(x => x + 1), cols.map(x => x + 1))
+    TestUtil.assertMatrixEqualTM2(res2, res1, 1e-6)
+  }
+
+  "selectRow" should "work properly" in {
+    val s1 = MatrixUtil.selectRow(convert(arr, Float), 2)
+    val s2 = MatrixUtil.selectRow(Tensor(convert(arr, Float)), 3)
+
+    s1 should be(s2)
   }
 
 }

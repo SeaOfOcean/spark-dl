@@ -18,12 +18,13 @@
 package com.intel.analytics.bigdl.pvanet.utils
 
 import breeze.linalg.{DenseMatrix, convert}
+import com.intel.analytics.bigdl.pvanet.TestUtil
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
-import org.scalatest.FlatSpec
+import org.scalatest.{FlatSpec, Matchers}
 
 import scala.io.Source
 
-class NmsSpec extends FlatSpec {
+class NmsSpec extends FlatSpec with Matchers {
   def loadDataFromFile(fileName: String, sizes: Array[Int]): Tensor[Float] = {
     val lines = Source.fromFile(fileName).getLines().toArray.map(x => x.toFloat)
     Tensor(Storage(lines)).resize(sizes)
@@ -68,21 +69,34 @@ class NmsSpec extends FlatSpec {
 
     val dets2 = convert(dets, Float)
 
+    val dets2copy = dets2.copy
+
     val keep = Nms.nms(dets2, 0.1f)
+
+    TestUtil.assertMatrixEqual(dets2copy, dets2, 1e-9f)
 
     val expected = Array(27, 2, 11)
     (expected zip keep).foreach(x => assert(x._1 == x._2))
+
 
     val keep2 = Nms.nms(dets2, 0.3f)
 
     val expected2 = Array(27, 26, 2, 7, 28, 19)
     (expected2 zip keep2).foreach(x => assert(x._1 == x._2))
 
+    val tensor2 = Tensor(dets2)
+
+    val keepT = Nms.nms(tensor2.contiguous(), 0.1f)
+    keepT should be(expected.map(x => x + 1))
+    Nms.nms(tensor2.contiguous(), 0.3f) should be(expected2.map(x => x + 1))
+
     val det3 = loadDataFromFile(classLoader.getResource("pvanet/nms.dat").getFile, Array(1009, 5))
 
     val keep3 = Nms.nms(det3.toBreezeMatrix(), 0.7f)
     val expected3 = Array(0, 4, 6, 232)
     (expected3 zip keep3).foreach(x => assert(x._1 == x._2))
+
+    Nms.nms(det3, 0.7f) should be(expected3.map(x => x + 1))
   }
 
 }
