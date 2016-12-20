@@ -35,19 +35,11 @@ object Model extends Enumeration {
 }
 
 abstract class FasterRcnnParam(phase: PhaseType = Phase.TEST) {
-  // For reproducibility
-  val RANDOM_SEED: Long = 3
-
   val anchorScales: Array[Float]
   val anchorRatios: Array[Float]
   val anchorNum: Int
   val featStride = 16
   var numClasses: Int = 21
-
-  // Pixel mean values (BGR order) as a (1, 1, 3) array
-  // We use the same pixel mean for all networks even though it"s not exactly what
-  // they were trained with
-  var PIXEL_MEANS = List(List(List(102.9801, 115.9465, 122.7717)))
 
   // Scales to use during training (can list multiple scales)
   // Each scale is the pixel size of an image"s shortest side
@@ -58,9 +50,6 @@ abstract class FasterRcnnParam(phase: PhaseType = Phase.TEST) {
 
   // Max pixel size of the longest side of a scaled input image
   val MAX_SIZE = 1000
-
-  // Images to use per minibatch
-  var IMS_PER_BATCH = 1
 
   // Minibatch size (number of regions of interest [ROIs])
   val BATCH_SIZE = 3
@@ -86,16 +75,6 @@ abstract class FasterRcnnParam(phase: PhaseType = Phase.TEST) {
   // Iterations between snapshots
   val SNAPSHOT_ITERS = 10000
 
-  // solver.prototxt specifies the snapshot path prefix, this adds an optional
-  // infix to yield the path: <prefix>[_<infix>]_iters_XYZ.caffemodel
-  val SNAPSHOT_INFIX = ""
-
-  // Use a prefetch thread in roi_data_layer.layer
-  // So far I haven"t found this useful; likely more engineering work is required
-  val USE_PREFETCH = false
-
-  // Normalize the targets (subtract empirical mean, divide by empirical stddev)
-  val BBOX_NORMALIZE_TARGETS = true
   // Deprecated (inside weights)
   val BBOX_INSIDE_WEIGHTS = Array(1.0f, 1.0f, 1.0f, 1.0f)
   // Normalize the targets using "precomputed" (or made up) means and stdevs
@@ -103,11 +82,6 @@ abstract class FasterRcnnParam(phase: PhaseType = Phase.TEST) {
   var BBOX_NORMALIZE_TARGETS_PRECOMPUTED = true
   val BBOX_NORMALIZE_MEANS = Array(0.0f, 0.0f, 0.0f, 0.0f)
   val BBOX_NORMALIZE_STDS = Array(0.1f, 0.1f, 0.2f, 0.2f)
-
-  // Make minibatches from images that have similar aspect ratios (i.e. both
-  // tall and thin or both short and wide) in order to avoid wasting computation
-  // on zero-padding.
-  val ASPECT_GROUPING = true
 
   // IOU >= thresh: positive example
   val RPN_POSITIVE_OVERLAP = 0.7
@@ -141,8 +115,6 @@ abstract class FasterRcnnParam(phase: PhaseType = Phase.TEST) {
   // Apply bounding box voting
   val BBOX_VOTE = false
 
-  var BBOX_REG = true
-
   val optimizeConfig: OptimizeConfig
 }
 
@@ -158,6 +130,19 @@ case class OptimizeConfig(
 )
 
 object FasterRcnnParam {
+  // For reproducibility
+  val RANDOM_SEED: Long = 3
+
+  // Make minibatches from images that have similar aspect ratios (i.e. both
+  // tall and thin or both short and wide) in order to avoid wasting computation
+  // on zero-padding.
+  val ASPECT_GROUPING = true
+
+  // Pixel mean values (BGR order) as a (1, 1, 3) array
+  // We use the same pixel mean for all networks even though it"s not exactly what
+  // they were trained with
+  val PIXEL_MEANS = List(List(List(102.9801, 115.9465, 122.7717)))
+
   def getNetParam(net: ModelType, phase: PhaseType): FasterRcnnParam = {
     net match {
       case Model.VGG16 => new VggParam(phase)

@@ -21,6 +21,7 @@ import com.intel.analytics.bigdl._
 import com.intel.analytics.bigdl.nn._
 import com.intel.analytics.bigdl.numeric.NumericFloat
 import com.intel.analytics.bigdl.pvanet.caffe.CaffeReader
+import com.intel.analytics.bigdl.pvanet.layers.{Proposal, ProposalTarget, ReshapeInfer}
 import com.intel.analytics.bigdl.pvanet.model.Model._
 import com.intel.analytics.bigdl.pvanet.model.Phase._
 import com.intel.analytics.bigdl.pvanet.utils.FileUtil
@@ -136,7 +137,7 @@ abstract class FasterRcnn(var phase: PhaseType) {
       case None => testModel = Some(createTestModel())
       case _ =>
     }
-    testModel.get
+    testModel.get.evaluate()
   }
 
   def getTrainModel: Module[Float] = {
@@ -144,7 +145,7 @@ abstract class FasterRcnn(var phase: PhaseType) {
       case None => trainModel = Some(createTrainModel())
       case _ =>
     }
-    trainModel.get
+    trainModel.get.training()
   }
 
   def criterion4: ParallelCriterion[Float]
@@ -183,14 +184,99 @@ abstract class FasterRcnn(var phase: PhaseType) {
 
   def createRpn(): Sequential[Float]
 
-  protected def createTestModel(): Sequential[Float]
-
-  protected def createTrainModel(): Sequential[Float]
-
-  def getModel: Module[Float] = {
-    if (isTest) getTestModel
-    else getTrainModel
+  def createTestModel(): Sequential[Float] = {
+    val model = new Sequential()
+    val model1 = new ParallelTable()
+    model1.add(featureAndRpnNet)
+    model1.add(new Identity())
+    model.add(model1)
+    // connect rpn and fast-rcnn
+    val middle = new ConcatTable()
+    val left = new Sequential()
+    val left1 = new ConcatTable()
+    left1.add(selectTensor(1, 1, 1))
+    left1.add(selectTensor(1, 1, 2))
+    left1.add(selectTensor1(2))
+    left.add(left1)
+    left.add(new Proposal(param))
+    left.add(selectTensor1(1))
+    // first add feature from feature net
+    middle.add(selectTensor(1, 2))
+    // then add rois from proposal
+    middle.add(left)
+    model.add(middle)
+    // get the fast rcnn results and rois
+    model.add(new ConcatTable().add(fastRcnn).add(selectTensor(2)))
+    model
   }
+
+
+  def createTrainModel(): Sequential[Float] = {
+    val model = new Sequential()
+
+    val rpnFeatureWithInfoGt = new ParallelTable()
+    rpnFeatureWithInfoGt.add(featureAndRpnNet)
+    // im_info
+    rpnFeatureWithInfoGt.add(new Identity())
+    // gt_boxes
+    rpnFeatureWithInfoGt.add(new Identity())
+    model.add(rpnFeatureWithInfoGt)
+
+    val lossModels = new ConcatTable()
+    model.add(lossModels)
+
+    lossModels.add(selectTensor(1, 1, 1).setName("rpn_cls"))
+    lossModels.add(selectTensor(1, 1, 2).setName("rpn_reg"))
+    val fastRcnnLossModel = new Sequential().setName("loss from fast rcnn")
+    // get ((rois, otherProposalTargets), features
+    val fastRcnnInputModel = new ConcatTable().setName("fast-rcnn")
+    fastRcnnInputModel.add(selectTensor(1, 2).setName("features"))
+    val sampleRoisModel = new Sequential().setPropagateBack(false)
+    fastRcnnInputModel.add(sampleRoisModel)
+    // add sample rois
+    lossModels.add(fastRcnnLossModel)
+
+    val proposalTargetInput = new ConcatTable()
+    // get rois from proposal layer
+    val proposalModel = new Sequential()
+      .add(new ConcatTable()
+        .add(new Sequential()
+          .add(selectTensor(1, 1, 1).setName("rpn_cls"))
+          .add(new SoftMax())
+          .add(new ReshapeInfer(Array(1, 2 * param.anchorNum, -1, 0)))
+          .setName("rpn_cls_softmax_reshape"))
+        .add(selectTensor(1, 1, 2).setName("rpn_reg"))
+        .add(selectTensor1NoBack(2).setName("im_info")))
+      .add(new Proposal(param))
+      .add(selectTensor1NoBack(1).setName("rpn_rois"))
+
+    proposalTargetInput.add(proposalModel)
+    proposalTargetInput.add(selectTensor1NoBack(3).setName("gtBoxes"))
+    sampleRoisModel.add(proposalTargetInput)
+    sampleRoisModel.add(new ProposalTarget(param))
+
+    // ( features, (rois, otherProposalTargets))
+    fastRcnnLossModel.add(fastRcnnInputModel)
+    fastRcnnLossModel.add(
+      new ConcatTable()
+        .add(new ConcatTable()
+          .add(selectTensor1(1).setName("features"))
+          .add(selectTensorNoBack(2, 1).setName("rois")))
+        .add(selectTableNoBack(2, 2).setName("other targets info")))
+    fastRcnnLossModel.add(new ParallelTable()
+      .add(fastRcnn.setName("fast rcnn"))
+      .add(new Identity()).setName("other targets info"))
+    // make each res a tensor
+    model.add(new ConcatTable()
+      .add(selectTensor1(1).setName("rpn cls"))
+      .add(selectTensor1(2).setName("rpn reg"))
+      .add(selectTensor(3, 1, 1).setName("cls"))
+      .add(selectTensor(3, 1, 2).setName("reg"))
+      .add(selectTensorNoBack(3, 2).setName("other target info")))
+    model
+  }
+
+  def getModel: Module[Float] = if (isTest) getTestModel else getTrainModel
 
   def selectTensorNoBack(depths: Int*): Sequential[Float] = {
     val module = new Sequential[Float]().setPropagateBack(false)
@@ -293,6 +379,7 @@ object FasterRcnn {
       }
     }
 
+    Random.setSeed(FasterRcnnParam.RANDOM_SEED)
     val fasterRcnnModel = pretrained match {
       case mp: String =>
         // big dl faster rcnn models
@@ -300,11 +387,10 @@ object FasterRcnn {
       case (dp: String, mp: String) =>
         // caffe pretrained model
         getFasterRcnn(modelType)
-//          .copyFromCaffe(new CaffeReader[Float](dp, mp))
-          .loadFromCaffeOrCache(dp, mp)
+          .copyFromCaffe(new CaffeReader[Float](dp, mp))
+//          .loadFromCaffeOrCache(dp, mp)
       case _ => getFasterRcnn(modelType)
     }
-    Random.setSeed(fasterRcnnModel.param.RANDOM_SEED)
     fasterRcnnModel
   }
 }

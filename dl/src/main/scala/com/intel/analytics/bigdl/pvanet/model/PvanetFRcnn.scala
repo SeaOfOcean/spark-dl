@@ -276,8 +276,4 @@ class PvanetFRcnn(phase: PhaseType = TEST)
     pc.add(loss_bbox, 1)
     pc
   }
-
-  override def createTestModel(): Sequential[Float] = ???
-
-  override def createTrainModel(): Sequential[Float] = ???
 }
