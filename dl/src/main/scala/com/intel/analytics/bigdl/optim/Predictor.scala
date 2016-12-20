@@ -15,28 +15,11 @@
  * limitations under the License.
  */
 
-package com.intel.analytics.bigdl.dataset.image
+package com.intel.analytics.bigdl.optim
 
-import com.intel.analytics.bigdl.dataset.Transformer
-import com.intel.analytics.bigdl.utils.RandomGenerator
+import com.intel.analytics.bigdl.dataset.{DataSet => DataSource}
 
-import scala.collection.Iterator
-
-object HFlip {
-  def apply(threshold: Double = 0.0): HFlip = {
-    new HFlip(threshold)
-  }
-}
-
-class HFlip(threshold: Double) extends Transformer[LabeledRGBImage, LabeledRGBImage] {
-  override def apply(prev: Iterator[LabeledRGBImage]): Iterator[LabeledRGBImage] = {
-    prev.map(img => {
-      if (RandomGenerator.RNG.uniform(0, 1) >= threshold) {
-        img.hflip()
-      } else {
-        img
-      }
-    })
-  }
+abstract class Predictor[T, DS1, DS2] {
+  def predict(dataSet : DataSource[DS1]) : DataSource[DS2]
 }
 

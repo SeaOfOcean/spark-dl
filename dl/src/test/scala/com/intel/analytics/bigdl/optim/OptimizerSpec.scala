@@ -17,12 +17,11 @@
 
 package com.intel.analytics.bigdl.optim
 
-import java.nio.file.{Paths, Files}
+import java.nio.file.{Files, Paths}
 
-import com.intel.analytics.bigdl.models.imagenet.AlexNet
 import com.intel.analytics.bigdl.nn.Sequential
-import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl._
+import com.intel.analytics.bigdl.models.alexnet.AlexNet
 import com.intel.analytics.bigdl.utils.{File, T, Table}
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -109,7 +108,7 @@ class OptimizerSpec extends FlatSpec with Matchers {
     val model = AlexNet(1000)
     val dummyOptimizer = new Optimizer[Float, Float, Float](model, null, null) {
       override def optimize(): Module[Float] = {
-        saveModel(model)
+        Optimizer.saveModel(model, this.cachePath, this.isOverWrite)
         model
       }
     }
@@ -128,7 +127,7 @@ class OptimizerSpec extends FlatSpec with Matchers {
     val model = AlexNet(1000)
     val dummyOptimizer = new Optimizer[Float, Float, Float](model, null, null) {
       override def optimize(): Module[Float] = {
-        saveModel(model, ".test")
+        Optimizer.saveModel(model, this.cachePath, this.isOverWrite, ".test")
         model
       }
     }
@@ -148,7 +147,7 @@ class OptimizerSpec extends FlatSpec with Matchers {
     val state = T("test" -> 123)
     val dummyOptimizer = new Optimizer[Float, Float, Float](model, null, null) {
       override def optimize(): Module[Float] = {
-        saveState(state)
+        Optimizer.saveState(state, this.cachePath, this.isOverWrite)
         model
       }
     }.setState(state)
@@ -166,7 +165,7 @@ class OptimizerSpec extends FlatSpec with Matchers {
     val state = T("test" -> 123)
     val dummyOptimizer = new Optimizer[Float, Float, Float](model, null, null) {
       override def optimize(): Module[Float] = {
-        saveState(state, ".post")
+        Optimizer.saveState(state, this.cachePath, this.isOverWrite, ".post")
         model
       }
     }.setState(state)

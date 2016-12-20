@@ -18,10 +18,12 @@ package com.intel.analytics.bigdl.models.utils
 
 import com.intel.analytics.bigdl.dataset.{Batch, LocalDataSet}
 import com.intel.analytics.bigdl.models.imagenet._
+import com.intel.analytics.bigdl.models.vgg.{Vgg_16, Vgg_19}
 import com.intel.analytics.bigdl.numeric.NumericFloat
 import com.intel.analytics.bigdl._
+import com.intel.analytics.bigdl.models.alexnet.{AlexNet, AlexNet_OWT}
 import com.intel.analytics.bigdl.nn.ClassNLLCriterion
-import com.intel.analytics.bigdl.optim.{Trigger, LocalOptimizer}
+import com.intel.analytics.bigdl.optim.{LocalOptimizer, Trigger}
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.utils.Engine
@@ -91,7 +93,7 @@ object LocalOptimizerPerf {
     val criterion = ClassNLLCriterion()
     val labels = Tensor(param.batchSize).fill(1)
     val dummyDataSet = new LocalDataSet[Batch[Float]] {
-      override def data(): Iterator[Batch[Float]] = {
+      override def data(looped : Boolean): Iterator[Batch[Float]] = {
         new Iterator[Batch[Float]] {
           override def hasNext: Boolean = true
 

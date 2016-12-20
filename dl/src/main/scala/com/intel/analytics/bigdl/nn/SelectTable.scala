@@ -16,9 +16,9 @@
  */
 package com.intel.analytics.bigdl.nn
 
-import com.intel.analytics.bigdl.nn.abstractnn.Activity
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
-import com.intel.analytics.bigdl.utils.{Table}
+import com.intel.analytics.bigdl.utils.Table
+import com.intel.analytics.bigdl.nn.abstractnn.Activity
 
 import scala.reflect.ClassTag
 
@@ -28,30 +28,30 @@ import scala.reflect.ClassTag
  * The gradients of the non-index elements are zeroed Tensors of the same size.
  * This is true regardless of the depth of the encapsulated Tensor as the function used
  * internally to do so is recursive.
- *
  * @param index the index to be selected
  */
-class SelectTable[B <: Activity : ClassTag, T: ClassTag](
+class SelectTable[T: ClassTag](
   val index: Int)
-  (implicit ev: TensorNumeric[T]) extends Container[Table, B, T] {
+  (implicit ev: TensorNumeric[T]) extends Container[Table, Activity, T]  {
 
-  override def updateOutput(input: Table): B = {
+  override def updateOutput(input: Table): Activity = {
     val index = if (this.index < 0) input.getState().size + this.index else this.index
 
     require(input.contains(index), "index does not exist in the input table")
-    output = input[B](index)
+    output = input[Activity](index)
+
     output
   }
 
-  override def updateGradInput(input: Table, gradOutput: B): Table = {
-    Utils.zeroTableCopy[T](gradInput, input)
+  override def updateGradInput(input: Table, gradOutput: Activity): Table = {
+    Utils.zeroTableCopy(gradInput, input)
     val index = if (this.index < 0) {
       input.length() + this.index + 1
     } else {
       this.index
     }
 
-    Utils.recursiveCopy(gradInput(index), gradOutput.asInstanceOf[Activity])
+    Utils.recursiveCopy(gradInput(index), gradOutput)
 
     require(gradInput.contains(index), "Index exceeds the size of input table")
 
@@ -61,10 +61,10 @@ class SelectTable[B <: Activity : ClassTag, T: ClassTag](
   override def toString: String = s"SelectTable($index)"
 
 
-  override def canEqual(other: Any): Boolean = other.isInstanceOf[SelectTable[B, T]]
+  override def canEqual(other: Any): Boolean = other.isInstanceOf[SelectTable[T]]
 
   override def equals(other: Any): Boolean = other match {
-    case that: SelectTable[B, T] =>
+    case that: SelectTable[T] =>
       super.equals(that) &&
         (that canEqual this) &&
         index == that.index
