@@ -56,8 +56,8 @@ class CaffeLoader[@specialized(Float, Double) T: ClassTag](defName: String, mode
   }
 
   private def loadBinary(prototxtName: String, modelName: String): Caffe.NetParameter = {
-    val f: File = new File(prototxtName)
-    assert(f.exists(), prototxtName + "does not exists")
+    val f = new File(prototxtName)
+    assert(f.exists(), prototxtName + " does not exists")
     val reader = new InputStreamReader(new FileInputStream(f), "ASCII")
     val builder = NetParameter.newBuilder
     TextFormat.merge(reader, builder)
@@ -92,7 +92,7 @@ class CaffeLoader[@specialized(Float, Double) T: ClassTag](defName: String, mode
       weightData(i) = ev.fromType[Float](weightList.get(i))
     }
 
-    if (destPara.size > 1) {
+    if (destPara.length > 1) {
       val caffeBias = getBlob(name, 1)
       if (caffeBias == null) return (destPara(1), null)
       val biasList = caffeBias.getDataList
@@ -136,9 +136,8 @@ class CaffeLoader[@specialized(Float, Double) T: ClassTag](defName: String, mode
     }
 
     namedModules.foreach {
-      case (name: String, mod: Module[T]) => {
+      case (name: String, mod: Module[T]) =>
         copyParameter(name, mod)
-      }
     }
     model
   }
@@ -154,9 +153,10 @@ object CaffeLoader {
   }
 
   def main(args: Array[String]): Unit = {
-    val module = Module.loadCaffeParameters[Float](AlexNet(1000),
-      "data/model/alexnet/deploy.prototxt",
-      "data/model/alexnet/bvlc_alexnet.caffemodel"
+    val modelName = "alexnet"
+    Module.loadCaffeParameters[Float](AlexNet(1000),
+      s"data/model/$modelName/deploy.prototxt",
+      s"data/model/$modelName/$modelName.caffemodel"
     )
   }
 }

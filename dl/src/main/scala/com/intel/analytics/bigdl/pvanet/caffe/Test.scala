@@ -19,11 +19,12 @@ package com.intel.analytics.bigdl.pvanet.caffe
 
 import java.nio.file.Paths
 
-import com.intel.analytics.bigdl.models.googlenet.{DataSet, GoogleNet_v1_NoAuxClassifier}
-import com.intel.analytics.bigdl.models.imagenet.Vgg_16
+import com.intel.analytics.bigdl.models.alexnet.AlexNet
+import com.intel.analytics.bigdl.models.googlenet.{GoogleNet_v1, GoogleNet_v1_NoAuxClassifier}
 import com.intel.analytics.bigdl.nn.Module
-import com.intel.analytics.bigdl.optim.{LocalValidator, Top1Accuracy}
-import com.intel.analytics.bigdl.pvanet.caffe.model.AlexNet
+import com.intel.analytics.bigdl.optim.{LocalValidator, Top1Accuracy, Top5Accuracy}
+import com.intel.analytics.bigdl.pvanet.caffe.model.{AlexNetUtil, GoogleNetUtil}
+import com.intel.analytics.bigdl.pvanet.utils.FileUtil
 import scopt.OptionParser
 
 
@@ -32,14 +33,14 @@ object Test {
   case class TestLocalParams(
     folder: String = "./",
     modelType: String = "alexnet",
-    caffeDefPath: Option[String] = None,
-    caffeModelPath: Option[String] = None,
+    caffeDefPath: String = "",
+    caffeModelPath: String = "",
     batchSize: Int = 32,
     coreNumber: Int = (Runtime.getRuntime().availableProcessors() / 2)
   )
 
-  val testLocalParser = new OptionParser[TestLocalParams]("BigDL AlexNet Example") {
-    head("Train AlexNet model on single node")
+  val testLocalParser = new OptionParser[TestLocalParams]("BigDL LoadCaffe Example") {
+    head("LoadCaffe example")
     opt[String]('f', "folder")
       .text("where you put your local hadoop sequence files")
       .action((x, c) => c.copy(folder = x))
@@ -48,10 +49,10 @@ object Test {
       .action((x, c) => c.copy(modelType = x))
     opt[String]("caffeDefPath")
       .text("caffe define path")
-      .action((x, c) => c.copy(caffeDefPath = Some(x)))
+      .action((x, c) => c.copy(caffeDefPath = x))
     opt[String]("caffeModelPath")
       .text("caffe model path")
-      .action((x, c) => c.copy(caffeModelPath = Some(x)))
+      .action((x, c) => c.copy(caffeModelPath = x))
     opt[Int]('b', "batchSize")
       .text("batch size")
       .action((x, c) => c.copy(batchSize = x))
@@ -62,26 +63,31 @@ object Test {
 
   def main(args: Array[String]): Unit = {
     testLocalParser.parse(args, new TestLocalParams()).map(param => {
-
-      val validationData = Paths.get(param.folder, "val")
+      val valPath = Paths.get(param.folder, "val")
       val imageSize = param.modelType match {
         case "alexnet" => 227
         case "googlenet" => 224
         case "vgg16" => 224
       }
-      val validateDataSet = DataSet.localDataSet(validationData, imageSize, param.batchSize,
-        param.coreNumber, false)
 
-      val module = param.modelType match {
-        case "alexnet" => AlexNet(1000)
-        case "googlenet" => GoogleNet_v1_NoAuxClassifier(1000)
-        case "vgg16" => Vgg_16(1000)
+      val (module, validateDataSet) = param.modelType match {
+        case "alexnet" =>
+          val means = FileUtil.loadFeaturesFullPath[Float]("data/model/alexnet/means-3_256_256.txt")
+          (AlexNet(1000), AlexNetUtil.localDataSet(valPath, imageSize,
+            param.batchSize, param.coreNumber, false, means))
+        case "googlenet" =>
+          val model = if (param.caffeDefPath.contains("deploy")) GoogleNet_v1_NoAuxClassifier(1000)
+          else GoogleNet_v1(1000)
+          (model, GoogleNetUtil.localDataSet(valPath, imageSize,
+            param.batchSize, param.coreNumber, false))
       }
+
       val model = Module.loadCaffeParameters[Float](module,
-        param.caffeDefPath.get, param.caffeModelPath.get)
+        param.caffeDefPath, param.caffeModelPath)
+      model.evaluate()
       val validator = new LocalValidator[Float](model, param.coreNumber)
-      println("dataset size", validateDataSet.size())
-      val result = validator.test(validateDataSet, Array(new Top1Accuracy[Float]))
+      val result = validator.test(validateDataSet, Array(new Top1Accuracy[Float],
+        new Top5Accuracy[Float]))
       result.foreach(r => {
         println(s"${r._2} is ${r._1}")
       })
