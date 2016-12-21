@@ -29,12 +29,12 @@ class CAdd[@specialized(Float, Double) T: ClassTag](
   implicit ev: TensorNumeric[T]) extends TensorModule[T] {
 
   val bias: Tensor[T] = Tensor[T](size)
-  val gradBias : Tensor[T] = Tensor[T](size)
+  val gradBias: Tensor[T] = Tensor[T](size)
 
   reset()
 
   override def reset(): Unit = {
-    val stdv = 1.0/math.sqrt(bias.nElement())
+    val stdv = 1.0 / math.sqrt(bias.nElement())
     bias.apply1(_ => ev.fromType[Double](RNG.uniform(-stdv, stdv)))
     zeroGradParameters()
   }
@@ -46,8 +46,10 @@ class CAdd[@specialized(Float, Double) T: ClassTag](
     } else {
       val expand = if (bias.dim() == input.dim()) {
         bias.view(bias.size())
-      } else {
+      } else if (bias.dim() + 1 == input.dim()) {
         bias.view(Array(1) ++ bias.size())
+      } else {
+        bias.view(Array(1) ++ bias.size() ++ Array(1, 1))
       }
       expand.expandAs(output)
       output.add(expand)
@@ -107,7 +109,7 @@ class CAdd[@specialized(Float, Double) T: ClassTag](
       bias == other.bias
   }
 
-  override def hashCode() : Int = {
+  override def hashCode(): Int = {
     val seed = 37
     var hash = super.hashCode()
     hash = hash * seed + size.hashCode()
@@ -125,7 +127,7 @@ class CAdd[@specialized(Float, Double) T: ClassTag](
 object CAdd {
   def apply[@specialized(Float, Double) T: ClassTag](
     size: Array[Int]
-  )(implicit ev: TensorNumeric[T]) : CAdd[T] = {
+  )(implicit ev: TensorNumeric[T]): CAdd[T] = {
     new CAdd[T](size)
   }
 }

@@ -29,12 +29,12 @@ class CMul[@specialized(Float, Double) T: ClassTag](
   implicit ev: TensorNumeric[T]) extends TensorModule[T] {
 
   val weight: Tensor[T] = Tensor[T](size)
-  val gradWeight : Tensor[T] = Tensor[T](size)
+  val gradWeight: Tensor[T] = Tensor[T](size)
 
   reset()
 
   override def reset(): Unit = {
-    val stdv = 1.0/math.sqrt(weight.nElement())
+    val stdv = 1.0 / math.sqrt(weight.nElement())
     weight.apply1(_ => ev.fromType[Double](RNG.uniform(-stdv, stdv)))
     zeroGradParameters()
   }
@@ -46,10 +46,11 @@ class CMul[@specialized(Float, Double) T: ClassTag](
     } else {
       val expand = if (weight.dim() == input.dim()) {
         weight.view(weight.size())
-      } else {
+      } else if (weight.dim() + 1 == input.dim()) {
         weight.view(Array(1) ++ weight.size())
+      } else {
+        weight.view(Array(1) ++ weight.size() ++ Array(1, 1))
       }
-
       expand.expandAs(output)
       output.cmul(expand)
     }
@@ -134,7 +135,7 @@ class CMul[@specialized(Float, Double) T: ClassTag](
       weight == other.weight
   }
 
-  override def hashCode() : Int = {
+  override def hashCode(): Int = {
     val seed = 37
     var hash = super.hashCode()
     hash = hash * seed + size.hashCode()
@@ -151,7 +152,7 @@ class CMul[@specialized(Float, Double) T: ClassTag](
 
 object CMul {
   def apply[@specialized(Float, Double) T: ClassTag](
-      size: Array[Int])(implicit ev: TensorNumeric[T]) : CMul[T] = {
+    size: Array[Int])(implicit ev: TensorNumeric[T]): CMul[T] = {
     new CMul[T](size)
   }
 }
