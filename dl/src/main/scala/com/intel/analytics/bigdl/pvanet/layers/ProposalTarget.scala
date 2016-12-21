@@ -101,6 +101,7 @@ class ProposalTarget[@specialized(Float, Double) T: ClassTag]
   : (Array[Float], DenseMatrix[Float], DenseMatrix[Float], DenseMatrix[Float]) = {
     // overlaps: (rois x gt_boxes)
     val overlaps = Bbox.bboxOverlap(all_rois(::, 1 until 5), gt_boxes(::, 0 until 4))
+    // todo: this can be solved by just max
     val gt_assignment = MatrixUtil.argmax2(overlaps, 1)
     val max_overlaps = MatrixUtil.max2(overlaps, 1)
     var labels = MatrixUtil.selectMatrix(gt_boxes, gt_assignment, 0)(::, 4).toArray

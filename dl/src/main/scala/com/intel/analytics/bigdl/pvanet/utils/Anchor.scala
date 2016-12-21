@@ -51,7 +51,7 @@ object Anchor {
    * scales wrt a reference (0, 0, 15, 15) window.
    *
    */
-  def generateAnchors2(ratios: Array[Float], scales: Array[Float],
+  def generateBasicAnchors2(ratios: Array[Float], scales: Array[Float],
     baseSize: Float = 16): Tensor[Float] = {
     val baseAnchor = Tensor(Storage(Array(1 - 1, 1 - 1, baseSize - 1, baseSize - 1)))
     val ratioAnchors = ratioEnum(baseAnchor, Tensor(Storage(ratios)))

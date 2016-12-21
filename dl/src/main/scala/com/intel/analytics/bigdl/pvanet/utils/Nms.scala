@@ -99,7 +99,7 @@ object Nms {
       val inter = xx2.cmul(yy2)
 
       val selectedArea = MatrixUtil.selectMatrix(areas,
-        order.slice(1, order.length).array, 0)
+        order.slice(1, order.length).array, 1)
       val ovr = inter.cdiv(selectedArea.add(areas.valueAt(i)).add(-1, inter))
       val inds = ovr.contiguous().storage().array().zipWithIndex
         .filter(x => x._1 <= thresh).map(x => x._2)

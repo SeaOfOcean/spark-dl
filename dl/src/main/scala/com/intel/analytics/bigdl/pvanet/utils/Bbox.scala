@@ -56,8 +56,49 @@ object Bbox {
           }
         }
       }
-      (0 until 4).foreach(x => detsVoted(i, x) = (accBox(x) / accScore))
+      (0 until 4).foreach(x => detsVoted(i, x) = accBox(x) / accScore)
       detsVoted(i, 4) = det(4)
+    }
+    detsVoted
+  }
+
+  def bboxVote(detsNMS: Tensor[Float], detsAll: Tensor[Float]): Tensor[Float] = {
+    val detsVoted = Tensor[Float](detsNMS.size(1), detsNMS.size(2))
+    var accBox: Tensor[Float] = null
+    var accScore = 0f
+    var det: Tensor[Float] = null
+    for (i <- 1 to detsNMS.size(1)) {
+      det = MatrixUtil.selectRow(detsNMS, i)
+      if (accBox == null) {
+        accBox = Tensor[Float](4)
+      } else {
+        accBox.fill(0f)
+      }
+      accScore = 0f
+      for (m <- 1 to detsAll.size(1)) {
+        val det2 = MatrixUtil.selectRow(detsAll, m, newSpace = true)
+
+        val bis0 = Math.max(det.valueAt(1), det2.valueAt(1))
+        val bis1 = Math.max(det.valueAt(2), det2.valueAt(2))
+        val bis2 = Math.min(det.valueAt(3), det2.valueAt(3))
+        val bis3 = Math.min(det.valueAt(4), det2.valueAt(4))
+
+        val iw = bis2 - bis0 + 1
+        val ih = bis3 - bis1 + 1
+
+        if (iw > 0 && ih > 0) {
+          val ua = (det.valueAt(3) - det.valueAt(1) + 1) * (det.valueAt(4) - det.valueAt(2) + 1) +
+            (det2.valueAt(3) - det2.valueAt(1) + 1) *
+              (det2.valueAt(4) - det2.valueAt(2) + 1) - iw * ih
+          val ov = iw * ih / ua
+          if (ov >= 0.5) {
+            accBox.add(det2.narrow(1, 1, 4).mul(det2.valueAt(5)))
+            accScore += det2.valueAt(5)
+          }
+        }
+      }
+      (1 to 4).foreach(x => detsVoted.setValue(i, x, accBox.valueAt(x) / accScore))
+      detsVoted.setValue(i, 5, det.valueAt(5))
     }
     detsVoted
   }
@@ -188,8 +229,8 @@ object Bbox {
     val targetsDw = gtWidths.cdiv(exWidths).log()
     val targetsDh = gtHeights.cdiv(exHeights).log()
 
-    val res = TensorUtil.concat(targetsDx, targetsDy, targetsDw, targetsDh)
-    res.resize(res.nElement() / 4, 4)
+    val res = TensorUtil.vertConcat(targetsDx, targetsDy, targetsDw, targetsDh)
+    res.t().contiguous()
   }
 
 

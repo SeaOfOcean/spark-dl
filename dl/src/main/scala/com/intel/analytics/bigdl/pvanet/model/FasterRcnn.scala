@@ -281,8 +281,8 @@ abstract class FasterRcnn(var phase: PhaseType) {
   def selectTensorNoBack(depths: Int*): Sequential[Float] = {
     val module = new Sequential[Float]().setPropagateBack(false)
     depths.slice(0, depths.length - 1).foreach(depth =>
-      module.add(new SelectTable[Table, Float](depth).setPropagateBack(false)))
-    module.add(new SelectTable[Tensor[Float], Float](depths(depths.length - 1)).setPropagateBack(false))
+      module.add(new SelectTable(depth).setPropagateBack(false)))
+    module.add(new SelectTable(depths(depths.length - 1)).setPropagateBack(false))
   }
 
   /**
@@ -294,38 +294,38 @@ abstract class FasterRcnn(var phase: PhaseType) {
   def selectTensor(depths: Int*): Sequential[Float] = {
     val module = new Sequential[Float]()
     depths.slice(0, depths.length - 1).foreach(depth =>
-      module.add(new SelectTable[Table, Float](depth)))
-    module.add(new SelectTable[Tensor[Float], Float](depths(depths.length - 1)))
+      module.add(new SelectTable(depth)))
+    module.add(new SelectTable(depths(depths.length - 1)))
   }
 
-  def selectTensor1(depth: Int): SelectTable[Tensor[Float], Float] = {
-    new SelectTable[Tensor[Float], Float](depth)
+  def selectTensor1(depth: Int): SelectTable[Float] = {
+    new SelectTable(depth)
   }
 
-  def selectTensor1NoBack(depth: Int): SelectTable[Tensor[Float], Float] = {
-    new SelectTable[Tensor[Float], Float](depth).setPropagateBack(false)
+  def selectTensor1NoBack(depth: Int): SelectTable[Float] = {
+    new SelectTable(depth).setPropagateBack(false)
   }
 
   def selectTable(depths: Int*): Sequential[Float] = {
     val module = new Sequential[Float]()
     depths.slice(0, depths.length).foreach(depth =>
-      module.add(new SelectTable[Table, Float](depth)))
+      module.add(new SelectTable(depth)))
     module
   }
 
   def selectTableNoBack(depths: Int*): Sequential[Float] = {
     val module = new Sequential[Float]().setPropagateBack(false)
     depths.slice(0, depths.length).foreach(depth =>
-      module.add(new SelectTable[Table, Float](depth).setPropagateBack(false)))
+      module.add(new SelectTable(depth).setPropagateBack(false)))
     module
   }
 
-  def selectTable1(depth: Int): SelectTable[Table, Float] = {
-    new SelectTable[Table, Float](depth)
+  def selectTable1(depth: Int): SelectTable[Float] = {
+    new SelectTable(depth)
   }
 
-  def selectTable1NoBack(depth: Int): SelectTable[Table, Float] = {
-    new SelectTable[Table, Float](depth).setPropagateBack(false)
+  def selectTable1NoBack(depth: Int): SelectTable[Float] = {
+    new SelectTable(depth).setPropagateBack(false)
   }
 
   def initParameters(module: Module[Float], init: (Double, Double)): Unit = {

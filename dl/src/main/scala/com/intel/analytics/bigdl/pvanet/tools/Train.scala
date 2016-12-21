@@ -60,10 +60,8 @@ object Train {
 
     val fasterRcnnModel = FasterRcnn(param.net, Phase.TRAIN, model2caffePath(param.net))
     MKL.setNumThreads(param.nThread)
-    val dataSource = ObjectDataSource("voc_2007_testcode1", param.folder,
-      fasterRcnnModel.param, true)
-    val valSource = ObjectDataSource("voc_2007_testcode1", param.folder,
-      fasterRcnnModel.param, false)
+    val dataSource = ObjectDataSource("voc_2007_testcode1", param.folder, true)
+    val valSource = ObjectDataSource("voc_2007_testcode1", param.folder, false)
     val config = fasterRcnnModel.param.optimizeConfig
     val imgScaler = new ImageScalerAndMeanSubstractor(fasterRcnnModel.param)
     fasterRcnnModel.train

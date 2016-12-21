@@ -56,13 +56,13 @@ class MatrixUtilSpec extends FlatSpec with Matchers {
     val gt = DenseMatrix((0.39796564, 0.09962627, 0.38716339, 0.78216441),
       (0.35269534, 0.7103468, 0.5326144, 0.03050023))
     MatrixUtil.selectMatrix(ar, Array(0, 2), 0) should be(convert(gt, Float))
-    MatrixUtil.selectMatrix(Tensor(ar), Array(1, 3), 0) should be(Tensor(convert(gt, Float)))
+    MatrixUtil.selectMatrix(Tensor(ar), Array(1, 3), 1) should be(Tensor(convert(gt, Float)))
 
     val gt2 = DenseMatrix((0.39796564, 0.38716339, 0.78216441),
       (0.8748918, 0.34264925, 0.28663851),
       (0.35269534, 0.5326144, 0.03050023))
     MatrixUtil.selectMatrix(ar, Array(0, 2, 3), 1) should be(convert(gt2, Float))
-    MatrixUtil.selectMatrix(Tensor(ar), Array(1, 3, 4), 1) should be(Tensor(convert(gt2, Float)))
+    MatrixUtil.selectMatrix(Tensor(ar), Array(1, 3, 4), 2) should be(Tensor(convert(gt2, Float)))
   }
 
   it should "selectCols" in {
@@ -138,7 +138,7 @@ class MatrixUtilSpec extends FlatSpec with Matchers {
     val s1 = MatrixUtil.selectRow(convert(arr, Float), 2)
     val s2 = MatrixUtil.selectRow(Tensor(convert(arr, Float)), 3)
 
-    s1 should be(s2)
+    s1 should be(s2.clone().storage().array())
   }
 
 }

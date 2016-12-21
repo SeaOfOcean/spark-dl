@@ -54,9 +54,8 @@ class LogSoftMax[@specialized(Float, Double) T: ClassTag]
         (input.size(1), input.size(2), input.size(3) * input.size(4))
       }
     output.resizeAs(input)
-    var t = 1
     val inputData = input.storage().array()
-    var outputData = output.storage().array()
+    val outputData = output.storage().array()
     for (t <- 0 until stride * nframe) {
       sum = ev.fromType[Int](0)
       maxInput = input.max()
@@ -95,7 +94,7 @@ class LogSoftMax[@specialized(Float, Double) T: ClassTag]
       }
 
     gradInput.resizeAs(output)
-    var gradInputData = gradInput.storage().array()
+    val gradInputData = gradInput.storage().array()
     val outputData = output.storage().array()
     val gradOutputData = gradOutput.storage().array()
 

@@ -55,14 +55,12 @@ class BboxSpec extends FlatSpec with Matchers {
       (342.84973, 159.25734, 499.0, 306.46826, 0.105595924),
       (71.944336, 42.300797, 435.08072, 323.51843, 0.095248096))
     val out = Bbox.bboxVote(convert(v1, Float), convert(v2, Float))
+    val out2 = Bbox.bboxVote(Tensor(convert(v1, Float)), Tensor(convert(v2, Float)))
     val expected = DenseMatrix((117.93, 181.086, 488.87, 319.773, 0.442934),
       (315.59, 139.251, 499.0, 307.717, 0.105596),
       (57.5732, 95.5176, 458.503, 320.046, 0.0952481))
-    for (i <- 0 until out.rows) {
-      for (j <- 0 until out.cols) {
-        assert(Math.abs(out(i, j) - expected(i, j)) < 1e-3)
-      }
-    }
+    TestUtil.assertMatrixEqualFD(out, expected, 1e-3)
+    TestUtil.assertMatrixEqualTM2(out2, out, 1e-6)
   }
 
 
@@ -109,13 +107,38 @@ class BboxSpec extends FlatSpec with Matchers {
       }
     }
     TestUtil.assertMatrixEqualTM(res2, expectedResults, 1e-6)
-
-    val bboxRes = Bbox.bboxTransform(convert(expectedResults, Float), convert(deltas, Float))
-    val bboxRes2 = Bbox.bboxTransform(Tensor(convert(boxes, Float)), Tensor(convert(deltas, Float)))
-
-    TestUtil.assertMatrixEqualTM2(bboxRes2, bboxRes, 1e-6)
   }
 
+  it should "bboxTransform" in {
+    val boxes = DenseMatrix(
+      (0.543404941791, 0.278369385094, 0.424517590749, 0.84477613232),
+      (0.00471885619097, 0.121569120783, 0.670749084727, 0.825852755105),
+      (0.136706589685, 0.575093329427, 0.891321954312, 0.209202122117),
+      (0.18532821955, 0.108376890464, 0.219697492625, 0.978623784707),
+      (0.811683149089, 0.171941012733, 0.816224748726, 0.274073747042))
+
+    val gtBoxes = DenseMatrix(
+      (0.431704183663, 0.940029819622, 0.817649378777, 0.336111950121),
+      (0.175410453742, 0.37283204629, 0.00568850735257, 0.252426353445),
+      (0.795662508473, 0.0152549712463, 0.598843376928, 0.603804539043),
+      (0.105147685412, 0.381943444943, 0.0364760565926, 0.890411563442),
+      (0.980920857012, 0.059941988818, 0.890545944729, 0.5769014994)
+    )
+
+    val expectedResults = DenseMatrix(
+      (0.159702071144, 0.0488366934707, 0.452952154562, -1.37491798924),
+      (-0.14836734993, -0.094515804079, -0.696438317903, -0.661439359029),
+      (0.104432386947, -0.130289899115, -0.781425016926, 0.918356120357),
+      (-0.127324920136, 0.0495534396512, -0.104935198821, -0.214975806336),
+      (0.12122887893, 0.0865724801121, -0.0992540735758, 0.319460857523)
+    )
+
+    val bboxRes = Bbox.bboxTransform(convert(boxes, Float), convert(gtBoxes, Float))
+    val bboxRes2 = Bbox.bboxTransform(Tensor(convert(boxes, Float)), Tensor(convert(gtBoxes, Float)))
+
+    TestUtil.assertMatrixEqualFD(bboxRes, expectedResults, 1e-6)
+    TestUtil.assertMatrixEqualTM(bboxRes2, expectedResults, 1e-6)
+  }
 
   it should "clipBoxes" in {
     val boxes = DenseMatrix(

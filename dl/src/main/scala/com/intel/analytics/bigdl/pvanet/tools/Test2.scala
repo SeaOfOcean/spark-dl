@@ -17,7 +17,6 @@
 
 package com.intel.analytics.bigdl.pvanet.tools
 
-import breeze.linalg.DenseMatrix
 import com.intel.analytics.bigdl.Module
 import com.intel.analytics.bigdl.pvanet.datasets._
 import com.intel.analytics.bigdl.pvanet.model.Model._
@@ -27,15 +26,15 @@ import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.{Table, Timer}
 import scopt.OptionParser
 
-object Test {
+object Test2 {
   def testNet(net: FasterRcnn, dataSource: ObjectDataSource,
     maxPerImage: Int = 100, thresh: Double = 0.05, vis: Boolean = false): Unit = {
     val imdb = dataSource.imdb
     val model = net.getTestModel
-    val allBoxes: Array[Array[DenseMatrix[Float]]] = {
-      val out = new Array[Array[DenseMatrix[Float]]](imdb.numClasses)
+    val allBoxes: Array[Array[Tensor[Float]]] = {
+      val out = new Array[Array[Tensor[Float]]](imdb.numClasses)
       Range(0, imdb.numClasses).foreach(x => {
-        out(x) = new Array[DenseMatrix[Float]](dataSource.size().toInt)
+        out(x) = new Array[Tensor[Float]](dataSource.size().toInt)
       })
       out
     }
@@ -52,23 +51,23 @@ object Test {
       println(s"process ${d.imagePath} ...............")
 
       imDetectTimer.tic()
-      val (scores: DenseMatrix[Float], boxes: DenseMatrix[Float]) = imDetect(model, imgWithRoi)
+      val (scores: Tensor[Float], boxes: Tensor[Float]) = imDetect(model, imgWithRoi)
       imDetectTimer.toc()
 
       miscTimer.tic()
       // skip j = 0, because it's the background class
       for (j <- 1 until imdb.numClasses) {
-        def getClsDet: DenseMatrix[Float] = {
-          val inds = Range(0, scores.rows).filter(ind => scores(ind, j) > thresh).toArray
-          if (inds.length == 0) return new DenseMatrix[Float](0, 5)
+        def getClsDet: Tensor[Float] = {
+          val inds = (1 to scores.size(1)).filter(ind => scores.valueAt(ind, j) > thresh).toArray
+          if (inds.length == 0) return Tensor[Float](0, 5)
           val clsScores = MatrixUtil.selectMatrix2(scores, inds, Array(j))
           val clsBoxes = MatrixUtil.selectMatrix2(boxes,
             inds, Range(j * 4, (j + 1) * 4).toArray)
 
-          var clsDets = DenseMatrix.horzcat(clsBoxes, clsScores)
+          var clsDets = TensorUtil.horzcat(clsBoxes, clsScores)
           val keep = Nms.nms(clsDets, net.param.NMS.toFloat)
 
-          val detsNMSed = MatrixUtil.selectMatrix(clsDets, keep, 0)
+          val detsNMSed = MatrixUtil.selectMatrix(clsDets, keep, 1)
 
           if (net.param.BBOX_VOTE) {
             clsDets = Bbox.bboxVote(detsNMSed, clsDets)
@@ -90,14 +89,16 @@ object Test {
       if (maxPerImage > 0) {
         var imageScores = Array[Float]()
         for (j <- Range(1, imdb.numClasses)) {
-          imageScores = imageScores ++ allBoxes(j)(i)(::, -1).toArray
+          imageScores = imageScores ++
+            MatrixUtil.selectColAsArray(allBoxes(j)(i), allBoxes(j)(i).size(2))
         }
         if (imageScores.length > maxPerImage) {
           val imageThresh = imageScores.sortWith(_ < _)(imageScores.length - maxPerImage)
           for (j <- Range(1, imdb.numClasses)) {
             val box = allBoxes(j)(i)
-            val keep = (0 until box.rows).filter(x => box(x, box.cols - 1) >= imageThresh).toArray
-            allBoxes(j)(i) = MatrixUtil.selectMatrix(box, keep, 0)
+            val keep = (1 to box.size(1)).filter(x =>
+              box.valueAt(x, box.size(2)) >= imageThresh).toArray
+            allBoxes(j)(i) = MatrixUtil.selectMatrix(box, keep, 1)
           }
         }
       }
@@ -113,7 +114,7 @@ object Test {
   }
 
   def imDetect(model: Module[Float], d: ImageWithRoi):
-  (DenseMatrix[Float], DenseMatrix[Float]) = {
+  (Tensor[Float], Tensor[Float]) = {
     val input = new Table
     input.insert(ImageToTensor(d))
     input.insert(d.imInfo.get)
@@ -127,14 +128,14 @@ object Test {
     // unscale back to raw image space
     val boxes = rois.narrow(2, 2, 4).div(d.imInfo.get.valueAt(3))
     // Apply bounding-box regression deltas
-    var predBoxes = Bbox.bboxTransformInv(boxes.toBreezeMatrix(), boxDeltas.toBreezeMatrix())
+    var predBoxes = Bbox.bboxTransformInv(boxes, boxDeltas)
     predBoxes = Bbox.clipBoxes(predBoxes, d.oriHeight, d.oriWidth)
-    (scores.toBreezeMatrix(), predBoxes)
+    (scores, predBoxes)
   }
 
-  def visDetection(d: Roidb, clsname: String, clsDets: DenseMatrix[Float],
+  def visDetection(d: Roidb, clsname: String, clsDets: Tensor[Float],
     thresh: Float = 0.3f): Unit = {
-    Draw.vis(d.imagePath, clsname, clsDets,
+    Draw.vis2(d.imagePath, clsname, clsDets,
       FileUtil.demoPath + s"/${clsname}_"
         + d.imagePath.substring(d.imagePath.lastIndexOf("/") + 1))
   }

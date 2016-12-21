@@ -18,6 +18,7 @@
 package com.intel.analytics.bigdl.pvanet.utils
 
 import java.io.{BufferedWriter, File, FileNotFoundException, FileWriter}
+import java.nio.file.Paths
 
 import breeze.linalg.DenseMatrix
 import com.intel.analytics.bigdl.pvanet.datasets.Imdb
@@ -55,6 +56,9 @@ object FileUtil {
     outdir
   }
 
+
+  def getFile(s: String): String = Paths.get(DATA_DIR, s).toString
+
   def getOutputDir(imdb: Imdb): String = {
     getOutputDir(imdb, "")
   }
@@ -82,15 +86,20 @@ object FileUtil {
 
   def loadFeaturesFullName[T: ClassTag](s: String, hasSize: Boolean = true,
     middleRoot: String = middleRoot)(implicit ev: TensorNumeric[T]): Tensor[T] = {
+    loadFeaturesFullPath[T](Paths.get(middleRoot, s).toString, hasSize)
+  }
+
+  def loadFeaturesFullPath[T: ClassTag](s: String, hasSize: Boolean = true)
+    (implicit ev: TensorNumeric[T]): Tensor[T] = {
     println(s"load $s from file")
 
     if (hasSize) {
       val size = s.substring(s.lastIndexOf("-") + 1, s.lastIndexOf("."))
         .split("_").map(x => x.toInt)
-      Tensor(Storage(Source.fromFile(middleRoot + s).getLines()
+      Tensor(Storage(Source.fromFile(s).getLines()
         .map(x => ev.fromType[Double](x.toDouble)).toArray)).reshape(size)
     } else {
-      Tensor(Storage(Source.fromFile(middleRoot + s).getLines()
+      Tensor(Storage(Source.fromFile(s).getLines()
         .map(x => ev.fromType[Double](x.toDouble)).toArray))
     }
   }
@@ -126,13 +135,14 @@ object FileUtil {
   }
 
 
-  def assertEqual[T: ClassTag](expectedName: String, output: Tensor[T])
+  def assertEqual[T: ClassTag](expectedName: String, output: Tensor[T], prec: Double)
     (implicit ev: TensorNumeric[T]): Unit = {
     val expected = loadFeatures[T](expectedName)
-    assertEqual(expected, output, expectedName)
+    assertEqual(expected, output, expectedName, prec)
   }
 
-  def assertEqual[T: ClassTag](expected: Tensor[T], output: Tensor[T], info: String = "")
+  def assertEqual[T: ClassTag](expected: Tensor[T], output: Tensor[T],
+    info: String = "", prec: Double)
     (implicit ev: TensorNumeric[T]): Unit = {
     if (!info.isEmpty) {
       println(s"compare $info ...")
@@ -141,7 +151,7 @@ object FileUtil {
       s"expected size ${expected.size().mkString(",")} " +
       s"does not match output ${output.size().mkString(",")}")
     (expected.storage().array() zip output.storage().array()).foreach(x =>
-      require(ev.toType[Double](ev.abs(ev.minus(x._1, x._2))) < 5,
+      require(ev.toType[Double](ev.abs(ev.minus(x._1, x._2))) < prec,
         s"${x._1} does not equal ${x._2}"))
     if (!info.isEmpty) {
       println(s"$info pass")

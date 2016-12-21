@@ -31,10 +31,10 @@ import com.intel.analytics.bigdl.utils.RandomGenerator
 import scala.util.Random
 
 
-class ObjectDataSource(val imdb: Imdb, looped: Boolean = true)
+class ObjectDataSource(val imdb: Imdb, val useFlipped: Boolean = false)
   extends LocalDataSet[Roidb] {
 
-  val roidbs = imdb.getRoidb
+  val roidbs = imdb.getRoidb(useFlipped)
 
   // permutation of the data index
   var perm: Array[Int] = _
@@ -52,7 +52,7 @@ class ObjectDataSource(val imdb: Imdb, looped: Boolean = true)
         perm(r._1 * 2 + 1) = indsArr(r._2 * 2 + 1)
       })
     }
-    if (imdb.param.ASPECT_GROUPING) {
+    if (FasterRcnnParam.ASPECT_GROUPING) {
       shuffleWithAspectGrouping(imdb.widths, imdb.heights)
     } else {
       RandomGenerator.shuffle(perm)
@@ -64,8 +64,8 @@ class ObjectDataSource(val imdb: Imdb, looped: Boolean = true)
    *
    * @return
    */
-  override def data(): Iterator[Roidb] = {
-    perm = imdb.getRoidb.indices.toArray
+  def data(looped: Boolean): Iterator[Roidb] = {
+    perm = roidbs.indices.toArray
     new Iterator[Roidb] {
       private val index = new AtomicInteger()
 
@@ -97,15 +97,14 @@ class ObjectDataSource(val imdb: Imdb, looped: Boolean = true)
 }
 
 object ObjectDataSource {
-  def apply(imdb: Imdb, looped: Boolean = true): ObjectDataSource =
-    new ObjectDataSource(imdb, looped)
+  def apply(imdb: Imdb): ObjectDataSource =
+    new ObjectDataSource(imdb)
 
-  def apply(name: String, devkitPath: String, param: FasterRcnnParam,
-    looped: Boolean): ObjectDataSource =
-    new ObjectDataSource(Imdb.getImdb(name, param, Some(devkitPath)), looped)
+  def apply(name: String, devkitPath: String, useFlipped: Boolean): ObjectDataSource =
+    new ObjectDataSource(Imdb.getImdb(name, Some(devkitPath)), useFlipped)
 
-  def apply(name: String, param: FasterRcnnParam, looped: Boolean): ObjectDataSource =
-    new ObjectDataSource(Imdb.getImdb(name, param), looped)
+  def apply(name: String, useFlipped: Boolean): ObjectDataSource =
+    new ObjectDataSource(Imdb.getImdb(name), useFlipped)
 }
 
 class ImageScalerAndMeanSubstractor(param: FasterRcnnParam)
@@ -141,7 +140,7 @@ class ImageScalerAndMeanSubstractor(param: FasterRcnnParam)
     require(pixels.length % 3 == 0)
     // mean subtract
     val meanPixels = pixels.zipWithIndex.map(x =>
-      (pixels(x._2) - param.PIXEL_MEANS.head.head(x._2 % 3)).toFloat
+      (pixels(x._2) - FasterRcnnParam.PIXEL_MEANS.head.head(x._2 % 3)).toFloat
     )
 
     val scaledImage = new RGBImageOD(meanPixels, imageBuff.getWidth, imageBuff.getHeight)

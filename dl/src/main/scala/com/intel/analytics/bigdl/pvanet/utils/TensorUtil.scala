@@ -79,7 +79,7 @@ object TensorUtil {
     resData
   }
 
-  def horzConcat[T: ClassTag](tensors: Tensor[T]*)(implicit ev: TensorNumeric[T]): Tensor[T] = {
+  def horzcat[T: ClassTag](tensors: Tensor[T]*)(implicit ev: TensorNumeric[T]): Tensor[T] = {
     require(tensors(0).dim() == 2, "currently only support 2D")
     val nRows = tensors(0).size(1)
     var nCols = tensors(0).size(2)
@@ -99,23 +99,31 @@ object TensorUtil {
     resData
   }
 
+
   def vertConcat[T: ClassTag](tensors: Tensor[T]*)(implicit ev: TensorNumeric[T]): Tensor[T] = {
-    require(tensors(0).dim() == 2, "currently only support 2D")
-    var nRows = tensors(0).size(1)
-    val nCols = tensors(0).size(2)
+    require(tensors(0).dim() <= 2, "currently only support 1D or 2D")
+
+    def getRowCol(tensor: Tensor[T]): (Int, Int) = {
+      if (tensors(0).nDimension() == 2) {
+        (tensor.size(1), tensor.size(2))
+      } else {
+        (1, tensor.size(1))
+      }
+    }
+
+    var nRows = getRowCol(tensors(0))._1
+    val nCols = getRowCol(tensors(0))._2
     for (i <- 1 until tensors.length) {
-      require(tensors(i).size(2) == nCols, "the cols length must be equal")
-      nRows += tensors(i).size(1)
+      require(getRowCol(tensors(i))._2 == nCols, "the cols length must be equal")
+      nRows += getRowCol(tensors(i))._1
     }
     val resData = Tensor[T](nRows, nCols)
     var id = 0
     tensors.foreach(tensor =>
-      (1 to tensor.size(1)).foreach(rid => {
+      (1 to getRowCol(tensor)._1).foreach(rid => {
         id = id + 1
-        (1 to tensor.size(2)).foreach(cid =>
-          resData.setValue(id, cid, tensor.valueAt(rid, cid)))
+        resData.update(id, tensor)
       }))
     resData
   }
-
 }

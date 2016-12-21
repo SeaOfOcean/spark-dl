@@ -23,6 +23,8 @@ import java.io.File
 import javax.imageio.ImageIO
 
 import breeze.linalg.DenseMatrix
+import com.intel.analytics.bigdl.pvanet.utils.MatrixUtil
+import com.intel.analytics.bigdl.tensor.Tensor
 
 object Draw {
   def vis(imgPath: String, clsname: String, dets: DenseMatrix[Float],
@@ -47,6 +49,38 @@ object Draw {
         }
         draw(g2d, bbox(0).toInt, bbox(1).toInt, bbox(2).toInt - bbox(0).toInt,
           bbox(3).toInt - bbox(1).toInt, s"$clsname ${"%.3f".format(score)}")
+      }
+    }
+    if (g2d != null) {
+      ImageIO.write(img, savePath.substring(savePath.lastIndexOf(".") + 1), new File(savePath))
+      println(savePath + " is saved")
+      g2d.dispose
+    }
+  }
+
+  def vis2(imgPath: String, clsname: String, dets: Tensor[Float],
+    savePath: String, thresh: Float = 0.3f): Unit = {
+    var img: BufferedImage = null
+    var g2d: Graphics2D = null
+
+    def loadImage = {
+      img = ImageIO.read(new File(imgPath))
+      g2d = img.createGraphics
+      val font = new Font("Helvetica", Font.PLAIN, 14);
+      g2d.setFont(font)
+      g2d.setStroke(new BasicStroke(3))
+    }
+
+    for (i <- 1 to Math.min(10, dets.size(1))) {
+      val bbox = MatrixUtil.selectMatrix2(dets, Array(i), Array(1, 2, 3, 4)).resize(4)
+      val score = dets.valueAt(i, 5)
+      if (score > thresh) {
+        if (g2d == null) {
+          loadImage
+        }
+        draw(g2d, bbox.valueAt(1).toInt, bbox.valueAt(2).toInt,
+          bbox.valueAt(3).toInt - bbox.valueAt(1).toInt,
+          bbox.valueAt(4).toInt - bbox.valueAt(2).toInt, s"$clsname ${"%.3f".format(score)}")
       }
     }
     if (g2d != null) {

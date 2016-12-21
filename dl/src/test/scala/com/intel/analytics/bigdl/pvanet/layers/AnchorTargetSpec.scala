@@ -8,7 +8,7 @@ import org.scalatest.{FlatSpec, Matchers}
 class AnchorTargetSpec extends FlatSpec with Matchers {
   "getAnchorTarget" should "work properly" in {
     val param = new VggParam(Phase.TRAIN)
-    val datasource = Imdb.getImdb("voc_2007_testcode1", param)
+    val datasource = Imdb.getImdb("voc_2007_testcode1")
     val roidb = datasource.loadAnnotation("000014")
     val scaler = new ImageScalerAndMeanSubstractor(param)
     val img = scaler.apply(roidb)
@@ -16,10 +16,9 @@ class AnchorTargetSpec extends FlatSpec with Matchers {
     val anchorTarget = new AnchorTarget(param)
     val height = 38
     val width = 57
-//    val targets = anchorTarget.getAnchorTarget(height, width,
+    //    val targets = anchorTarget.getAnchorTarget(height, width,
 //      img.scaledImage.height(), img.scaledImage.width(), img.gtBoxes.get)
-    val targets = anchorTarget.getAnchorTarget(height, width,
-      600, 901, img.gtBoxes.get)
+val targets = anchorTarget.getAnchorTarget(height, width, 600, 901, img.gtBoxes.get)
     val expected1 = BboxTarget(
       FileUtil.loadFeatures[Float]("rpn_labels"),
       FileUtil.loadFeatures[Float]("rpn_bbox_targets"),

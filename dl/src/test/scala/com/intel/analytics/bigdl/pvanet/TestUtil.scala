@@ -60,7 +60,8 @@ object TestUtil {
       assert(actual.size(1) == expected.rows && actual.size(2) == expected.cols)
       for (r <- 0 until expected.rows) {
         for (c <- 0 until expected.cols) {
-          assert(abs(expected(r, c) - actual.valueAt(r + 1, c + 1)) < diff)
+          assert(abs(expected(r, c) - actual.valueAt(r + 1, c + 1)) < diff,
+            s"${expected(r, c)} not equal to ${actual.valueAt(r + 1, c + 1)}")
         }
       }
     }

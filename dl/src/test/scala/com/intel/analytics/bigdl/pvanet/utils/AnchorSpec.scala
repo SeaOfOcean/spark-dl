@@ -57,7 +57,7 @@ class AnchorSpec extends FlatSpec with Matchers {
   "_generate anchors" should "work well" in {
     val act1 = Anchor.generateBasicAnchors(Array[Float](0.5f, 1, 2),
       Array[Float](8, 16, 32))
-    val act1Tensor = Anchor.generateAnchors2(Array[Float](0.5f, 1, 2),
+    val act1Tensor = Anchor.generateBasicAnchors2(Array[Float](0.5f, 1, 2),
       Array[Float](8, 16, 32))
     val expected1 = DenseMatrix((-84.0, -40.0, 99.0, 55.0),
       (-176.0, -88.0, 191.0, 103.0),
@@ -72,7 +72,7 @@ class AnchorSpec extends FlatSpec with Matchers {
     TestUtil.assertMatrixEqualTM(act1Tensor, expected1, 1e-6)
     val act2 = Anchor.generateBasicAnchors(Array[Float](0.5f, 1, 2, 4, 8),
       Array[Float](8, 16, 32, 64, 128))
-    val act2Tensor = Anchor.generateAnchors2(Array[Float](0.5f, 1, 2, 4, 8),
+    val act2Tensor = Anchor.generateBasicAnchors2(Array[Float](0.5f, 1, 2, 4, 8),
       Array[Float](8, 16, 32, 64, 128))
     val expected2 = DenseMatrix(
       (-84.0, -40.0, 99.0, 55.0),

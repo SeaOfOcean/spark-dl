@@ -122,7 +122,7 @@ class FasterRcnnOptimizer(data: LocalDataSet[ImageWithRoi],
 
     state("epoch") = state.get[Int]("epoch").getOrElse(1)
     state("neval") = state.get[Int]("neval").getOrElse(1)
-    var dataIter = data.data()
+    var dataIter = data.data(true)
     data.shuffle()
     while (!endWhen(state)) {
       val start = System.nanoTime()
@@ -164,7 +164,7 @@ val dataFetchTime = System.nanoTime()
 
       if (count >= data.size()) {
         state("epoch") = state[Int]("epoch") + 1
-        dataIter = data.data()
+        dataIter = data.data(true)
         data.shuffle()
         count = 0
       }

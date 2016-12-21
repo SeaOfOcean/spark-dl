@@ -214,7 +214,7 @@ class PvanetFRcnn(phase: PhaseType = TEST)
     compose.add(convTable)
     val rpnAndFeature = new ConcatTable()
     rpnAndFeature.add(new Sequential()
-      .add(new SelectTable[Tensor[Float], Float](1)).add(createRpn()))
+      .add(new SelectTable(1)).add(createRpn()))
     rpnAndFeature.add(new JoinTable(2, 4))
     compose.add(rpnAndFeature)
     compose

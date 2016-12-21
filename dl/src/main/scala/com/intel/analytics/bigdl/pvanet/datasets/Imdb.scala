@@ -26,7 +26,7 @@ import com.intel.analytics.bigdl.pvanet.utils.{FileUtil, MatrixUtil}
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.File
 
-abstract class Imdb(val param: FasterRcnnParam) {
+abstract class Imdb {
   val name: String
   val classes: Array[String]
   var imageIndex: Array[String] = _
@@ -55,10 +55,10 @@ abstract class Imdb(val param: FasterRcnnParam) {
    * gt_classes
    * flipped
    */
-  def getRoidb: Array[Roidb] = {
+  def getRoidb(useFlipped: Boolean): Array[Roidb] = {
     if (roidb != null && roidb.length > 0) return roidb
     roidb = loadRoidb
-    if (param.USE_FLIPPED) {
+    if (useFlipped) {
       appendFlippedImages()
     }
     roidb
@@ -93,7 +93,9 @@ abstract class Imdb(val param: FasterRcnnParam) {
     imageIndex = newImageIndex
   }
 
-  def evaluateDetections(allBoxes: Array[Array[DenseMatrix[Float]]], outputDir: String): Unit
+  def evaluateDetections(allBoxes: Array[Array[DenseMatrix[Float]]]): Unit
+
+  def evaluateDetections(allBoxes: Array[Array[Tensor[Float]]]): Unit
 
   private def getImageSizes: Array[Array[Int]] = {
     if (sizes != null) return sizes
@@ -161,13 +163,13 @@ object Imdb {
    * Get an imdb (image database) by name
    *
    */
-  def getImdb(name: String, param: FasterRcnnParam, devkitPath: Option[String] = None): Imdb = {
+  def getImdb(name: String, devkitPath: Option[String] = None): Imdb = {
     val items = name.split("_")
     if (items.length != 3) throw new Exception("dataset name error")
     if (items(0) == "voc") {
       devkitPath match {
-        case Some(path) => new PascalVoc(items(1), items(2), path, param = param)
-        case _ => new PascalVoc(items(1), items(2), param = param)
+        case Some(path) => new PascalVoc(items(1), items(2), path)
+        case _ => new PascalVoc(items(1), items(2))
       }
     } else {
       throw new UnsupportedOperationException("unsupported dataset")

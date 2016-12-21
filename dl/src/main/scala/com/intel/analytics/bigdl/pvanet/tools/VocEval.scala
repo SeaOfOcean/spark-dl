@@ -21,7 +21,6 @@ import java.io.File
 import java.util
 
 import breeze.linalg.{DenseMatrix, DenseVector, argmax, argsort, convert, max}
-import com.intel.analytics.bigdl.pvanet.datasets.PascalVoc
 import com.intel.analytics.bigdl.pvanet.utils.FileUtil
 import com.intel.analytics.bigdl.utils.{File => DlFile}
 
@@ -95,19 +94,19 @@ object VocEval {
    * [use_07_metric])
    * Top level function that does the PASCAL VOC evaluation.
    *
-   * @param detpath       Path to detections
+   * @param detPath       Path to detections
    *                      detpath.format(classname) should produce the detection results file.
-   * @param annopath      Path to annotations
+   * @param annoPath      Path to annotations
    *                      annopath.format(imagename) should be the xml annotations file.
-   * @param imagesetfile  Text file containing the list of images, one image per line.
+   * @param imagesetFile  Text file containing the list of images, one image per line.
    * @param classname     Category name (duh)
-   * @param cachedir      Directory for caching the annotations
-   * @param ovthresh      Overlap threshold (default = 0.5)
+   * @param cacheDir      Directory for caching the annotations
+   * @param ovThresh      Overlap threshold (default = 0.5)
    * @param use_07_metric Whether to use VOC07's 11 point AP computation
    * @return
    */
-  def eval(detpath: String, annopath: String, imagesetfile: String, classname: String,
-    cachedir: String, ovthresh: Double = 0.5, use_07_metric: Boolean = false)
+  def eval(detPath: String, annoPath: String, imagesetFile: String, classname: String,
+    cacheDir: String, ovThresh: Double = 0.5, use_07_metric: Boolean = false)
   : (Array[Double], Array[Double], Double) = {
     // assumes detections are in detpath.format(classname)
     // assumes annotations are in annopath.format(imagename)
@@ -115,20 +114,20 @@ object VocEval {
     // cachedir caches the annotations in a pickle file
 
     // first load gt
-    if (!FileUtil.existFile(cachedir)) {
-      new File(cachedir).mkdirs()
+    if (!FileUtil.existFile(cacheDir)) {
+      new File(cacheDir).mkdirs()
     }
-    val cachefile = s"${cachedir}/annots.pkl"
+    val cachefile = s"${cacheDir}/annots.pkl"
     // read list of images
-    val imagenames = Source.fromFile(imagesetfile).getLines().toList.map(x => x.trim)
+    val imageNames = Source.fromFile(imagesetFile).getLines().toList.map(x => x.trim)
 
     var recs: util.HashMap[Int, List[Object]] = null
     def loadAnnots: Unit = {
       // load annots
       recs = new util.HashMap[Int, List[Object]]()
-      imagenames.zipWithIndex.foreach {
+      imageNames.zipWithIndex.foreach {
         case (imagename, i) =>
-          recs.put(imagename.toInt, parseRec(annopath.format(imagename)))
+          recs.put(imagename.toInt, parseRec(annoPath.format(imagename)))
       }
       DlFile.save(recs, cachefile)
     }
@@ -148,9 +147,9 @@ object VocEval {
     // extract gt objects for this class
     var npos = 0
     var classRecs = Map[Int, (DenseMatrix[Int], List[Boolean], Array[Boolean])]()
-    imagenames.foreach { imagename =>
+    imageNames.foreach { imagename =>
       val R = recs.get(imagename.toInt).filter(obj => obj.name == classname)
-      var bbox = new DenseMatrix[Int](R.length, 4)
+      val bbox = new DenseMatrix[Int](R.length, 4)
       R.zipWithIndex.foreach(x => Range(0, 4).foreach(j => bbox(x._2, j) = x._1.bbox(j)))
       val difficult = R.map(x => x.difficult)
       val det = new Array[Boolean](R.length)
@@ -158,7 +157,7 @@ object VocEval {
       classRecs += (imagename.toInt -> (bbox, difficult, det))
     }
     // read dets
-    val detfile = detpath.format(classname)
+    val detfile = detPath.format(classname)
     val splitlines = Source.fromFile(detfile).getLines().map(x =>
       x.trim.split(" ")).toList
     var imageIds = splitlines.map(x => x(0).toInt)
@@ -203,7 +202,7 @@ object VocEval {
         jmax = argmax(overlaps)
       }
 
-      if (ovmax > ovthresh) {
+      if (ovmax > ovThresh) {
         if (!R._2(jmax)) {
           if (!R._3(jmax)) {
             tp(d) = 1
@@ -232,7 +231,7 @@ object VocEval {
 
   def parseRec(path: String): List[Object] = {
     val xml = XML.loadFile(path)
-    var objs = xml \\ "object"
+    val objs = xml \\ "object"
     val boxes = new Array[Int](4)
     var objects = List[Object]()
     // Load object bounding boxes into a data frame.
