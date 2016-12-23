@@ -17,8 +17,7 @@
 
 package com.intel.analytics.bigdl.nn
 
-import com.intel.analytics.bigdl._
-import com.intel.analytics.bigdl.nn.abstractnn.{AbstractCriterion, Activity}
+import com.intel.analytics.bigdl.nn.abstractnn.{Activity, AbstractCriterion}
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.utils.{T, Table}
 
@@ -44,7 +43,7 @@ class ParallelCriterion[T: ClassTag](val repeatTarget: Boolean = false)
     criterion: AbstractCriterion[_ <: Activity, _ <: Activity, T],
     weight : Double = 1.0): this.type = {
     criterions.insert(criterion)
-    weights.insert(ev.fromType[Double](weight))
+    weights.insert(ev.fromType(weight))
     outputs.insert(ev.fromType(0))
     this
   }
@@ -52,12 +51,11 @@ class ParallelCriterion[T: ClassTag](val repeatTarget: Boolean = false)
   override def updateOutput(input: Table, target: Table): T = {
     var output = ev.fromType[Int](0)
     var i = 1
-    while (i <= criterions.length()) {
-      val currentCriterion = criterions[Criterion[T]](i)
+    while(i <= criterions.length()) {
+      val currentCriterion = criterions[AbstractCriterion[Activity, Activity, T]](i)
       val currentTarget: Activity = if (repeatTarget) target else target(i)
       outputs(i) = currentCriterion.forward(input(i), currentTarget)
-      output = ev.plus(output, ev.times(weights[T](i), outputs(i))
-      )
+      output = ev.plus(output, ev.times(weights[T](i), outputs(i)))
       i += 1
     }
 
@@ -71,7 +69,7 @@ class ParallelCriterion[T: ClassTag](val repeatTarget: Boolean = false)
     while (i <= criterions.length()) {
       val currentCriterion = criterions[AbstractCriterion[Activity, Activity, T]](i)
       val currentTarget: Activity = if (repeatTarget) target else target(i)
-      Utils.recursiveAdd[T](gradInput(i), ev.toType[Double](weights[T](i)),
+      Utils.recursiveAdd[T](gradInput(i), ev.toType[Double](weights(i)),
         currentCriterion.updateGradInput(input(i), currentTarget))
       i += 1
     }

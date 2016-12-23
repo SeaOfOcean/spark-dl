@@ -54,26 +54,25 @@ class SpatialConvolution[T: ClassTag](
     kernelH, kernelW)
   val gradBias: Tensor[T] = Tensor[T](nOutputPlane)
 
-  val fInput = Tensor[T]()
-  val fGradInput = Tensor[T]()
-  private val ones = Tensor[T]()
-  private val onesBatch = Tensor[T]()
-  private val onesBias = Tensor[T]()
-  private var weightMM: Tensor[T] = null
-  private val gradientBiasMT: Tensor[T] = Tensor[T]()
-  private var gradWeightMM: Tensor[T] = null
+  var fInput = Tensor[T]()
+  var fGradInput = Tensor[T]()
+  protected val ones = Tensor[T]()
+  protected val onesBatch = Tensor[T]()
+  protected val onesBias = Tensor[T]()
+  protected var weightMM: Tensor[T] = null
+  protected var gradientBiasMT: Tensor[T] = Tensor[T]()
+  protected var gradWeightMM: Tensor[T] = null
   @transient
-  private var gradWeightMMInBatch: Tensor[T] = null
-  private val _1x1 = if (kernelH == 1 && kernelW == 1 && strideW == 1 && strideH == 1
+  protected var gradWeightMMInBatch: Tensor[T] = null
+  protected val _1x1 = if (kernelH == 1 && kernelW == 1 && strideW == 1 && strideH == 1
     && padH == 0 && padW == 0) {
     true
   } else {
     false
   }
   reset()
-
-  private var im2colTime = 0L
-  private var col2imTime = 0L
+  protected var im2colTime = 0L
+  protected var col2imTime = 0L
 
   def getIm2ColTime(): Double = im2colTime
 
@@ -85,7 +84,7 @@ class SpatialConvolution[T: ClassTag](
   }
 
   @transient
-  private var results: Array[Future[Unit]] = null
+  protected var results: Array[Future[Unit]] = null
 
   override def reset(): Unit = {
     initMethod match {
@@ -400,7 +399,7 @@ class SpatialConvolution[T: ClassTag](
       s" $kernelH, $strideW, $strideH, $padW, $padH)"
   }
 
-  private def updateOutputFrame(input: Tensor[T], output: Tensor[T], weight: Tensor[T],
+  protected def updateOutputFrame(input: Tensor[T], output: Tensor[T], weight: Tensor[T],
     bias: Tensor[T], fInput: Tensor[T],
     kW: Int, kH: Int, dW: Int, dH: Int, padW: Int, padH: Int,
     nInputPlane: Int, inputWidth: Int, inputHeight: Int,
@@ -429,7 +428,7 @@ class SpatialConvolution[T: ClassTag](
     output2d.addr(ev.fromType(1), bias, onesBias)
   }
 
-  private def updateGradInputFrame(gradInput: Tensor[T], gradOutput: Tensor[T],
+  protected def updateGradInputFrame(gradInput: Tensor[T], gradOutput: Tensor[T],
     weight: Tensor[T], fgradInput: Tensor[T], kW: Int, kH: Int, dW: Int, dH: Int,
     padW: Int, padH: Int)(implicit ev: TensorNumeric[T]): Unit = {
     ev.getType() match {
@@ -467,7 +466,7 @@ class SpatialConvolution[T: ClassTag](
     }
   }
 
-  private def accGradParametersFrame(gradOutput: Tensor[T], gradWeight: Tensor[T],
+  protected def accGradParametersFrame(gradOutput: Tensor[T], gradWeight: Tensor[T],
     gradBias: Tensor[T], fInput: Tensor[T], scale: T)(implicit ev: TensorNumeric[T]): Unit = {
 
     ev.getType() match {
@@ -523,7 +522,7 @@ class SpatialConvolution[T: ClassTag](
     }
   }
 
-  private def calcGradParametersFrame(gradOutput: Tensor[T], gradWeight: Tensor[T],
+  protected def calcGradParametersFrame(gradOutput: Tensor[T], gradWeight: Tensor[T],
     gradBias: Tensor[T],
     fInput: Tensor[T], scale: T)(implicit ev: TensorNumeric[T]): Unit = {
 

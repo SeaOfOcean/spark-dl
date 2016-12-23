@@ -44,6 +44,7 @@ class SaveObjSpec extends FlatSpec with Matchers {
 
   "GoogleNet load from saved file" should "be same with the original one" in {
     val model = GoogleNet_v1(1000)
+
     val filePath = java.io.File.createTempFile("SaveObjSpecGoogleNet", ".obj").getAbsolutePath
     model.forward(Tensor[Float](4, 3, 224, 224))
     File.save(model, filePath, true)

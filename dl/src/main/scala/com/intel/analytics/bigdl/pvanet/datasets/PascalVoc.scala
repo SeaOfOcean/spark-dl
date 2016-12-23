@@ -243,7 +243,7 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
     results
   }
 
-  def cleanup(cachedir: String) = new File(cachedir).listFiles().foreach(f => f.delete())
+  private def cleanup(cachedir: String) = new File(cachedir).listFiles().foreach(f => f.delete())
 
   def evaluateDetections(allBoxes: Array[Array[DenseMatrix[Float]]]): Unit = {
     writeVocResultsFile(allBoxes)

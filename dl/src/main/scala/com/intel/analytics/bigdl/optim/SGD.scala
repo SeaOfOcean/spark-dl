@@ -146,6 +146,17 @@ object SGD {
     }
   }
 
+  case class EpochDecay(decayType: (Int) => Double) extends LearningRateSchedule {
+    override def updateHyperParameter(config: Table, state: Table): Unit = {
+      val lr = config.get[Double]("learningRate").getOrElse(1e-1)
+      var clr = -lr
+      val epoch = config[Int]("epoch")
+      val decay = decayType(epoch)
+      clr = clr * math.pow(0.1, decay)
+      config("clr") = clr
+    }
+  }
+
   case class EpochStep(stepSize : Int, gamma : Double) extends LearningRateSchedule {
     override def updateHyperParameter(config: Table, state: Table): Unit = {
       val lr = config.get[Double]("learningRate").getOrElse(1e-3)

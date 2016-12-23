@@ -23,7 +23,6 @@ import caffe.Caffe
 import caffe.Caffe.{LayerParameter, NetParameter, V1LayerParameter}
 import com.google.protobuf.{CodedInputStream, TextFormat}
 import com.intel.analytics.bigdl.Module
-import com.intel.analytics.bigdl.models.imagenet.AlexNet
 import com.intel.analytics.bigdl.nn.{Module, Utils}
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
@@ -31,7 +30,7 @@ import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import scala.reflect.ClassTag
 
 class CaffeLoader[@specialized(Float, Double) T: ClassTag](defName: String, modelName: String,
-  matchAll: Boolean = true //if match all modules with parameters
+  matchAll: Boolean = true // if match all modules with parameters
 )(implicit ev: TensorNumeric[T]) {
   val isOverwrite = true
   var netparam: Caffe.NetParameter = _
@@ -150,13 +149,5 @@ object CaffeLoader {
     (implicit ev: TensorNumeric[T]): Module[T] = {
     val caffeLoader = new CaffeLoader[T](defPath, modelPath, matchAll)
     caffeLoader.copyParameters(model)
-  }
-
-  def main(args: Array[String]): Unit = {
-    val modelName = "alexnet"
-    Module.loadCaffeParameters[Float](AlexNet(1000),
-      s"data/model/$modelName/deploy.prototxt",
-      s"data/model/$modelName/$modelName.caffemodel"
-    )
   }
 }
