@@ -17,8 +17,9 @@
 
 package com.intel.analytics.bigdl.dataset.image
 
-import com.intel.analytics.bigdl.dataset.{Batch, Transformer}
+import com.intel.analytics.bigdl.dataset.{Utils, Batch, Transformer}
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
+import com.intel.analytics.bigdl.utils.Engine
 
 import scala.collection.Iterator
 
@@ -26,7 +27,7 @@ object RGBImgToBatch {
   def apply(batchSize: Int): RGBImgToBatch = new RGBImgToBatch(batchSize)
 }
 
-class RGBImgToBatch(batchSize: Int)
+class RGBImgToBatch private[bigdl](totalBatch: Int)
   extends Transformer[LabeledRGBImage, Batch[Float]] {
 
   override def apply(prev: Iterator[LabeledRGBImage]): Iterator[Batch[Float]] = {
@@ -37,6 +38,7 @@ class RGBImgToBatch(batchSize: Int)
       private var labelData: Array[Float] = null
       private var width = 0
       private var height = 0
+      private val batchSize = Utils.getBatchSize(totalBatch)
 
       override def hasNext: Boolean = prev.hasNext
 

@@ -17,7 +17,7 @@
 
 package com.intel.analytics.bigdl.dataset.image
 
-import com.intel.analytics.bigdl.dataset.{Batch, Transformer}
+import com.intel.analytics.bigdl.dataset.{Utils, Batch, Transformer}
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 
 import scala.collection.Iterator
@@ -28,7 +28,7 @@ object GreyImgToBatch {
   }
 }
 
-class GreyImgToBatch(batchSize: Int)
+class GreyImgToBatch private[dataset](totalBatchSize: Int)
   extends Transformer[LabeledGreyImage, Batch[Float]] {
 
   private def copyImage(img: GreyImage, storage: Array[Float], offset: Int): Unit = {
@@ -47,6 +47,7 @@ class GreyImgToBatch(batchSize: Int)
       private val labelTensor: Tensor[Float] = Tensor[Float]()
       private var featureData: Array[Float] = null
       private var labelData: Array[Float] = null
+      private val batchSize = Utils.getBatchSize(totalBatchSize)
       private var width = 0
       private var height = 0
 

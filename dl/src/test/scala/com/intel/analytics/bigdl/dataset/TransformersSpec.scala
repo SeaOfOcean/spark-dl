@@ -26,7 +26,7 @@ import com.intel.analytics.bigdl.utils.RandomGenerator.RNG
 import org.scalatest.{FlatSpec, Matchers}
 
 class TransformersSpec extends FlatSpec with Matchers {
-  import Utils._
+  import TestUtils._
 
   "Grey Image Cropper" should "crop image correct" in {
     val image = new LabeledGreyImage(32, 32)
@@ -75,6 +75,7 @@ class TransformersSpec extends FlatSpec with Matchers {
   }
 
   "Grey Image toTensor" should "convert correctly" in {
+    Engine.setNodeNumber(None)
     val image1 = new LabeledGreyImage(32, 32)
     val image2 = new LabeledGreyImage(32, 32)
     val image3 = new LabeledGreyImage(32, 32)
@@ -197,6 +198,7 @@ class TransformersSpec extends FlatSpec with Matchers {
   }
 
   "RGB Image toTensor" should "convert correctly" in {
+    Engine.setNodeNumber(None)
     val image1 = new LabeledRGBImage(32, 32)
     val image2 = new LabeledRGBImage(32, 32)
     val image3 = new LabeledRGBImage(32, 32)
@@ -310,6 +312,7 @@ class TransformersSpec extends FlatSpec with Matchers {
   }
 
   "Multi thread RGB Image toTensor" should "convert correctly" in {
+    Engine.setNodeNumber(None)
     val image1 = new LabeledRGBImage(32, 32)
     val image2 = new LabeledRGBImage(32, 32)
     val image3 = new LabeledRGBImage(32, 32)
@@ -324,7 +327,7 @@ class TransformersSpec extends FlatSpec with Matchers {
     Engine.setCoreNumber(1)
     val dataSource = new LocalArrayDataSet[LabeledRGBImage](Array(image1, image2, image3))
     val toTensor = new MTLabeledRGBImgToBatch[LabeledRGBImage](
-      width = 32, height = 32, batchSize = 2, transformer = Identity[LabeledRGBImage]
+      width = 32, height = 32, totalBatchSize = 2, transformer = Identity[LabeledRGBImage]
     )
     val tensorDataSource = dataSource -> toTensor
     val iter = tensorDataSource.data(looped = true)

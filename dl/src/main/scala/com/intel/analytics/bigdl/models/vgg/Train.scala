@@ -19,7 +19,7 @@ package com.intel.analytics.bigdl.models.vgg
 import java.nio.file.Paths
 
 import com.intel.analytics.bigdl.dataset.DataSet
-import com.intel.analytics.bigdl.dataset.image.{RGBImgToBatch, RGBImgNormalizer, SampleToRGBImg, RGBImage}
+import com.intel.analytics.bigdl.dataset.image._
 import com.intel.analytics.bigdl.nn.{Module, ClassNLLCriterion}
 import com.intel.analytics.bigdl._
 import com.intel.analytics.bigdl.nn.abstractnn.AbstractModule
@@ -97,7 +97,7 @@ object SparkTrain {
   def main(args: Array[String]): Unit = {
     trainSparkParser.parse(args, new TrainSparkParams()).map(param => {
       Engine.setCluster(param.nodesNumber, param.coreNumberPerNode)
-      val batchSize = 128
+      val batchSize = param.batchSize.getOrElse(128)
       val maxEpoch = 90
 
       val conf = Engine.sparkConf()

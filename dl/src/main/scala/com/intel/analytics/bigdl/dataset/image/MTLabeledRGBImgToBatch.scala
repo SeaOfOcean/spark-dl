@@ -19,7 +19,7 @@ package com.intel.analytics.bigdl.dataset.image
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import com.intel.analytics.bigdl.dataset.{Batch, Transformer}
+import com.intel.analytics.bigdl.dataset.{Utils, Batch, Transformer}
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import com.intel.analytics.bigdl.utils.Engine
 import scala.reflect.ClassTag
@@ -33,9 +33,11 @@ object MTLabeledRGBImgToBatch {
   }
 }
 
-class MTLabeledRGBImgToBatch[A: ClassTag](width: Int, height: Int, batchSize: Int,
-  transformer: Transformer[A, LabeledRGBImage])
+class MTLabeledRGBImgToBatch[A: ClassTag] private[bigdl]
+(width: Int, height: Int, totalBatchSize: Int, transformer: Transformer[A, LabeledRGBImage])
   extends Transformer[A, Batch[Float]] {
+
+  private val batchSize = Utils.getBatchSize(totalBatchSize)
 
   private def getPosition(count: AtomicInteger): Int = {
     val position = count.getAndIncrement()

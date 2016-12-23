@@ -80,6 +80,7 @@ object DistriOptimizer {
     val sc = dataset.data(looped = true).sparkContext
     val partitionNum = dataset.originRDD().partitions.length
     var wallClockTime = 0L
+    var lastEpochTime = 0L
     val driverState = T("epoch" -> state.get[Int]("epoch").getOrElse(1),
       "neval" -> state.get[Int]("neval").getOrElse(1))
     val _subModelNumber = Engine.getEngineType match {
@@ -225,6 +226,7 @@ object DistriOptimizer {
 
       accumulateCount += recordsNum.value
       val end = System.nanoTime()
+      wallClockTime += end - start
       logger.info(s"${_header} Train ${recordsNum.value} in ${(end - start) / 1e9}seconds. " +
         s"Throughput is ${recordsNum.value / ((end - start) / 1e9)} records/second. Loss is ${
           lossSum.value / stackCount.value
@@ -233,7 +235,8 @@ object DistriOptimizer {
       driverState("neval") = driverState[Int]("neval") + 1
       if (accumulateCount >= dataset.size()) {
         val epochEnd = System.nanoTime()
-        wallClockTime = wallClockTime + epochEnd - epochStart
+        wallClockTime = lastEpochTime + epochEnd - epochStart
+        lastEpochTime = wallClockTime
         epochStart = System.nanoTime()
         logger.info(s"${_header} Epoch finished. Wall clock time is ${wallClockTime / 1e6}ms")
 
@@ -270,7 +273,7 @@ object DistriOptimizer {
     isOverWrite: Boolean,
     wallClockTime: Long,
     models: RDD[Cache[T]],
-    model : Module[T],
+    model: Module[T],
     state: Table)
   : Unit = {
     if (cacheTrigger.isDefined) {
@@ -331,6 +334,8 @@ object DistriOptimizer {
       AllReduceParameter.tlength = weights.nElement()
       AllReduceParameter.partitionNum = partitionNum
       _ps.init(weights)
+
+      logger.info("model thread pool size is " + Engine.model.getPoolSize)
 
       Iterator(Cache(
         cached.map(_._1), // models
@@ -410,7 +415,7 @@ object DistriOptimizer {
 
 
   private def getModel[T: ClassTag](
-    models: RDD[Cache[T]], model : Module[T]): Module[T] = {
+    models: RDD[Cache[T]], model: Module[T]): Module[T] = {
     val _ps = new AllReduceParameter[T]()
     val partitionNum = models.partitions.length
     val weights = models.mapPartitions(iter => {

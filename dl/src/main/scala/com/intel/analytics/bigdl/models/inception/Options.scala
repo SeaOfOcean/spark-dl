@@ -15,51 +15,27 @@
  * limitations under the License.
  */
 
-package com.intel.analytics.bigdl.models.googlenet
+package com.intel.analytics.bigdl.models.inception
 
 import scopt.OptionParser
 
 object Options {
-  case class TrainLocalParams(
-    folder: String = "./",
-    cache: Option[String] = None,
-    modelSnapshot: Option[String] = None,
-    stateSnapshot: Option[String] = None,
-    coreNumber: Int = (Runtime.getRuntime().availableProcessors() / 2)
-  )
 
-  val trainLocalParser = new OptionParser[TrainLocalParams]("BigDL AlexNet Example") {
-    head("Train AlexNet model on single node")
-    opt[String]('f', "folder")
-      .text("where you put your local hadoop sequence files")
-      .action((x, c) => c.copy(folder = x))
-    opt[String]("model")
-      .text("model snapshot location")
-      .action((x, c) => c.copy(modelSnapshot = Some(x)))
-    opt[String]("cache")
-      .text("where to cache the model")
-      .action((x, c) => c.copy(cache = Some(x)))
-    opt[String]("state")
-      .text("state snapshot location")
-      .action((x, c) => c.copy(stateSnapshot = Some(x)))
-    opt[Int]('c', "core")
-      .text("cores number to train the model")
-      .action((x, c) => c.copy(coreNumber = x))
-  }
-
-  case class TrainSparkParams(
+  case class TrainParams(
     folder: String = "./",
-    cache: Option[String] = None,
+    checkpoint: Option[String] = None,
     modelSnapshot: Option[String] = None,
     stateSnapshot: Option[String] = None,
     coreNumberPerNode: Int = -1,
-    nodesNumber: Int = -1
+    nodesNumber: Int = -1,
+    classNumber: Int = 1000,
+    batchSize: Option[Int] = None
   )
 
-  val trainSparkParser = new OptionParser[TrainSparkParams]("BigDL Lenet Example") {
-    head("Train Lenet model on Apache Spark")
+  val trainParser = new OptionParser[TrainParams]("BigDL Inception Example") {
+    head("Train GoogleNet model on Apache Spark")
     opt[String]('f', "folder")
-      .text("where you put the MNIST data")
+      .text("url of hdfs folder store the hadoop sequence files")
       .action((x, c) => c.copy(folder = x))
     opt[String]("model")
       .text("model snapshot location")
@@ -67,9 +43,9 @@ object Options {
     opt[String]("state")
       .text("state snapshot location")
       .action((x, c) => c.copy(stateSnapshot = Some(x)))
-    opt[String]("cache")
+    opt[String]("checkpoint")
       .text("where to cache the model")
-      .action((x, c) => c.copy(cache = Some(x)))
+      .action((x, c) => c.copy(checkpoint = Some(x)))
     opt[Int]('c', "core")
       .text("cores number on each node")
       .action((x, c) => c.copy(coreNumberPerNode = x))
@@ -78,5 +54,40 @@ object Options {
       .text("nodes number to train the model")
       .action((x, c) => c.copy(nodesNumber = x))
       .required()
+    opt[Int]('b', "batchSize")
+      .text("batch size")
+      .action((x, c) => c.copy(batchSize = Some(x)))
+    opt[Int]("classNum")
+      .text("class number")
+      .action((x, c) => c.copy(classNumber = x))
+  }
+
+  case class TestParams(
+    folder: String = "./",
+    model: String = "",
+    coreNumberPerNode: Int = -1,
+    nodesNumber: Int = -1,
+    batchSize: Option[Int] = None
+  )
+
+  val testParser = new OptionParser[TestParams]("BigDL Inception Test Example") {
+    opt[String]('f', "folder")
+      .text("url of hdfs folder store the hadoop sequence files")
+      .action((x, c) => c.copy(folder = x))
+    opt[String]("model")
+      .text("model snapshot location")
+      .action((x, c) => c.copy(model = x))
+      .required()
+    opt[Int]('c', "core")
+      .text("cores number on each node")
+      .action((x, c) => c.copy(coreNumberPerNode = x))
+      .required()
+    opt[Int]('n', "nodeNumber")
+      .text("nodes number to train the model")
+      .action((x, c) => c.copy(nodesNumber = x))
+      .required()
+    opt[Int]('b', "batchSize")
+      .text("batch size")
+      .action((x, c) => c.copy(batchSize = Some(x)))
   }
 }

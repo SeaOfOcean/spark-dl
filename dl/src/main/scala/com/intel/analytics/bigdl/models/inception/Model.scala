@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.intel.analytics.bigdl.models.googlenet
+package com.intel.analytics.bigdl.models.inception
 
 import com.intel.analytics.bigdl._
 import com.intel.analytics.bigdl.nn._
@@ -374,3 +374,4 @@ object GoogleNet_v2 {
     model
   }
 }
+

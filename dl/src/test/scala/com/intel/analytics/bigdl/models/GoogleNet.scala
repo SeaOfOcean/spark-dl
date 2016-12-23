@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.intel.analytics.bigdl.example
+package com.intel.analytics.bigdl.models
 
 import java.util
 
@@ -185,7 +185,7 @@ object GoogleNet {
         model.add(splitter)
 
         model
-      }
+    }
   }
 
   def inception[D: ClassTag](inputSize: Int, config: Table)(
@@ -344,7 +344,8 @@ object GoogleNet {
     val times = model.getTimes()
     var n = 0
     println(times.map(t => ( {
-      n += 1; s"${t._1}-$n"
+      n += 1;
+      s"${t._1}-$n"
     }, (t._2 + t._3) / 1e9 / iter,
       t._2 / 1e9 / iter, t._3 / 1e9 / iter))
       .sortWith(_._2 > _._2).mkString("\n"))
@@ -387,7 +388,8 @@ object GoogleNet {
     val times = model.getTimes()
     var n = 0
     println(times.map(t => ( {
-      n += 1; s"${t._1}-$n"
+      n += 1;
+      s"${t._1}-$n"
     }, (t._2 + t._3) / 1e9 / iter,
       t._2 / 1e9 / iter, t._3 / 1e9 / iter))
       .sortWith(_._2 > _._2).mkString("\n"))

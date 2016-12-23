@@ -65,6 +65,8 @@ class ThreadPool(private var poolSize: Int) {
     }
   }
 
+  def getPoolSize : Int = poolSize
+
   /**
    * Set MKL thread pool size
    *
@@ -175,7 +177,15 @@ object Engine {
   }
 
   // Set node number
-  private var nodeNum: Option[Int] = None
+  private var nodeNum: Option[Int] = if (System.getenv("DL_NODE_NUMBER") == null) {
+    None
+  } else {
+    Some(System.getenv("DL_NODE_NUMBER").toInt)
+  }
+
+  def setNodeNumber(n : Option[Int]): Unit = {
+    nodeNum = n
+  }
 
   private val ERROR = "Please use bigdlvars.sh set the env. For spark application, please use" +
     "Engine.sparkConf() to initialize your sparkConf"
@@ -201,7 +211,7 @@ object Engine {
 
   val default: ThreadPool = new ThreadPool(defaultPoolSize)
 
-  private var _model : ThreadPool = null
+  @volatile private var _model : ThreadPool = null
 
   def model : ThreadPool = {
     if (_model == null) {
@@ -238,6 +248,7 @@ object Engine {
         .setExecutorEnv("OMP_WAIT_POLICY", "passive")
         .setExecutorEnv("OMP_NUM_THREADS", "1")
         .setExecutorEnv("DL_CORE_NUMBER", coreNumber().toString)
+        .setExecutorEnv("DL_NODE_NUMBER", nodeNum.get.toString)
         .set("spark.task.maxFailures", "1")
         .set("spark.shuffle.blockTransferService", "nio")
         .set("spark.akka.frameSize", "10")
@@ -245,6 +256,7 @@ object Engine {
       new SparkConf().setExecutorEnv("DL_ENGINE_TYPE", "mkldnn")
         .setExecutorEnv("MKL_DISABLE_FAST_MM", "1")
         .setExecutorEnv("DL_CORE_NUMBER", coreNumber().toString)
+        .setExecutorEnv("DL_NODE_NUMBER", nodeNum.get.toString)
         .set("spark.task.maxFailures", "1")
         .set("spark.shuffle.blockTransferService", "nio")
         .set("spark.akka.frameSize", "10")
