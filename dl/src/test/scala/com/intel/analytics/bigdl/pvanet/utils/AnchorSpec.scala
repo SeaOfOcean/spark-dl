@@ -147,8 +147,8 @@ class AnchorSpec extends FlatSpec with Matchers {
   }
 
   "getAllAnchors" should "work properly" in {
-    val shifts = Tensor.randperm[Float](12).resize(3,4)
-    val anchors = Tensor.randperm[Float](8).resize(2,4)
+    val shifts = Tensor.randperm[Float](12).resize(3, 4)
+    val anchors = Tensor.randperm[Float](8).resize(2, 4)
     val allAnchors = Anchor.getAllAnchors(shifts.toBreezeMatrix(), anchors.toBreezeMatrix())
     val allAnchors2 = Anchor.getAllAnchors(shifts, anchors)
     TestUtil.assertMatrixEqualTM(allAnchors2, convert(allAnchors, Double), 1e-6)

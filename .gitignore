@@ -24,11 +24,3 @@ project/plugins/project/
 nohup.out
 model.*
 state.*
-
-data/cache/*
-data/model/*
-discard/*
-dl/data/cache/*
-dl/data/model/*
-dl/data
-data
