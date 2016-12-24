@@ -68,7 +68,7 @@ object Bbox {
     var accScore = 0f
     var det: Tensor[Float] = null
     for (i <- 1 to detsNMS.size(1)) {
-      det = MatrixUtil.selectRow(detsNMS, i)
+      det = TensorUtil.selectRow(detsNMS, i)
       if (accBox == null) {
         accBox = Tensor[Float](4)
       } else {
@@ -76,7 +76,7 @@ object Bbox {
       }
       accScore = 0f
       for (m <- 1 to detsAll.size(1)) {
-        val det2 = MatrixUtil.selectRow(detsAll, m, newSpace = true)
+        val det2 = TensorUtil.selectRow(detsAll, m, newSpace = true)
 
         val bis0 = Math.max(det.valueAt(1), det2.valueAt(1))
         val bis1 = Math.max(det.valueAt(2), det2.valueAt(2))
@@ -214,15 +214,15 @@ object Bbox {
   }
 
   def bboxTransform(exRois: Tensor[Float], gtRois: Tensor[Float]): Tensor[Float] = {
-    val exWidths = MatrixUtil.selectCol(exRois, 3) - MatrixUtil.selectCol(exRois, 1) + 1.0f
-    val exHeights = MatrixUtil.selectCol(exRois, 4) - MatrixUtil.selectCol(exRois, 2) + 1.0f
-    val exCtrX = MatrixUtil.selectCol(exRois, 1) + exWidths * 0.5f
-    val exCtrY = MatrixUtil.selectCol(exRois, 2) + exHeights * 0.5f
+    val exWidths = TensorUtil.selectCol(exRois, 3) - TensorUtil.selectCol(exRois, 1) + 1.0f
+    val exHeights = TensorUtil.selectCol(exRois, 4) - TensorUtil.selectCol(exRois, 2) + 1.0f
+    val exCtrX = TensorUtil.selectCol(exRois, 1) + exWidths * 0.5f
+    val exCtrY = TensorUtil.selectCol(exRois, 2) + exHeights * 0.5f
 
-    val gtWidths = MatrixUtil.selectCol(gtRois, 3) - MatrixUtil.selectCol(gtRois, 1) + 1.0f
-    val gtHeights = MatrixUtil.selectCol(gtRois, 4) - MatrixUtil.selectCol(gtRois, 2) + 1.0f
-    val gtCtrX = MatrixUtil.selectCol(gtRois, 1) + gtWidths * 0.5f
-    val gtCtrY = MatrixUtil.selectCol(gtRois, 2) + gtHeights * 0.5f
+    val gtWidths = TensorUtil.selectCol(gtRois, 3) - TensorUtil.selectCol(gtRois, 1) + 1.0f
+    val gtHeights = TensorUtil.selectCol(gtRois, 4) - TensorUtil.selectCol(gtRois, 2) + 1.0f
+    val gtCtrX = TensorUtil.selectCol(gtRois, 1) + gtWidths * 0.5f
+    val gtCtrY = TensorUtil.selectCol(gtRois, 2) + gtHeights * 0.5f
 
     val targetsDx = (gtCtrX - exCtrX) / exWidths
     val targetsDy = (gtCtrY - exCtrY) / exHeights
@@ -280,24 +280,24 @@ object Bbox {
     if (boxes.size(1) == 0) {
       return Tensor[Float](0, deltas.size(2))
     }
-    val widths = MatrixUtil.selectCol(boxes, 3) - MatrixUtil.selectCol(boxes, 1) + 1.0f
-    val heights = MatrixUtil.selectCol(boxes, 4) - MatrixUtil.selectCol(boxes, 2) + 1.0f
-    val ctrX = MatrixUtil.selectCol(boxes, 1) + widths * 0.5f
-    val ctrY = MatrixUtil.selectCol(boxes, 2) + heights * 0.5f
+    val widths = TensorUtil.selectCol(boxes, 3) - TensorUtil.selectCol(boxes, 1) + 1.0f
+    val heights = TensorUtil.selectCol(boxes, 4) - TensorUtil.selectCol(boxes, 2) + 1.0f
+    val ctrX = TensorUtil.selectCol(boxes, 1) + widths * 0.5f
+    val ctrY = TensorUtil.selectCol(boxes, 2) + heights * 0.5f
 
-    val dx = MatrixUtil.selectCols(deltas, 1, 4)
-    val dy = MatrixUtil.selectCols(deltas, 2, 4)
-    var dw = MatrixUtil.selectCols(deltas, 3, 4)
-    var dh = MatrixUtil.selectCols(deltas, 4, 4)
+    val dx = TensorUtil.selectCols(deltas, 1, 4)
+    val dy = TensorUtil.selectCols(deltas, 2, 4)
+    var dw = TensorUtil.selectCols(deltas, 3, 4)
+    var dh = TensorUtil.selectCols(deltas, 4, 4)
 
-    MatrixUtil.mulVecToMatCols(dx, widths)
-    MatrixUtil.addVecToMatCols(dx, ctrX)
-    MatrixUtil.mulVecToMatCols(dy, heights)
-    MatrixUtil.addVecToMatCols(dy, ctrY)
+    TensorUtil.mulVecToMatCols(dx, widths)
+    TensorUtil.addVecToMatCols(dx, ctrX)
+    TensorUtil.mulVecToMatCols(dy, heights)
+    TensorUtil.addVecToMatCols(dy, ctrY)
     dw = dw.exp()
-    MatrixUtil.mulVecToMatCols(dw, widths)
+    TensorUtil.mulVecToMatCols(dw, widths)
     dh = dh.exp()
-    MatrixUtil.mulVecToMatCols(dh, heights)
+    TensorUtil.mulVecToMatCols(dh, heights)
 
     val predBoxes = Tensor[Float](deltas.size(1), deltas.size(2))
 

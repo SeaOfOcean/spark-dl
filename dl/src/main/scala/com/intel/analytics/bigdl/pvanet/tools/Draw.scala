@@ -23,7 +23,7 @@ import java.io.File
 import javax.imageio.ImageIO
 
 import breeze.linalg.DenseMatrix
-import com.intel.analytics.bigdl.pvanet.utils.MatrixUtil
+import com.intel.analytics.bigdl.pvanet.utils.{TensorUtil}
 import com.intel.analytics.bigdl.tensor.Tensor
 import org.apache.log4j.Logger
 
@@ -74,7 +74,7 @@ object Draw {
     }
 
     for (i <- 1 to Math.min(10, dets.size(1))) {
-      val bbox = MatrixUtil.selectMatrix2(dets, Array(i), Array(1, 2, 3, 4)).resize(4)
+      val bbox = TensorUtil.selectMatrix2(dets, Array(i), Array(1, 2, 3, 4)).resize(4)
       val score = dets.valueAt(i, 5)
       if (score > thresh) {
         if (g2d == null) {

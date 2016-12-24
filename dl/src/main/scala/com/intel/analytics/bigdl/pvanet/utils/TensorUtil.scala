@@ -38,6 +38,163 @@ object TensorUtil {
     res
   }
 
+  def mulVecToMatCols(mat: Tensor[Float], vec: Tensor[Float]): Unit = {
+    assert(mat.size(1) == vec.nElement())
+    (1 to mat.size(1)).foreach(rid => mat(rid).mul(vec.valueAt(rid)))
+  }
+
+  def addVecToMatCols(mat: Tensor[Float], vec: Tensor[Float]): Unit = {
+    (1 to mat.size(2)).foreach(cid => {
+      (1 to mat.size(1)).foreach(rid => {
+        mat.setValue(rid, cid, mat.valueAt(rid, cid) + vec.valueAt(rid))
+      })
+    })
+  }
+
+  def selectMatrix2(mat: Tensor[Float],
+    rows: Array[Int], cols: Array[Int]): Tensor[Float] = {
+    val out = Tensor[Float](rows.length, cols.length)
+    rows.zip(Stream from 1).map(r => {
+      cols.zip(Stream from 1).map(c => {
+        out.setValue(r._2, c._2, mat.valueAt(r._1, c._1))
+      })
+    })
+    out
+  }
+
+  def selectMatrix(matrix: Tensor[Float],
+    selectInds: Array[Int], dim: Int): Tensor[Float] = {
+    assert(dim == 1 || dim == 2)
+    if (matrix.nDimension() == 1) {
+      val res = Tensor[Float](selectInds.length)
+      selectInds.zip(Stream.from(1)).map { x =>
+        res.update(x._2, matrix.valueAt(x._1))
+      }
+      return res
+    }
+    // select rows
+    if (dim == 1) {
+      val res = Tensor[Float](selectInds.length, matrix.size(2))
+      selectInds.zip(Stream.from(1)).map(x => res.update(x._2, matrix(x._1)))
+      res
+    } else {
+      val res = Tensor[Float](matrix.size(1), selectInds.length)
+      selectInds.zip(Stream.from(1)).map(x => updateCol(res, x._2, selectCol(matrix, x._1)))
+      res
+    }
+  }
+
+  /**
+   * If x1 = [1, 2, 3]
+   * x2 = [4, 5, 6]
+   * return [1 2 3
+   * 1 2 3
+   * 1 2 3
+   * 4 4 4
+   * 5 5 5
+   * 6 6 6]
+   *
+   * @param x1
+   * @param x2
+   * @return
+   */
+  def meshgrid(x1: Tensor[Float],
+    x2: Tensor[Float]): (Tensor[Float], Tensor[Float]) = {
+    val x1Mesh = Tensor[Float](x2.nElement(), x1.nElement())
+    (1 to x2.nElement()).foreach(i => x1Mesh.update(i, x1))
+    val x2Mesh = Tensor[Float](x2.nElement(), x1.nElement())
+    (1 to x1.nElement()).foreach { i =>
+      (1 to x2Mesh.size(1)).foreach(x => x2Mesh.setValue(x, i, x2.valueAt(x)))
+    }
+    (x1Mesh, x2Mesh)
+  }
+
+  /**
+   * return the max value in rows(d=0) or in cols(d=1)
+   * arr = [4 9
+   * 5 7
+   * 8 5]
+   *
+   * argmax2(arr, 1) will return 3, 1
+   * argmax2(arr, 2) will return 2, 2, 1
+   *
+   * @param arr
+   * @param d
+   * @return
+   * todo: this maybe removed
+   */
+  def argmax2(arr: Tensor[Float], d: Int): Array[Int] = {
+    arr.max(d)._2.storage().array().map(x => x.toInt)
+//    if (arr.size == 0) return Array[Int]()
+//    if (d == 0) {
+//      Array.range(0, arr.size(2)).map(i => {
+//        argmax(arr(::, i))
+//      })
+//    } else {
+//      Array.range(0, arr.rows).map(i => {
+//        argmax(arr(i, ::))
+//      })
+//    }
+  }
+
+  def max2(arr: Tensor[Float], d: Int): Array[Float] = {
+    arr.max(d)._1.storage().array()
+//    if (arr.size == 0) return Array[Float]()
+//    if (d == 1) {
+//      (1 to arr.size(2)).map(i => {
+//        arr.
+//        max(arr(::, i))
+//      })
+//    } else {
+//      (1 to arr.size(1)).map(i => {
+//        max(arr(i, ::))
+//      })
+//    }
+  }
+
+
+  def selectCol(mat: Tensor[Float], cid: Int): Tensor[Float] = {
+    if (mat.nElement() == 0) return Tensor[Float](0)
+    mat.select(2, cid)
+//    val col = Tensor[Float](mat.size(1))
+//    (1 to mat.size(1)).foreach(rid => col.setValue(rid, mat.valueAt(rid, cid)))
+//    col
+  }
+
+
+  def selectColAsArray(mat: Tensor[Float], cid: Int): Array[Float] = {
+    val res = selectCol(mat, cid)
+    if (res.nElement() == 0) Array[Float]()
+    else res.clone().storage().array()
+  }
+
+
+  def updateAllCols(mat: Tensor[Float], vec: Tensor[Float]): Unit = {
+    (1 to mat.size(2)).foreach(cid => updateCol(mat, cid, vec))
+  }
+
+
+  def updateCol(tensor: Tensor[Float], cid: Int, value: Tensor[Float]): Unit = {
+    require(tensor.size(1) == value.nElement())
+    (1 to tensor.size(1)).foreach(rid => tensor.setValue(rid, cid, value.valueAt(rid)))
+  }
+
+  def selectCols(mat: Tensor[Float], cid: Int, step: Int): Tensor[Float] = {
+    val out = Tensor[Float](mat.size(1), mat.size(2) / step)
+    var ind = 1
+    for (i <- cid to mat.size(2) by step) {
+      updateCol(out, ind, selectCol(mat, i))
+      ind += 1
+    }
+    out
+  }
+
+
+  def selectRow(mat: Tensor[Float], rid: Int, newSpace: Boolean = false): Tensor[Float] = {
+    if (newSpace) mat.apply(rid).clone()
+    else mat.apply(rid)
+  }
+
 
   /**
    * update with 2d tensor, the range must be equal to the src tensor size

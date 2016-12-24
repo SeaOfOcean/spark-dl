@@ -146,7 +146,7 @@ object Anchor {
   def generateShifts2(width: Int, height: Int, featStride: Float): Tensor[Float] = {
     val shiftX = Tensor[Float].range(0, width - 1).apply1(x => x * featStride)
     val shiftY = Tensor[Float].range(0, height - 1).apply1(x => x * featStride)
-    MatrixUtil.meshgrid(shiftX, shiftY) match {
+    TensorUtil.meshgrid(shiftX, shiftY) match {
       case (x1Mesh, x2Mesh) =>
         return TensorUtil.concat(
           x1Mesh.resize(x1Mesh.nElement()),

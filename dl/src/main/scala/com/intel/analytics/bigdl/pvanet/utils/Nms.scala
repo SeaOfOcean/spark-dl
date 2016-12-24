@@ -75,20 +75,21 @@ object Nms {
     val scores = dets.select(2, 5)
 
     val areas = x2.clone().add(-1, x1).add(1f).cmul(y2.clone().add(-1, y1).add(1f))
-    var order = scores.topk(scores.nElement(), increase = false)._2.storage().array().map(x => x.toInt)
+    var order = scores.topk(scores.nElement(), increase = false)._2
+      .storage().array().map(x => x.toInt)
 
     while (order.size > 0) {
       val i = order(0)
       keep :+= i
 
       def getMax(vec: Tensor[Float]) =
-        MatrixUtil.selectMatrix(vec, order.slice(1, order.length), 1)
+        TensorUtil.selectMatrix(vec, order.slice(1, order.length), 1)
           .apply1(x => Math.max(x, vec.valueAt(i)))
       val xx1 = getMax(x1)
       val yy1 = getMax(y1)
 
       def getMin(vec: Tensor[Float]) =
-        MatrixUtil.selectMatrix(vec, order.slice(1, order.length), 1)
+        TensorUtil.selectMatrix(vec, order.slice(1, order.length), 1)
           .apply1(x => Math.min(x, vec.valueAt(i)))
       val xx2 = getMin(x2)
       val yy2 = getMin(y2)
@@ -98,7 +99,7 @@ object Nms {
 
       val inter = xx2.cmul(yy2)
 
-      val selectedArea = MatrixUtil.selectMatrix(areas,
+      val selectedArea = TensorUtil.selectMatrix(areas,
         order.slice(1, order.length).array, 1)
       val ovr = inter.cdiv(selectedArea.add(areas.valueAt(i)).add(-1, inter))
       val inds = ovr.contiguous().storage().array().zipWithIndex
