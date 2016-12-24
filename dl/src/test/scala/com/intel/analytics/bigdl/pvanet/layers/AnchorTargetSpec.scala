@@ -33,15 +33,17 @@ class AnchorTargetSpec extends FlatSpec with Matchers {
     val anchorTarget = new AnchorTarget(param)
     val height = 38
     val width = 57
-    //    val targets = anchorTarget.getAnchorTarget(height, width,
-//      img.scaledImage.height(), img.scaledImage.width(), img.gtBoxes.get)
-val targets = anchorTarget.getAnchorTarget(height, width, 600, 901, img.gtBoxes.get)
+val targets = anchorTarget.getAnchorTarget2(height, width, 600, 901, img.gtBoxes.get)
     val expected1 = BboxTarget(
-      FileUtil.loadFeatures[Float]("rpn_labels"),
-      FileUtil.loadFeatures[Float]("rpn_bbox_targets"),
-      FileUtil.loadFeatures[Float]("rpn_bbox_inside_weights"),
-      FileUtil.loadFeatures[Float]("rpn_bbox_outside_weights"))
-    FileUtil.assertEqualIgnoreSize[Float](expected1.labels, targets.labels, "compare targets label")
-    FileUtil.assertEqualTable[Float](expected1.targetsTable, targets.targetsTable)
+      FileUtil.loadFeatures("rpn_labels"),
+      FileUtil.loadFeatures("rpn_bbox_targets"),
+      FileUtil.loadFeatures("rpn_bbox_inside_weights"),
+      FileUtil.loadFeatures("rpn_bbox_outside_weights"))
+    FileUtil.assertEqual(expected1.labels, targets.labels, "compare targets label", 1e-6)
+    FileUtil.assertEqual(expected1.bboxOutsideWeights, targets.bboxOutsideWeights,
+      "compare bboxOutsideWeights", 1e-6)
+    FileUtil.assertEqual(expected1.bboxInsideWeights, targets.bboxInsideWeights,
+      "compare bboxInsideWeights", 1e-6)
+    FileUtil.assertEqual(expected1.bboxTargets, targets.bboxTargets, "compare targets", 1e-2)
   }
 }

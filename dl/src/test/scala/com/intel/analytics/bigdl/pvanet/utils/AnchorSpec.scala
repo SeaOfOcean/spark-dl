@@ -114,21 +114,21 @@ class AnchorSpec extends FlatSpec with Matchers {
   val anchors = Anchor.generateBasicAnchors(param.anchorRatios, param.anchorScales)
 
   "generateAnchors" should "work properly" in {
-    TestUtil.assertMatrixEqualTM(FileUtil.loadFeatures[Float]("anchors", root),
+    TestUtil.assertMatrixEqualTM(FileUtil.loadFeatures("anchors", root),
       convert(anchors, Double), 1e-6)
   }
 
   var shifts: DenseMatrix[Float] = Anchor.generateShifts(width, height, 16)
 
   "generateShifts" should "work properly" in {
-    val expected = FileUtil.loadFeatures[Float]("shifts", root)
+    val expected = FileUtil.loadFeatures("shifts", root)
     TestUtil.assertMatrixEqualTM(expected, convert(shifts, Double), 1e-6)
   }
 
   val allAnchors = Anchor.getAllAnchors(shifts, anchors)
   val allAnchors2 = Anchor.getAllAnchors(Tensor(shifts), Tensor(anchors))
   "generateAllAnchors" should "work properly" in {
-    val expected = FileUtil.loadFeatures[Float]("allAnchors", root)
+    val expected = FileUtil.loadFeatures("allAnchors", root)
     TestUtil.assertMatrixEqualTM(expected, convert(allAnchors, Double), 1e-6)
     TestUtil.assertMatrixEqualTM(allAnchors2, convert(allAnchors, Double), 1e-6)
   }

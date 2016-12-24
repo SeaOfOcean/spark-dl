@@ -22,7 +22,6 @@ import java.nio.file.Paths
 
 import breeze.linalg.DenseMatrix
 import com.intel.analytics.bigdl.pvanet.datasets.Imdb
-import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import com.intel.analytics.bigdl.utils.{Table, File => DlFile}
 
@@ -84,37 +83,36 @@ object FileUtil {
   }
 
 
-  def loadFeaturesFullName[T: ClassTag](s: String, hasSize: Boolean = true,
-    middleRoot: String = middleRoot)(implicit ev: TensorNumeric[T]): Tensor[T] = {
-    loadFeaturesFullPath[T](Paths.get(middleRoot, s).toString, hasSize)
+  def loadFeaturesFullName(s: String, hasSize: Boolean = true,
+    middleRoot: String = middleRoot): Tensor[Float] = {
+    loadFeaturesFullPath(Paths.get(middleRoot, s).toString, hasSize)
   }
 
-  def loadFeaturesFullPath[T: ClassTag](s: String, hasSize: Boolean = true)
-    (implicit ev: TensorNumeric[T]): Tensor[T] = {
+  def loadFeaturesFullPath(s: String, hasSize: Boolean = true): Tensor[Float] = {
     println(s"load $s from file")
 
     if (hasSize) {
       val size = s.substring(s.lastIndexOf("-") + 1, s.lastIndexOf("."))
         .split("_").map(x => x.toInt)
       Tensor(Storage(Source.fromFile(s).getLines()
-        .map(x => ev.fromType[Double](x.toDouble)).toArray)).reshape(size)
+        .map(x => x.toFloat).toArray)).reshape(size)
     } else {
       Tensor(Storage(Source.fromFile(s).getLines()
-        .map(x => ev.fromType[Double](x.toDouble)).toArray))
+        .map(x => x.toFloat).toArray))
     }
   }
 
-  var middleRoot = "/home/xianyan/code/intel/big-dl/spark-dl/dl/data/middle/vgg16/step1/"
+  var middleRoot = "data/middle/vgg16/step1/"
 
-  def loadFeatures[T: ClassTag](s: String, middleRoot: String = middleRoot)
-    (implicit ev: TensorNumeric[T]): Tensor[T] = {
+  def loadFeatures(s: String, middleRoot: String = middleRoot)
+  : Tensor[Float] = {
     if (s.contains(".txt")) {
-      loadFeaturesFullName[T](s, true, middleRoot)
+      loadFeaturesFullName(s, true, middleRoot)
     } else {
       val list = new File(middleRoot).listFiles()
       list.foreach(x => {
         if (x.getName.matches(s"$s-.*txt")) {
-          return loadFeaturesFullName[T](x.getName, true, middleRoot)
+          return loadFeaturesFullName(x.getName, true, middleRoot)
         }
       })
       throw new FileNotFoundException(s"cannot map $s")
@@ -135,15 +133,13 @@ object FileUtil {
   }
 
 
-  def assertEqual[T: ClassTag](expectedName: String, output: Tensor[T], prec: Double)
-    (implicit ev: TensorNumeric[T]): Unit = {
-    val expected = loadFeatures[T](expectedName)
+  def assertEqual(expectedName: String, output: Tensor[Float], prec: Double): Unit = {
+    val expected = loadFeatures(expectedName)
     assertEqual(expected, output, expectedName, prec)
   }
 
-  def assertEqual[T: ClassTag](expected: Tensor[T], output: Tensor[T],
-    info: String = "", prec: Double)
-    (implicit ev: TensorNumeric[T]): Unit = {
+  def assertEqual(expected: Tensor[Float], output: Tensor[Float],
+    info: String = "", prec: Double): Unit = {
     if (!info.isEmpty) {
       println(s"compare $info ...")
     }
@@ -151,30 +147,35 @@ object FileUtil {
       s"expected size ${expected.size().mkString(",")} " +
       s"does not match output ${output.size().mkString(",")}")
     (expected.storage().array() zip output.storage().array()).foreach(x =>
-      require(ev.toType[Double](ev.abs(ev.minus(x._1, x._2))) < prec,
+      require(Math.abs(x._1-x._2) < prec,
         s"${x._1} does not equal ${x._2}"))
     if (!info.isEmpty) {
       println(s"$info pass")
     }
   }
 
-  def assertEqualTable[T: ClassTag](expected: Table, output: Table, info: String = "")
-    (implicit ev: TensorNumeric[T]): Unit = {
+  def assertEqualTable[T: ClassTag](expected: Table, output: Table, info: String = ""): Unit = {
     require(expected.length() == output.length())
-    (1 to expected.length()).foreach(i => assertEqualIgnoreSize[T](expected(i), output(i)))
+    (1 to expected.length()).foreach(i => assertEqualIgnoreSize(expected(i), output(i)))
   }
 
-  def assertEqualIgnoreSize[T: ClassTag](expected: Tensor[T], output: Tensor[T], info: String = "")
-    (implicit ev: TensorNumeric[T]): Unit = {
+  def assertEqualIgnoreSize(expected: Tensor[Float], output: Tensor[Float], info: String = "",
+    prec: Double = 1e-6): Unit = {
     if (!info.isEmpty) {
-      println(s"compare $info ...")
+      println(s"compare $info ===============================")
     }
     require(expected.nElement() == output.nElement(), "size mismatch: " +
       s"expected size ${expected.size().mkString(",")} " +
       s"does not match output ${output.size().mkString(",")}")
-    (expected.contiguous().storage().array() zip output.contiguous().storage().array()).foreach(x =>
-      require(ev.toType[Double](ev.abs(ev.minus(x._1, x._2))) < 1e-6,
-        s"${x._1} does not equal ${x._2}"))
+    (expected.contiguous().storage().array() zip output.contiguous().storage().array()
+      zip Stream.from(0)).foreach { x =>
+//      if (Math.abs(x._1._1 - x._1._2) > prec) {
+//        println(s"expected ${x._1._1} does not equal " +
+//          s"actual ${x._1._2} in ${x._2}/${output.nElement()}")
+//      }
+      require(Math.abs(x._1._1 - x._1._2) < prec,
+        s"expected ${x._1._1} does not equal actual ${x._1._2} in ${x._2}/${output.nElement()}")
+    }
     if (!info.isEmpty) {
       println(s"$info pass")
     }

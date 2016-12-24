@@ -31,15 +31,15 @@ class PvanetFRcnnSpec extends FlatSpec {
     val model = vggFrcnn.getModel
     val input = new Table()
     FileUtil.middleRoot = FileUtil.getFile("middle/pvanet/14/")
-    input.insert(FileUtil.loadFeatures[Float]("data"))
-    input.insert(FileUtil.loadFeatures[Float]("im_info").resize(3))
+    input.insert(FileUtil.loadFeatures("data"))
+    input.insert(FileUtil.loadFeatures("im_info").resize(3))
     val result = model.forward(input).asInstanceOf[Table]
 
     val name2Module = Utils.getNamedModules[Float](model)
 
     def compare(name: String): Unit = compare2(name, name)
 
-    def compare2(name1: String, name2: String): Unit = FileUtil.assertEqual[Float](name1,
+    def compare2(name1: String, name2: String): Unit = FileUtil.assertEqual(name1,
       name2Module(name2).output.asInstanceOf[Tensor[Float]], 1e-2)
 
     compare2("conv3_4", "conv4_1/incep/pool")

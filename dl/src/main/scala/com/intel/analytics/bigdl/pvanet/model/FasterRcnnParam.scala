@@ -102,11 +102,11 @@ abstract class FasterRcnnParam(phase: PhaseType = Phase.TEST) {
   // Proposal height and width both need to be greater than RPN_MIN_SIZE (at orig image scale)
   val RPN_MIN_SIZE = 16
   // Deprecated (outside weights)
-  val RPN_BBOX_INSIDE_WEIGHTS = Array(1.0, 1.0, 1.0, 1.0)
+  val RPN_BBOX_INSIDE_WEIGHTS = Array(1.0f, 1.0f, 1.0f, 1.0f)
   // Give the positive RPN examples weight of p * 1 / {num positives}
   // and give negatives a weight of (1 - p)
   // Set to -1.0 to use uniform example weighting
-  val RPN_POSITIVE_WEIGHT = -1.0
+  val RPN_POSITIVE_WEIGHT = -1.0f
 
   // Overlap threshold used for non-maximum suppression (suppress boxes with
   // IoU >= this threshold)

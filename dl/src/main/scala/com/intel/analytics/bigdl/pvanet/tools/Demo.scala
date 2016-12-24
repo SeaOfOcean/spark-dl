@@ -21,7 +21,8 @@ import breeze.linalg.DenseMatrix
 import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, Roidb}
 import com.intel.analytics.bigdl.pvanet.model.Model._
 import com.intel.analytics.bigdl.pvanet.model._
-import com.intel.analytics.bigdl.pvanet.utils.{Bbox, MatrixUtil, Nms}
+import com.intel.analytics.bigdl.pvanet.utils.{Bbox, MatrixUtil, Nms, TensorUtil}
+import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.Timer
 import org.apache.log4j.Logger
 import scopt.OptionParser
@@ -76,26 +77,26 @@ object Demo {
       val scaledImage = imageScaler.apply(img)
       val timer = new Timer
       timer.tic()
-      val (scores: DenseMatrix[Float], boxes: DenseMatrix[Float])
+      val (scores: Tensor[Float], boxes: Tensor[Float])
       = Test.imDetect(model, scaledImage)
       timer.toc()
       logger.info(s"Detection took ${"%.3f".format(timer.totalTime / 1e9)}s " +
-        s"for ${boxes.rows} object proposals")
+        s"for ${boxes.size(1)} object proposals")
       // Visualize detections for each class
       val CONF_THRESH = 0.8f
       val NMS_THRESH = 0.3f
       for (j <- 1 until classes.length) {
-        def getClsDet: DenseMatrix[Float] = {
-          val inds = Range(0, scores.rows).toArray
-          if (inds.length == 0) return new DenseMatrix[Float](0, 5)
-          val clsScores = MatrixUtil.selectMatrix2(scores, inds, Array(j))
-          val clsBoxes = MatrixUtil.selectMatrix2(boxes,
+        def getClsDet: Tensor[Float] = {
+          val inds = Range(0, scores.size(1)).toArray
+          if (inds.length == 0) return Tensor[Float](0, 5)
+          val clsScores = TensorUtil.selectMatrix2(scores, inds, Array(j))
+          val clsBoxes = TensorUtil.selectMatrix2(boxes,
             inds, Range(j * 4, (j + 1) * 4).toArray)
 
-          var clsDets = DenseMatrix.horzcat(clsBoxes, clsScores)
+          var clsDets = TensorUtil.horzcat(clsBoxes, clsScores)
           val keep = Nms.nms(clsDets, NMS_THRESH)
 
-          val detsNMSed = MatrixUtil.selectMatrix(clsDets, keep, 0)
+          val detsNMSed = TensorUtil.selectMatrix(clsDets, keep, 0)
 
           if (net.param.BBOX_VOTE) {
             clsDets = Bbox.bboxVote(detsNMSed, clsDets)

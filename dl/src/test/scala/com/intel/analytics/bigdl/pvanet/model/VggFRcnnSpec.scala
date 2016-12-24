@@ -33,8 +33,8 @@ class VggFRcnnSpec extends FlatSpec {
     val model = vggFrcnn.getModel
     val input = new Table()
     FileUtil.middleRoot = FileUtil.getFile("middle/vgg16/14/")
-    input.insert(FileUtil.loadFeatures[Float]("data"))
-    input.insert(FileUtil.loadFeatures[Float]("im_info").resize(3))
+    input.insert(FileUtil.loadFeatures("data"))
+    input.insert(FileUtil.loadFeatures("im_info").resize(3))
     val result = model.forward(input).asInstanceOf[Table]
 
     val name2Module = Utils.getNamedModules[Float](model)
@@ -42,7 +42,7 @@ class VggFRcnnSpec extends FlatSpec {
     def compare(name: String): Unit = compare2(name, name)
 
     def compare2(caffeOutName: String, moduleName: String): Unit
-    = FileUtil.assertEqual[Float](caffeOutName,
+    = FileUtil.assertEqual(caffeOutName,
       name2Module(moduleName).output.asInstanceOf[Tensor[Float]], 1e-4)
 
 
@@ -58,9 +58,9 @@ class VggFRcnnSpec extends FlatSpec {
     val boxDeltas = result(1).asInstanceOf[Table](2).asInstanceOf[Tensor[Float]]
     val rois = result(2).asInstanceOf[Tensor[Float]]
 
-    FileUtil.assertEqual[Float]("rois", rois, 1e-3)
+    FileUtil.assertEqual("rois", rois, 1e-3)
 
-    FileUtil.assertEqual[Float]("cls_prob", scores, 1e-3)
-    FileUtil.assertEqual[Float]("bbox_pred", boxDeltas, 1e-3)
+    FileUtil.assertEqual("cls_prob", scores, 1e-3)
+    FileUtil.assertEqual("bbox_pred", boxDeltas, 1e-3)
   }
 }

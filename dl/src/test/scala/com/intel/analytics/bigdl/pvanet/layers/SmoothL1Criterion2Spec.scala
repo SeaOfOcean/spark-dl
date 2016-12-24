@@ -110,10 +110,10 @@ class SmoothL1Criterion2Spec extends FlatSpec with Matchers {
 
   "a smoothl1criterion of object detection with sigma 3 and real data" should
     "generate correct loss and grad" in {
-    val input = FileUtil.loadFeatures[Float]("bbox_pred")
-    val targets = FileUtil.loadFeatures[Float]("bbox_targets")
-    val inW = FileUtil.loadFeatures[Float]("bbox_inside_weights")
-    val outW = FileUtil.loadFeatures[Float]("bbox_outside_weights")
+    val input = FileUtil.loadFeatures("bbox_pred")
+    val targets = FileUtil.loadFeatures("bbox_targets")
+    val inW = FileUtil.loadFeatures("bbox_inside_weights")
+    val outW = FileUtil.loadFeatures("bbox_outside_weights")
 
     val bboxTarget = BboxTarget(null, targets, inW, outW)
 

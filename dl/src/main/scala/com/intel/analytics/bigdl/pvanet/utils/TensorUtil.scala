@@ -124,6 +124,7 @@ object TensorUtil {
    * todo: this maybe removed
    */
   def argmax2(arr: Tensor[Float], d: Int): Array[Int] = {
+    require(d >= 1)
     arr.max(d)._2.storage().array().map(x => x.toInt)
 //    if (arr.size == 0) return Array[Int]()
 //    if (d == 0) {

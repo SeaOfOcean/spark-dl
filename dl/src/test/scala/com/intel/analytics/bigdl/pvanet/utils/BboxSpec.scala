@@ -59,6 +59,7 @@ class BboxSpec extends FlatSpec with Matchers {
     val expected = DenseMatrix((117.93, 181.086, 488.87, 319.773, 0.442934),
       (315.59, 139.251, 499.0, 307.717, 0.105596),
       (57.5732, 95.5176, 458.503, 320.046, 0.0952481))
+    // todo: is this wierd?
     TestUtil.assertMatrixEqualFD(out, expected, 1e-3)
     TestUtil.assertMatrixEqualTM2(out2, out, 1e-6)
   }
@@ -134,7 +135,8 @@ class BboxSpec extends FlatSpec with Matchers {
     )
 
     val bboxRes = Bbox.bboxTransform(convert(boxes, Float), convert(gtBoxes, Float))
-    val bboxRes2 = Bbox.bboxTransform(Tensor(convert(boxes, Float)), Tensor(convert(gtBoxes, Float)))
+    val bboxRes2 = Bbox.bboxTransform(Tensor(convert(boxes, Float)),
+      Tensor(convert(gtBoxes, Float)))
 
     TestUtil.assertMatrixEqualFD(bboxRes, expectedResults, 1e-6)
     TestUtil.assertMatrixEqualTM(bboxRes2, expectedResults, 1e-6)
