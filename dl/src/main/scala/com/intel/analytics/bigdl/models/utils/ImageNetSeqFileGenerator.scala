@@ -19,7 +19,7 @@ package com.intel.analytics.bigdl.models.utils
 import java.nio.file.{Files, Paths}
 
 import com.intel.analytics.bigdl.dataset.DataSet
-import com.intel.analytics.bigdl.dataset.image.{RGBImgToLocalSeqFile, LocalImgReader, LocalImageFiles}
+import com.intel.analytics.bigdl.dataset.image.{BGRImgToLocalSeqFile, LocalImgReader, LocalImageFiles}
 import scopt.OptionParser
 
 object ImageNetSeqFileGenerator {
@@ -70,7 +70,7 @@ object ImageNetSeqFileGenerator {
           val workingThread = new Thread(new Runnable {
             override def run(): Unit = {
               val pipeline = trainDataSource -> LocalImgReader(256) ->
-                RGBImgToLocalSeqFile(param.blockSize, Paths.get(param.output, "train",
+                BGRImgToLocalSeqFile(param.blockSize, Paths.get(param.output, "train",
                   s"imagenet-seq-$tid"))
               val iter = pipeline.data(looped = false)
               while (iter.hasNext) {
@@ -93,15 +93,15 @@ object ImageNetSeqFileGenerator {
 
         val validationDataSource = DataSet.ImageFolder.paths(validationFolderPath)
         validationDataSource.shuffle()
+        val iter = validationDataSource.data(looped = false)
         (0 until param.parallel).map(tid => {
           val workingThread = new Thread(new Runnable {
             override def run(): Unit = {
-              val pipeline = validationDataSource -> LocalImgReader(256) ->
-                RGBImgToLocalSeqFile(param.blockSize, Paths.get(param.output, "val",
-                  s"imagenet-seq-$tid"))
-              val iter = pipeline.data(looped = false)
-              while (iter.hasNext) {
-                println(s"Generated file ${iter.next()}")
+              val imageIter = LocalImgReader(256)(iter)
+              val fileIter = BGRImgToLocalSeqFile(param.blockSize, Paths.get(param.output, "val",
+                  s"imagenet-seq-$tid"))(imageIter)
+              while (fileIter.hasNext) {
+                println(s"Generated file ${fileIter.next()}")
               }
             }
           })

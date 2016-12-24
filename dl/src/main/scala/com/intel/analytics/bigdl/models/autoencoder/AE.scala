@@ -15,24 +15,28 @@
  * limitations under the License.
  */
 
-package com.intel.analytics.bigdl.dataset.image
+package com.intel.analytics.bigdl.models.autoencoder
 
-import com.intel.analytics.bigdl.dataset.{Sample, Transformer}
+import com.intel.analytics.bigdl.nn.{LogSoftMax, _}
+import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
+import com.intel.analytics.bigdl._
+import com.intel.analytics.bigdl.tensor.Tensor
+import com.intel.analytics.bigdl.utils.T
 
-import scala.collection.Iterator
+import scala.reflect.ClassTag
 
-object SampleToRGBImg {
-  def apply(normalize: Float = 255f): SampleToRGBImg =
-    new SampleToRGBImg(normalize)
-}
+object AE {
+  val rowN = 28
+  val colN = 28
+  val featureSize = rowN * colN
 
-class SampleToRGBImg(normalize: Float)
-  extends Transformer[Sample, LabeledRGBImage] {
-  private val buffer = new LabeledRGBImage()
-
-  override def apply(prev: Iterator[Sample]): Iterator[LabeledRGBImage] = {
-    prev.map(rawData => {
-      buffer.copy(rawData.data, normalize).setLabel(rawData.label)
-    })
+  def apply(classNum: Int): Module[Float] = {
+    val model = Sequential[Float]()
+    model.add(new Reshape(Array(featureSize)))
+    model.add(new Linear(featureSize, classNum))
+    model.add(new ReLU[Float]())
+    model.add(new Linear(classNum, featureSize))
+    model.add(new Sigmoid[Float]())
+    model
   }
 }

@@ -15,25 +15,25 @@
  * limitations under the License.
  */
 
-package com.intel.analytics.bigdl.example.loadCaffe
+package com.intel.analytics.bigdl.example.classifier
 
 import java.nio.file.Path
 
 import com.intel.analytics.bigdl.dataset._
-import com.intel.analytics.bigdl.dataset.image.{RGBImgCropper, RGBImgNormalizer, _}
+import com.intel.analytics.bigdl.dataset.image.{BGRImgCropper, BGRImgNormalizer, _}
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.File
 
 object Preprocessor {
   def apply(path: Path, imageSize: Int, batchSize: Int,
-    transformers: Transformer[LabeledImageLocalPath, LabeledRGBImage])
+    transformers: Transformer[LabeledImageLocalPath, LabeledBGRImage])
   : LocalDataSet[Batch[Float]] = {
     DataSet.ImageFolder.paths(path).transform(
-      MTLabeledRGBImgToBatch(
+      MTLabeledBGRImgToBatch(
         width = imageSize,
         height = imageSize,
         batchSize = batchSize,
-        transformer = transformers, swapChannel = false))
+        transformer = transformers, toRGB = false))
   }
 }
 
@@ -41,8 +41,8 @@ object AlexNetPreprocessor {
   def apply(path: Path, imageSize: Int, batchSize: Int, meanFile: String)
   : LocalDataSet[Batch[Float]] = {
     val means = File.load[Tensor[Float]](meanFile)
-    val transformers = (LocalImgReader(256, 256, normalize = 1f) -> RGBImgPixelNormalizer(means)
-      -> RGBImgCropper(imageSize, imageSize, CropCenter))
+    val transformers = (LocalImgReader(256, 256, normalize = 1f) -> BGRImgPixelNormalizer(means)
+      -> BGRImgCropper(imageSize, imageSize, CropCenter))
     Preprocessor(path, imageSize, batchSize, transformers)
   }
 }
@@ -50,11 +50,27 @@ object AlexNetPreprocessor {
 object GoogleNetPreprocessor {
   def apply(path: Path, imageSize: Int, batchSize: Int): LocalDataSet[Batch[Float]] = {
     val transformers = (LocalImgReader(256, 256, normalize = 1f)
-      -> RGBImgCropper(imageSize, imageSize, CropCenter)
-      -> RGBImgNormalizer(123, 117, 104, 1, 1, 1))
+      -> BGRImgCropper(imageSize, imageSize, CropCenter)
+      -> BGRImgNormalizer(123, 117, 104, 1, 1, 1))
     Preprocessor(path, imageSize, batchSize, transformers)
   }
 }
 
+object ResNetPreprocessor {
+  def apply(path: Path, imageSize: Int, batchSize: Int)
+  : LocalDataSet[Batch[Float]] = {
+    DataSet.ImageFolder.paths(path)
+      .transform(
+        MTLabeledBGRImgToBatch(
+          width = imageSize,
+          height = imageSize,
+          batchSize = batchSize,
+          transformer = LocalImgReader(256) ->
+            BGRImgCropper(cropWidth = imageSize, cropHeight = imageSize, CropCenter) ->
+            BGRImgNormalizer(0.485, 0.456, 0.406, 0.229, 0.224, 0.225)
 
+        )
+      )
+  }
+}
 

@@ -17,21 +17,31 @@
 
 package com.intel.analytics.bigdl.dataset.image
 
-import com.intel.analytics.bigdl.dataset.{Utils, Batch, Transformer}
+import com.intel.analytics.bigdl.dataset.{Batch, Transformer}
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
-import com.intel.analytics.bigdl.utils.Engine
 
 import scala.collection.Iterator
 
-object RGBImgToBatch {
-  def apply(batchSize: Int, swapChannel : Boolean = true): RGBImgToBatch
-    = new RGBImgToBatch(batchSize, swapChannel)
+object GreyImgToAEBatch {
+  def apply(batchSize : Int) : GreyImgToAEBatch = {
+    new GreyImgToAEBatch(batchSize)
+  }
 }
 
-class RGBImgToBatch(totalBatch: Int, swapChannel : Boolean = true)
-  extends Transformer[LabeledRGBImage, Batch[Float]] {
+class GreyImgToAEBatch(batchSize: Int)
+  extends Transformer[LabeledGreyImage, Batch[Float]] {
 
-  override def apply(prev: Iterator[LabeledRGBImage]): Iterator[Batch[Float]] = {
+  private def copyImage(img: GreyImage, storage: Array[Float], offset: Int): Unit = {
+    val content = img.content
+    val frameLength = img.width() * img.height()
+    var j = 0
+    while (j < frameLength) {
+      storage(offset + j) = content(j)
+      j += 1
+    }
+  }
+
+  override def apply(prev: Iterator[LabeledGreyImage]): Iterator[Batch[Float]] = {
     new Iterator[Batch[Float]] {
       private val featureTensor: Tensor[Float] = Tensor[Float]()
       private val labelTensor: Tensor[Float] = Tensor[Float]()
@@ -39,7 +49,6 @@ class RGBImgToBatch(totalBatch: Int, swapChannel : Boolean = true)
       private var labelData: Array[Float] = null
       private var width = 0
       private var height = 0
-      private val batchSize = Utils.getBatchSize(totalBatch)
 
       override def hasNext: Boolean = prev.hasNext
 
@@ -49,23 +58,21 @@ class RGBImgToBatch(totalBatch: Int, swapChannel : Boolean = true)
           while (i < batchSize && prev.hasNext) {
             val img = prev.next()
             if (featureData == null) {
-              featureData = new Array[Float](batchSize * 3 * img.height() * img.width())
-              labelData = new Array[Float](batchSize)
+              featureData = new Array[Float](batchSize * img.height() * img.width())
+              labelData = new Array[Float](batchSize * img.height() * img.width())
               height = img.height()
               width = img.width()
             }
-            img.copyTo(featureData, i * img.width() * img.height() * 3, swapChannel)
+            copyImage(img, featureData, i * img.width() * img.height())
             labelData(i) = img.label()
             i += 1
           }
-
           if (labelTensor.nElement() != i) {
             featureTensor.set(Storage[Float](featureData),
-              storageOffset = 1, sizes = Array(i, 3, height, width))
-            labelTensor.set(Storage[Float](labelData),
-              storageOffset = 1, sizes = Array(i))
+              storageOffset = 1, sizes = Array(i, height, width))
+            labelTensor.set(Storage[Float](featureData),
+              storageOffset = 1, sizes = Array(i, height * width))
           }
-
           Batch(featureTensor, labelTensor)
         } else {
           null
