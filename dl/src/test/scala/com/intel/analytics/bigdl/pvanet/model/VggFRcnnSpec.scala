@@ -41,10 +41,14 @@ class VggFRcnnSpec extends FlatSpec {
 
     def compare(name: String): Unit = compare2(name, name)
 
-    def compare2(name1: String, name2: String): Unit = FileUtil.assertEqual[Float](name1,
-      name2Module(name2).output.asInstanceOf[Tensor[Float]], 1e-2)
+    def compare2(caffeOutName: String, moduleName: String): Unit
+    = FileUtil.assertEqual[Float](caffeOutName,
+      name2Module(moduleName).output.asInstanceOf[Tensor[Float]], 1e-4)
 
-    compare("conv5_3")
+
+    compare2("conv5_3", "relu5_3")
+    compare2("rpn_output", "rpn_relu/3x3")
+    compare("bbox_pred")
     compare("pool5")
     compare2("fc6", "drop6")
     compare2("fc7", "drop7")

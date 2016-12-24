@@ -25,9 +25,8 @@ import com.intel.analytics.bigdl.pvanet.layers.{Proposal, ProposalTarget, Reshap
 import com.intel.analytics.bigdl.pvanet.model.Model._
 import com.intel.analytics.bigdl.pvanet.model.Phase._
 import com.intel.analytics.bigdl.pvanet.utils.FileUtil
-import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.RandomGenerator._
-import com.intel.analytics.bigdl.utils.{Table, File => DlFile}
+import com.intel.analytics.bigdl.utils.{File => DlFile}
 
 import scala.util.Random
 
@@ -75,9 +74,10 @@ abstract class FasterRcnn(var phase: PhaseType) {
         return out
       }
     }
-    val module: SpatialConvolution[Float] = new SpatialConvolution(p._1, p._2, p._3, p._3, p._4, p._4,
-      p._5, p._5, propagateBack = isBack, initMethod = initMethod).setName(name)
-    if (init != null) initParameters(module, init)
+    val module: SpatialConvolution[Float] =
+      new SpatialConvolution(p._1, p._2, p._3, p._3, p._4, p._4,
+        p._5, p._5, propagateBack = isBack, initMethod = initMethod).setName(name)
+    if (phase == TRAIN && init != null) initParameters(module, init)
     module
   }
 
@@ -108,7 +108,7 @@ abstract class FasterRcnn(var phase: PhaseType) {
       }
     }
     val module = new Linear(p._1, p._2).setName(name)
-    if (init != null) initParameters(module, init)
+    if (phase == TRAIN && init != null) initParameters(module, init)
     module
   }
 
@@ -329,9 +329,9 @@ abstract class FasterRcnn(var phase: PhaseType) {
   }
 
   def initParameters(module: Module[Float], init: (Double, Double)): Unit = {
-    val params = module.getParameters()
-    params._1.apply1(_ => RNG.normal(0, init._1).toFloat)
-    params._2.apply1(_ => init._2.toFloat)
+    val params = module.parameters()
+    params._1(0).apply1(_ => RNG.normal(0, init._1).toFloat)
+    params._1(1).apply1(_ => init._2.toFloat)
   }
 
   def loadFromCaffeOrCache(dp: String, mp: String): this.type = {
@@ -343,7 +343,7 @@ abstract class FasterRcnn(var phase: PhaseType) {
         setFeatureAndRpnNet(featureAndRpn)
         setFastRcnn(fastRcnn)
       case _ =>
-        Module.loadCaffeParameters[Float](getModel, dp, mp, phase == TEST)
+        Module.loadCaffe[Float](getModel, dp, mp, phase == TEST)
         DlFile.save((featureAndRpnNet, fastRcnn), cachedPath, true)
     }
     this
@@ -387,8 +387,8 @@ object FasterRcnn {
       case (dp: String, mp: String) =>
         // caffe pretrained model
         getFasterRcnn(modelType)
-          .copyFromCaffe(new CaffeReader[Float](dp, mp))
-//          .loadFromCaffeOrCache(dp, mp)
+//          .copyFromCaffe(new CaffeReader[Float](dp, mp))
+          .loadFromCaffeOrCache(dp, mp)
       case _ => getFasterRcnn(modelType)
     }
     fasterRcnnModel
