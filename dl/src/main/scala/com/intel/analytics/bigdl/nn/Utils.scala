@@ -199,23 +199,6 @@ object Utils {
     recursiveTensorApply1[T](x, t => t.fill(ev.fromType[Double](value)))
   }
 
-  def copyParamModules[T](testModel: Module[T],
-    name2model: Map[String, Module[T]]): Unit = {
-    def setModules(module: Module[T]): Unit = {
-      if (module.isInstanceOf[Container[_, _, T]]) {
-        val m2 = module.asInstanceOf[Container[_, _, T]].modules
-        for (i <- m2.indices) {
-          if (m2(i).isInstanceOf[Container[_, _, T]]) {
-            setModules(m2(i))
-          } else {
-            m2(i) = name2model(m2(i).getName())
-          }
-        }
-      }
-    }
-    setModules(testModel)
-  }
-
   /**
    * get all modules and map by name
    *

@@ -17,10 +17,9 @@
 package com.intel.analytics.bigdl.nn
 
 import com.intel.analytics.bigdl.nn.abstractnn.{AbstractModule, Activity}
-import com.intel.analytics.bigdl.pvanet.caffe.CaffeLoader
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
-import com.intel.analytics.bigdl.utils.File
+import com.intel.analytics.bigdl.utils.{CaffeLoader, File}
 
 import scala.reflect.ClassTag
 
