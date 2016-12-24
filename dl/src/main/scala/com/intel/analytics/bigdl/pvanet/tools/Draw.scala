@@ -25,8 +25,10 @@ import javax.imageio.ImageIO
 import breeze.linalg.DenseMatrix
 import com.intel.analytics.bigdl.pvanet.utils.MatrixUtil
 import com.intel.analytics.bigdl.tensor.Tensor
+import org.apache.log4j.Logger
 
 object Draw {
+  val logger = Logger.getLogger(getClass)
   def vis(imgPath: String, clsname: String, dets: DenseMatrix[Float],
     savePath: String, thresh: Float = 0.3f): Unit = {
     var img: BufferedImage = null
@@ -53,7 +55,7 @@ object Draw {
     }
     if (g2d != null) {
       ImageIO.write(img, savePath.substring(savePath.lastIndexOf(".") + 1), new File(savePath))
-      println(savePath + " is saved")
+      logger.info(savePath + " is saved")
       g2d.dispose
     }
   }
@@ -85,7 +87,7 @@ object Draw {
     }
     if (g2d != null) {
       ImageIO.write(img, savePath.substring(savePath.lastIndexOf(".") + 1), new File(savePath))
-      println(savePath + " is saved")
+      logger.info(savePath + " is saved")
       g2d.dispose
     }
   }

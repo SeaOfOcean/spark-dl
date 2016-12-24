@@ -24,9 +24,12 @@ import com.intel.analytics.bigdl.pvanet.model.{FasterRcnn, Model, Phase}
 import com.intel.analytics.bigdl.pvanet.utils._
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.{Table, Timer}
+import org.apache.log4j.Logger
 import scopt.OptionParser
 
 object Test2 {
+  val logger = Logger.getLogger(getClass)
+
   def testNet(net: FasterRcnn, dataSource: ObjectDataSource,
     maxPerImage: Int = 100, thresh: Double = 0.05, vis: Boolean = false): Unit = {
     val imdb = dataSource.imdb
@@ -48,7 +51,7 @@ object Test2 {
     for (i <- 0 until imdb.numImages) {
       val d = dataIter.next()
       val imgWithRoi = imageScaler.apply(d)
-      println(s"process ${d.imagePath} ...............")
+      logger.info(s"process ${d.imagePath} ...............")
 
       imDetectTimer.tic()
       val (scores: Tensor[Float], boxes: Tensor[Float]) = imDetect(model, imgWithRoi)
@@ -56,13 +59,14 @@ object Test2 {
 
       miscTimer.tic()
       // skip j = 0, because it's the background class
-      for (j <- 1 until imdb.numClasses) {
+      for (cls <- 1 until imdb.numClasses) {
         def getClsDet: Tensor[Float] = {
-          val inds = (1 to scores.size(1)).filter(ind => scores.valueAt(ind, j) > thresh).toArray
+          val inds = (1 to scores.size(1)).filter(ind =>
+            scores.valueAt(ind, cls + 1) > thresh).toArray
           if (inds.length == 0) return Tensor[Float](0, 5)
-          val clsScores = MatrixUtil.selectMatrix2(scores, inds, Array(j))
+          val clsScores = MatrixUtil.selectMatrix2(scores, inds, Array(cls + 1))
           val clsBoxes = MatrixUtil.selectMatrix2(boxes,
-            inds, Range(j * 4, (j + 1) * 4).toArray)
+            inds, Range(cls * 4 + 1, (cls + 1) * 4 + 1).toArray)
 
           var clsDets = TensorUtil.horzcat(clsBoxes, clsScores)
           val keep = Nms.nms(clsDets, net.param.NMS.toFloat)
@@ -79,9 +83,9 @@ object Test2 {
         val clsDets = getClsDet
 
         if (vis) {
-          visDetection(d, imdb.classes(j), clsDets)
+          visDetection(d, imdb.classes(cls), clsDets)
         }
-        allBoxes(j)(i) = clsDets
+        allBoxes(cls)(i) = clsDets
       }
 
       // Limit to max_per_image detections *over all classes*
@@ -103,11 +107,11 @@ object Test2 {
         }
       }
       miscTimer.toc()
-      println(s"im detect: $i/${imdb.numImages} " +
+      logger.info(s"im detect: $i/${imdb.numImages} " +
         s"${imDetectTimer.averageTime / 1e9}s ${miscTimer.averageTime / 1e9}s")
     }
 
-    println("Evaluating detections")
+    logger.info("Evaluating detections")
 
 //    val outputDir = FileUtil.getOutputDir(imdb, "VGG16")
     imdb.evaluateDetections(allBoxes)

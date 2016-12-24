@@ -26,6 +26,7 @@ import com.intel.analytics.bigdl.pvanet.tools.VocEval
 import com.intel.analytics.bigdl.pvanet.utils.FileUtil
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.{File => DlFile}
+import org.apache.log4j.Logger
 
 import scala.Array._
 import scala.io.Source
@@ -36,6 +37,7 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
   val devkitPath: String = FileUtil.DATA_DIR + "/VOCdevkit")
   extends Imdb {
 
+  val logger = Logger.getLogger(getClass)
   override val name = "voc_" + year + "_" + imageSet
   val dataPath = devkitPath + "/VOC" + year
   override val classes = Array[String](
@@ -164,7 +166,7 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
     classToInd.foreach {
       case (cls, clsInd) =>
         if (cls != "__background__") {
-          println(s"writing $cls VOC results file")
+          logger.info(s"writing $cls VOC results file")
           val filename = getVocResultsFileTemplate().format(cls)
           val of = new PrintWriter(new java.io.File(filename))
           imageIndex.zipWithIndex.foreach {
@@ -190,7 +192,7 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
     classToInd.foreach {
       case (cls, clsInd) =>
         if (cls != "__background__") {
-          println(s"writing $cls VOC results file")
+          logger.info(s"writing $cls VOC results file")
           val filename = getVocResultsFileTemplate().format(cls)
           val of = new PrintWriter(new java.io.File(filename))
           imageIndex.zipWithIndex.foreach {

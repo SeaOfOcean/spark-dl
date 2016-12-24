@@ -50,7 +50,7 @@ object TensorUtil {
    * @param src
    */
   def updateRange(dest: Tensor[Float], startR: Int, endR: Int, startC: Int, endC: Int,
-    src: Tensor[Float]) = {
+    src: Tensor[Float]): Unit = {
     assert(src.size(1) == endR - startR + 1)
     assert(src.size(2) == endC - startC + 1)
     (startR to endR).zip(Stream.from(1)).foreach(r => {
@@ -79,7 +79,7 @@ object TensorUtil {
     resData
   }
 
-  def horzcat[T: ClassTag](tensors: Tensor[T]*)(implicit ev: TensorNumeric[T]): Tensor[T] = {
+  def horzcat(tensors: Tensor[Float]*): Tensor[Float] = {
     require(tensors(0).dim() == 2, "currently only support 2D")
     val nRows = tensors(0).size(1)
     var nCols = tensors(0).size(2)
@@ -87,14 +87,11 @@ object TensorUtil {
       require(tensors(i).size(1) == nRows, "the rows length must be equal")
       nCols += tensors(i).size(2)
     }
-    val resData = Tensor[T](nRows, nCols)
+    val resData = Tensor[Float](nRows, nCols)
     var id = 1
     tensors.foreach { tensor =>
-      (1 to tensor.size(2)).foreach { cid =>
-        (1 to tensor.size(1)).foreach(rid =>
-          resData.setValue(rid, id, tensor.valueAt(rid, cid)))
-      }
-      id = id + 1
+      TensorUtil.updateRange(resData, 1, nRows, id, id + tensor.size(2) - 1, tensor)
+      id = id + tensor.size(2)
     }
     resData
   }

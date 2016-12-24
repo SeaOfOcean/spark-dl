@@ -22,6 +22,7 @@ import com.intel.analytics.bigdl.pvanet.model.FasterRcnnParam
 import com.intel.analytics.bigdl.pvanet.utils._
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import com.intel.analytics.bigdl.utils.Table
+import org.apache.log4j.Logger
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
@@ -39,6 +40,7 @@ case class BboxTarget(labels: Tensor[Float],
 }
 
 class AnchorTarget(param: FasterRcnnParam) {
+  val logger = Logger.getLogger(getClass)
   val basicAnchors = Anchor.generateBasicAnchors(param.anchorRatios, param.anchorScales)
 
   /**
@@ -91,19 +93,20 @@ class AnchorTarget(param: FasterRcnnParam) {
    */
   def getAnchorTarget(featureH: Int, featureW: Int,
     imgH: Int, imgW: Int, gtBoxes: Tensor[Float]): BboxTarget = {
-    println("img size", imgH, imgW)
+    logger.info("img size", imgH, imgW)
     // 1. Generate proposals from bbox deltas and shifted anchors
     val shifts = Anchor.generateShifts(featureW, featureH, param.featStride)
     totalAnchors = shifts.rows * param.anchorNum
-    println("totalAnchors", totalAnchors)
+    logger.info(s"totalAnchors: $totalAnchors")
     val allAnchors = Anchor.getAllAnchors(shifts, basicAnchors)
 
 
     // keep only inside anchors
     val indsInside = getIndsInside(imgW, imgH, allAnchors, 0)
-    println("indsInside", indsInside.length)
+    logger.info(s"indsInside: ${indsInside.length}")
     val exp = FileUtil.loadFeaturesFullName[Float]("inds_inside", false)
-    FileUtil.assertEqualIgnoreSize[Float](exp, Tensor(Storage(indsInside.toArray.map(x=>x.toFloat))), "compare indsInside")
+    FileUtil.assertEqualIgnoreSize[Float](exp,
+      Tensor(Storage(indsInside.toArray.map(x => x.toFloat))), "compare indsInside")
     val insideAnchors = getInsideAnchors(indsInside, allAnchors)
 
     // overlaps between the anchors and the gt boxes
@@ -184,9 +187,9 @@ class AnchorTarget(param: FasterRcnnParam) {
     if (fgInds.length > numFg) {
       val disableInds = Random.shuffle(fgInds).take(fgInds.length - numFg.toInt)
       disableInds.foreach(x => labels(x) = -1)
-      println(s"${disableInds.length} fg inds are disabled")
+      logger.info(s"${disableInds.length} fg inds are disabled")
     }
-    println(s"fg: ${fgInds.length}")
+    logger.info(s"fg: ${fgInds.length}")
 
     // subsample negative labels if we have too many
     val numBg = param.RPN_BATCHSIZE - fgInds.length
@@ -196,13 +199,14 @@ class AnchorTarget(param: FasterRcnnParam) {
       val disableInds = FileUtil.loadFeaturesFullName[Float]("disablebg3354", false,
         "/home/xianyan/code/intel/big-dl/spark-dl/dl/data/middle/vgg16/step1/").storage().array()
       disableInds.foreach(x => labels(x.toInt) = -1)
-      println(s"${disableInds.length} bg inds are disabled, " +
+      logger.info(s"${disableInds.length} bg inds are disabled, " +
         s"now ${labels.findAll(_ == 0).length} inds")
     }
     labels
   }
 
-  def getBboxInsideWeights(indsInside: ArrayBuffer[Int], labels: DenseVector[Float]): DenseMatrix[Float] = {
+  def getBboxInsideWeights(indsInside: ArrayBuffer[Int],
+    labels: DenseVector[Float]): DenseMatrix[Float] = {
     val bboxInsideWeights = DenseMatrix.zeros[Float](indsInside.length, 4)
     labels.foreachPair((k, v) => {
       if (v == 1) {

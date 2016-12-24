@@ -23,9 +23,11 @@ import com.intel.analytics.bigdl.pvanet.model.Model._
 import com.intel.analytics.bigdl.pvanet.model._
 import com.intel.analytics.bigdl.pvanet.utils.{Bbox, MatrixUtil, Nms}
 import com.intel.analytics.bigdl.utils.Timer
+import org.apache.log4j.Logger
 import scopt.OptionParser
 
 object Demo {
+  val logger = Logger.getLogger(getClass)
 
   val classes = Array[String](
     "__background__", // always index 0
@@ -70,14 +72,14 @@ object Demo {
 
     imgNames.foreach(imaName => {
       val img = Roidb(param.folder + "/" + imaName)
-      println(s"process ${img.imagePath} ...")
+      logger.info(s"process ${img.imagePath} ...")
       val scaledImage = imageScaler.apply(img)
       val timer = new Timer
       timer.tic()
       val (scores: DenseMatrix[Float], boxes: DenseMatrix[Float])
       = Test.imDetect(model, scaledImage)
       timer.toc()
-      println(s"Detection took ${"%.3f".format(timer.totalTime / 1e9)}s " +
+      logger.info(s"Detection took ${"%.3f".format(timer.totalTime / 1e9)}s " +
         s"for ${boxes.rows} object proposals")
       // Visualize detections for each class
       val CONF_THRESH = 0.8f

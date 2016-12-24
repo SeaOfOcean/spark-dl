@@ -27,12 +27,14 @@ import com.intel.analytics.bigdl.pvanet.model.Phase._
 import com.intel.analytics.bigdl.pvanet.utils.FileUtil
 import com.intel.analytics.bigdl.utils.RandomGenerator._
 import com.intel.analytics.bigdl.utils.{File => DlFile}
+import org.apache.log4j.Logger
 
 import scala.util.Random
 
 
 abstract class FasterRcnn(var phase: PhaseType) {
 
+  val logger = Logger.getLogger(getClass)
   val modelType: ModelType
   val param: FasterRcnnParam
   var caffeReader: CaffeReader[Float] = _
@@ -339,7 +341,7 @@ abstract class FasterRcnn(var phase: PhaseType) {
     val mod = FileUtil.load[(Sequential[Float], Sequential[Float])](cachedPath)
     mod match {
       case Some((featureAndRpn, fastRcnn)) =>
-        println(s"load model with caffe weight from cache $cachedPath")
+        logger.info(s"load model with caffe weight from cache $cachedPath")
         setFeatureAndRpnNet(featureAndRpn)
         setFastRcnn(fastRcnn)
       case _ =>
@@ -387,7 +389,6 @@ object FasterRcnn {
       case (dp: String, mp: String) =>
         // caffe pretrained model
         getFasterRcnn(modelType)
-//          .copyFromCaffe(new CaffeReader[Float](dp, mp))
           .loadFromCaffeOrCache(dp, mp)
       case _ => getFasterRcnn(modelType)
     }

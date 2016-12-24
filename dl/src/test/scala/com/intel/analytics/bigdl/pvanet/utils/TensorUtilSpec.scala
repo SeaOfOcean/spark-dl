@@ -32,6 +32,21 @@ class TensorUtilSpec extends FlatSpec with Matchers {
     res should be(expected)
   }
 
+  "horzcat" should "work properly" in {
+    val m1 = Tensor(Storage(Array[Float](1, 2, 3, 4, 5, 6, 7, 8, 9))).resize(3, 3)
+    val m2 = Tensor(Storage(Array[Float](11, 22, 33))).resize(3, 1)
+
+    val res = TensorUtil.horzcat(m1, m2)
+    val expected = Tensor(Storage(Array[Float](1, 2, 3, 11, 4, 5, 6, 22, 7, 8, 9, 33)))
+      .resize(3, 4)
+    res should be(expected)
+
+    val m3 = Tensor(Storage(Array[Float](11, 12, 21, 22, 31, 32))).resize(3, 2)
+    val expected2 = Tensor(Storage(Array[Float](1, 2, 3, 11, 12, 4,
+      5, 6, 21, 22, 7, 8, 9, 31, 32))).resize(3, 5)
+    TensorUtil.horzcat(m1, m3) should be(expected2)
+  }
+
   "updateRange" should "work properly" in {
     val dest = Tensor(Storage(Array(1, 2, 3, 4, 5, 6, 7, 8, 9).map(x => x.toFloat))).resize(3, 3)
     val src = Tensor(Storage(Array(-1, -2, -3, -4).map(x => x.toFloat))).resize(2, 2)

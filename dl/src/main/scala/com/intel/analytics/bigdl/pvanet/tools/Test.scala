@@ -170,7 +170,7 @@ object Test {
 
     val model = FasterRcnn(param.net, Phase.TEST, model2caffePath(param.net))
     MKL.setNumThreads(param.nThread)
-    val testDataSource = ObjectDataSource("voc_2007_testcode", param.folder, false)
+    val testDataSource = ObjectDataSource("voc_2007_testcode1", param.folder, false)
     testNet(model, testDataSource)
   }
 
