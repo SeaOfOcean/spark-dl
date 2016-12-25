@@ -16,27 +16,51 @@
  */
 package com.intel.analytics.bigdl.models.alexnet
 
-import java.nio.file.Path
+import java.nio.file.{Path, Paths}
 
-import com.intel.analytics.bigdl.dataset.{Batch, DataSet, LocalDataSet, SeqFileLocalPath}
+import com.intel.analytics.bigdl.DataSet
+import com.intel.analytics.bigdl.dataset._
 import com.intel.analytics.bigdl.dataset.image._
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.Engine
+import org.apache.spark.SparkContext
 
 object ImageNet2012 {
-  def apply(path: Path, imageSize: Int, batchSize: Int, size: Int)
-  : LocalDataSet[Batch[Float]] = {
-    DataSet.SequenceFolder.paths(path, size)
-      .transform(
-        MTLabeledBGRImgToBatch(
+  def apply(
+    path: String,
+    sc: Option[SparkContext],
+    imageSize: Int,
+    batchSize: Int,
+    nodeNumber: Int,
+    coresPerNode: Int,
+    classNumber: Int,
+    size: Int,
+    ds: DataSet[_] = null
+  )
+  : DataSet[MiniBatch[Float]] = {
+    (if (sc.isDefined) {
+      DataSet.SeqFileFolder.files(path, sc.get, classNumber, nodeNumber,
+        (if (ds == null) null else ds.toDistributed().originRDD())).transform(
+        MTLabeledBGRImgToBatch[ByteRecord](
           width = imageSize,
           height = imageSize,
           batchSize = batchSize,
-          transformer = (LocalSeqFileToBytes() -> SampleToBGRImg() ->
-            BGRImgCropper(cropWidth = imageSize, cropHeight = imageSize) -> HFlip(0.5) ->
-            BGRImgNormalizer(0.485, 0.456, 0.406, 0.229, 0.224, 0.225)
-            )
+          transformer = (SampleToBGRImg() -> BGRImgCropper(imageSize, imageSize)
+            -> HFlip(0.5) -> BGRImgNormalizer(0.485, 0.456, 0.406, 0.229, 0.224, 0.225))
+        ))
+    } else {
+      DataSet.SeqFileFolder.paths(Paths.get(path), size)
+        .transform(
+          MTLabeledBGRImgToBatch(
+            width = imageSize,
+            height = imageSize,
+            batchSize = batchSize,
+            transformer = (LocalSeqFileToBytes() -> SampleToBGRImg() ->
+              BGRImgCropper(cropWidth = imageSize, cropHeight = imageSize) -> HFlip(0.5) ->
+              BGRImgNormalizer(0.485, 0.456, 0.406, 0.229, 0.224, 0.225)
+              )
+          )
         )
-      )
+    })
   }
 }

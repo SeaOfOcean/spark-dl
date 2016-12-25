@@ -18,11 +18,30 @@
 package com.intel.analytics.bigdl.optim
 
 import com.intel.analytics.bigdl._
-import com.intel.analytics.bigdl.dataset.{DataSet => DataSource}
+import com.intel.analytics.bigdl.dataset.{MiniBatch, DistributedDataSet, LocalDataSet}
 
-abstract class Validator[T, DS](
-  model: Module[T]
+abstract class Validator[T, D](
+  model: Module[T],
+  dataSet: DataSet[D]
 ) {
-  def test(dataSet : DataSource[DS],
-    vMethods : Array[ValidationMethod[T]]) : Array[(ValidationResult, ValidationMethod[T])]
+  def test(vMethods: Array[ValidationMethod[T]]): Array[(ValidationResult, ValidationMethod[T])]
+}
+
+object Validator {
+  def apply[T, D](model: Module[T], dataset: DataSet[D]): Validator[T, D] = {
+    dataset match {
+      case d: DistributedDataSet[MiniBatch[T]] =>
+        new DistriValidator[T](
+          model = model,
+          dataSet = d
+        ).asInstanceOf[Validator[T, D]]
+      case d: LocalDataSet[MiniBatch[T]] =>
+        new LocalValidator[T](
+          model = model,
+          dataSet = d
+        ).asInstanceOf[Validator[T, D]]
+      case _ =>
+        throw new UnsupportedOperationException
+    }
+  }
 }

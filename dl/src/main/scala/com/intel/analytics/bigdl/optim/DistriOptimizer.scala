@@ -18,8 +18,9 @@
 package com.intel.analytics.bigdl.optim
 
 import com.intel.analytics.bigdl._
-import com.intel.analytics.bigdl.dataset.{DataSet => DataSource, Batch, DistributedDataSet}
-import com.intel.analytics.bigdl.parameters.{CompressedTensor, AllReduceParameter, AllReduceParameterManager, ParameterManager}
+import com.intel.analytics.bigdl.DataSet
+import com.intel.analytics.bigdl.dataset.{MiniBatch, DistributedDataSet}
+import com.intel.analytics.bigdl.parameters.{CompressedTensor, AllReduceParameter}
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.utils._
@@ -62,7 +63,7 @@ object DistriOptimizer {
   )
 
   private[optim] def optimize[T: ClassTag](
-    dataset: DistributedDataSet[Batch[T]],
+    dataset: DistributedDataSet[MiniBatch[T]],
     coresPerNode: Int,
     state: Table,
     endWhen: Trigger,
@@ -71,13 +72,13 @@ object DistriOptimizer {
     model: Module[T],
     optimMethod: OptimMethod[T],
     validationTrigger: Option[Trigger],
-    validationDataSet: Option[DataSource[RDD[Batch[T]]]],
+    validationDataSet: Option[DataSet[MiniBatch[T]]],
     validationMethods: Option[Array[ValidationMethod[T]]],
     cacheTrigger: Option[Trigger],
     cachePath: Option[String],
     isOverWrite: Boolean
   )(implicit ev: TensorNumeric[T]) = {
-    val sc = dataset.data(looped = true).sparkContext
+    val sc = dataset.data(train = true).sparkContext
     val partitionNum = dataset.originRDD().partitions.length
     var wallClockTime = 0L
     var lastEpochTime = 0L
@@ -85,7 +86,6 @@ object DistriOptimizer {
       "neval" -> state.get[Int]("neval").getOrElse(1))
     val _subModelNumber = Engine.getEngineType match {
       case MklBlas => coresPerNode
-      case MklDnn => 1
       case _ => throw new IllegalArgumentException()
     }
     var accumulateCount = 0
@@ -113,7 +113,7 @@ object DistriOptimizer {
       val driverMetrics = metrics
       val start = System.nanoTime()
       val _ps = new AllReduceParameter[T]()
-      dataset.data(looped = true).zipPartitions(
+      dataset.data(train = true).zipPartitions(
         models, true)(
         (data, modelIter) => {
           var time = System.nanoTime()
@@ -289,7 +289,7 @@ object DistriOptimizer {
 
   private def initThreadModels[T: ClassTag](
     model: Module[T],
-    dataset: DistributedDataSet[Batch[T]],
+    dataset: DistributedDataSet[MiniBatch[T]],
     criterion: Criterion[T],
     state: Table,
     nodeNumber: Int,
@@ -300,7 +300,7 @@ object DistriOptimizer {
     val broadcast = sc.broadcast((model, criterion, state))
     val _subModelNumber = Engine.getEngineType match {
       case MklBlas => coresPerNode
-      case MklDnn => 1
+      case _ => throw new IllegalArgumentException
     }
 
     require(dataset.originRDD().partitions.length == nodeNumber,
@@ -356,7 +356,7 @@ object DistriOptimizer {
 
   private def validate[T](
     validationTrigger: Option[Trigger],
-    validationDataSet: Option[DataSource[RDD[Batch[T]]]],
+    validationDataSet: Option[DataSet[MiniBatch[T]]],
     validationMethods: Option[Array[ValidationMethod[T]]],
     coresPerNode: Int,
     models: RDD[Cache[T]],
@@ -371,11 +371,11 @@ object DistriOptimizer {
       return
     }
     val vMethods = validationMethods.get
-    val validateRDD = validationDataSet.get.data(looped = false)
+    val validateRDD = validationDataSet.get.toDistributed().data(train = false)
     logger.info(s"[Wall Clock ${wallClockTime / 1e9}s] Validate model...")
     val _subModelNumber = Engine.getEngineType match {
       case MklBlas => coresPerNode
-      case MklDnn => 1
+      case _ => throw new IllegalArgumentException
     }
     models.zipPartitions(validateRDD)((modelIter, dataIter) => {
       val workingModels = modelIter.next().localModels
@@ -394,7 +394,7 @@ object DistriOptimizer {
               val target = batch.labels.narrow(1, offset + 1, length)
               val output = workingModels(b).forward(input)
               vMethods.map(validation => {
-                validation(output.asInstanceOf[Tensor[T]], target)
+                validation(output, target)
               })
             }
           )
@@ -440,13 +440,13 @@ object DistriOptimizer {
   }
 }
 
-class DistriOptimizer[T: ClassTag](
+class DistriOptimizer[T: ClassTag] private[optim](
   model: Module[T],
-  dataset: DistributedDataSet[Batch[T]],
+  dataset: DistributedDataSet[MiniBatch[T]],
   criterion: Criterion[T]
 )
   (implicit ev: TensorNumeric[T])
-  extends Optimizer[T, RDD[Batch[T]], RDD[Batch[T]]](
+  extends Optimizer[T, MiniBatch[T]](
     model, dataset, criterion) {
 
   def disableCheckSingleton(): this.type = {
@@ -482,8 +482,8 @@ class DistriOptimizer[T: ClassTag](
       validationTrigger,
       validationDataSet,
       validationMethods,
-      cacheTrigger,
-      cachePath,
+      checkpointTrigger,
+      checkpointPath,
       isOverWrite
     )
 

@@ -14,48 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.spark.ml
+import org.apache.spark.ml.param.ParamMap
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.types.StructType
 
-package com.intel.analytics.bigdl.dataset
+abstract class MlTransform extends Transformer{
 
-import java.nio.file.Path
+  def process(dataset: DataFrame): DataFrame
 
-import com.intel.analytics.bigdl.tensor.Tensor
+  override def transform(dataset: DataFrame): DataFrame = {
+    process(dataset)
+  }
 
-/**
- * Represent an image
- */
-abstract class Image extends Serializable {
-  def width(): Int
+  override def transformSchema(schema: StructType): StructType = schema
 
-  def height(): Int
-
-  def content: Array[Float]
+  override def copy(extra: ParamMap): MlTransform = defaultCopy(extra)
 }
-
-/**
- * Represent a local file path of an image file
- *
- * @param path
- */
-class LocalImagePath(val path : Path)
-
-/**
- * Represent a local file path of a hadoop sequence file
- *
- * @param path
- */
-case class LocalSeqFilePath(val path: Path)
-
-/**
- * Represent a label
- *
- * @tparam T
- */
-trait Label[T] {
-  def setLabel(label: T): this.type
-  def label(): T
-}
-
-case class MiniBatch[T](data: Tensor[T], labels: Tensor[T])
-
-case class ByteRecord(data: Array[Byte], label: Float)

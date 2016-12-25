@@ -16,6 +16,7 @@
  */
 package com.intel.analytics
 
+import com.intel.analytics.bigdl.dataset.AbstractDataSet
 import com.intel.analytics.bigdl.nn.abstractnn.Activity
 
 import scala.language.implicitConversions
@@ -35,4 +36,6 @@ package object bigdl {
   ): Criterion[T] = criterion.asInstanceOf[Criterion[T]]
 
   val numeric = com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
+
+  type DataSet[D] = AbstractDataSet[D, _]
 }

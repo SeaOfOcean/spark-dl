@@ -21,10 +21,8 @@ import java.nio.file.Paths
 
 import com.intel.analytics.bigdl.dataset.DataSet
 import com.intel.analytics.bigdl.dataset.image._
-import com.intel.analytics.bigdl.nn.{ClassNLLCriterion, MSECriterion, Module}
+import com.intel.analytics.bigdl.nn.{MSECriterion, Module}
 import com.intel.analytics.bigdl._
-import com.intel.analytics.bigdl.nn.abstractnn.AbstractModule
-import com.intel.analytics.bigdl.optim.DataSet
 import com.intel.analytics.bigdl.optim._
 import com.intel.analytics.bigdl.utils.{Engine, T}
 import org.apache.log4j.{Level, Logger}
@@ -42,11 +40,10 @@ object SparkTrain {
 
   def main(args: Array[String]): Unit = {
     trainSparkParser.parse(args, new TrainSparkParams()).map(param => {
-      Engine.setCluster(param.nodesNumber, param.coreNumberPerNode)
       val batchSize = 150
       val maxEpoch = 10
 
-      val conf = Engine.sparkConf()
+      val conf = Engine.init(param.nodesNumber, param.coreNumberPerNode, true).get
         .setAppName("Train Autoencoder on MNIST")
         .set("spark.akka.frameSize", 64.toString)
       val sc = new SparkContext(conf)
@@ -76,14 +73,14 @@ object SparkTrain {
         )
       }
 
-      val optimizer = new DistriOptimizer[Float](
+      val optimizer = Optimizer(
         model = model,
         dataset = trainDataSet,
         criterion = new MSECriterion[Float]()
       )
 
-      if (param.cache.isDefined) {
-        optimizer.setCache(param.cache.get, Trigger.everyEpoch)
+      if (param.checkpoint.isDefined) {
+        optimizer.setCheckpoint(param.checkpoint.get, Trigger.everyEpoch)
       }
       optimizer
         .setState(state)

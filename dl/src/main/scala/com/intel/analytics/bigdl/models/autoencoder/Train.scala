@@ -22,11 +22,9 @@ import java.nio.file.Paths
 import com.intel.analytics.bigdl._
 import com.intel.analytics.bigdl.dataset.DataSet
 import com.intel.analytics.bigdl.dataset.image.{GreyImgNormalizer, GreyImgToAEBatch, GreyImgToBatch, SampleToGreyImg}
-import com.intel.analytics.bigdl.nn.{ClassNLLCriterion, MSECriterion, Module}
-import com.intel.analytics.bigdl.optim.DataSet
+import com.intel.analytics.bigdl.nn.{MSECriterion, Module}
 import com.intel.analytics.bigdl.optim._
 import com.intel.analytics.bigdl.utils.{Engine, T}
-import org.apache.spark.{SparkConf, SparkContext}
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric._
 
 
@@ -58,13 +56,13 @@ object Train {
       }
 
       Engine.setCoreNumber(param.coreNumber)
-      val optimizer = new LocalOptimizer[Float](
+      val optimizer = Optimizer(
         model = model,
         dataset = trainSet.transform(normalizer).transform(GreyImgToAEBatch(param.batchSize)),
         criterion = new MSECriterion[Float]()
       )
-      if (param.cache.isDefined) {
-        optimizer.setCache(param.cache.get, Trigger.everyEpoch)
+      if (param.checkpoint.isDefined) {
+        optimizer.setCheckpoint(param.checkpoint.get, Trigger.everyEpoch)
       }
 
       optimizer

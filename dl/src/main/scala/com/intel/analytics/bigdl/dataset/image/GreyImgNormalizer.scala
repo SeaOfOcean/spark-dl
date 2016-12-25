@@ -17,19 +17,20 @@
 
 package com.intel.analytics.bigdl.dataset.image
 
-import com.intel.analytics.bigdl.dataset.{LocalDataSet, Transformer}
+import com.intel.analytics.bigdl.DataSet
+import com.intel.analytics.bigdl.dataset.{DataSet, LocalDataSet, Transformer}
 
 import scala.collection.Iterator
 
 object GreyImgNormalizer {
-  def apply(dataSource: LocalDataSet[LabeledGreyImage], samples: Int = Int.MaxValue)
+  def apply(dataSet: DataSet[LabeledGreyImage], samples: Int = Int.MaxValue)
   : GreyImgNormalizer = {
     var sum: Double = 0
     var total: Int = 0
-    dataSource.shuffle()
-    var iter = dataSource.data(looped = false)
+    dataSet.shuffle()
+    var iter = dataSet.toLocal().data(train = false)
     var i = 0
-    while (i < math.min(samples, dataSource.size())) {
+    while (i < math.min(samples, dataSet.size())) {
       val img = iter.next()
       img.content.foreach(e => {
         sum += e
@@ -42,8 +43,8 @@ object GreyImgNormalizer {
 
     sum = 0
     i = 0
-    iter = dataSource.data(looped = false)
-    while (i < math.min(samples, dataSource.size())) {
+    iter = dataSet.toLocal().data(train = false)
+    while (i < math.min(samples, dataSet.size())) {
       val img = iter.next()
       img.content.foreach(e => {
         val diff = e - mean

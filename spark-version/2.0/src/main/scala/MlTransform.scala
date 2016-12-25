@@ -14,12 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.spark.ml
+import org.apache.spark.ml.param.ParamMap
+import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{DataFrame, Dataset}
 
-package com.intel.analytics.bigdl.optim
+abstract class MlTransform extends Transformer{
 
-import com.intel.analytics.bigdl.dataset.{DataSet => DataSource}
+  def process(dataset: DataFrame): DataFrame
 
-abstract class Predictor[T, DS1, DS2] {
-  def predict(dataSet : DataSource[DS1]) : DataSource[DS2]
+  override def transform(dataset: Dataset[_]): DataFrame = {
+    process(dataset.toDF())
+  }
+
+  override def transformSchema(schema: StructType): StructType = schema
+
+  override def copy(extra: ParamMap): MlTransform = defaultCopy(extra)
 }
-

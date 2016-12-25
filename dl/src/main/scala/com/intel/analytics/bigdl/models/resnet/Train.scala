@@ -80,13 +80,13 @@ object LocalTrain {
       }
 
       Engine.setCoreNumber(param.coreNumber)
-      val optimizer = new LocalOptimizer[Float](
+      val optimizer = Optimizer(
         model = model,
         dataset = trainDataSet,
         criterion = new CrossEntropyCriterion[Float]()
       )
-      if (param.cache.isDefined) {
-        optimizer.setCache(param.cache.get, Trigger.everyEpoch)
+      if (param.checkpoint.isDefined) {
+        optimizer.setCheckpoint(param.checkpoint.get, Trigger.everyEpoch)
       }
 
       optimizer
@@ -112,16 +112,14 @@ object SparkTrain {
 
   def main(args: Array[String]): Unit = {
     trainSparkParser.parse(args, new TrainSparkParams()).map(param => {
+      val conf = Engine.init(param.nodesNumber, param.coreNumberPerNode, true).get
+        .setAppName("Train ResNet on Cifar10")
+        .set("spark.akka.frameSize", 64.toString)
       val batchSize = 128
       val (imageSize, lrSchedule, maxEpoch, dataSet) = param.dataset match {
         // case "imagenet" => (224, DatasetType.ImageNet, 90, ImagenetDataSet)
         case _ => (32, DatasetType.CIFAR10, 165, Cifar10DataSet)
       }
-
-      Engine.setCluster(param.nodesNumber, param.coreNumberPerNode)
-      val conf = Engine.sparkConf()
-        .setAppName("Train ResNet on Cifar10")
-        .set("spark.akka.frameSize", 64.toString)
 
       val sc = new SparkContext(conf)
 
@@ -160,14 +158,14 @@ object SparkTrain {
       }
 
 
-      val optimizer = new DistriOptimizer[Float](
+      val optimizer = Optimizer(
         model = model,
         dataset = trainDataSet,
         criterion = new CrossEntropyCriterion[Float]()
       )
 
       if (param.cache.isDefined) {
-        optimizer.setCache(param.cache.get, Trigger.everyEpoch)
+        optimizer.setCheckpoint(param.cache.get, Trigger.everyEpoch)
       }
       optimizer
         .setValidation(Trigger.everyEpoch,

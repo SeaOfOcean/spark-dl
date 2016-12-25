@@ -26,7 +26,7 @@ import com.intel.analytics.bigdl.utils.{Engine, T}
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.SparkContext
 
-object GoogleNetv1_SparkTrain {
+object TrainGoogleNetV1 {
   Logger.getLogger("org").setLevel(Level.ERROR)
   Logger.getLogger("akka").setLevel(Level.ERROR)
   Logger.getLogger("breeze").setLevel(Level.ERROR)
@@ -36,29 +36,34 @@ object GoogleNetv1_SparkTrain {
 
   def main(args: Array[String]): Unit = {
     trainParser.parse(args, new TrainParams()).map(param => {
-      Engine.setCluster(param.nodesNumber, param.coreNumberPerNode)
-      val batchSize = param.batchSize.getOrElse(1568)
       val imageSize = 224
+      val sc = Engine.init(param.nodeNumber, param.coreNumber, param.env == "spark")
+        .map(conf => {
+          conf.setAppName("BigDL Inception v1 Train Example")
+            .set("spark.task.maxFailures", "1")
+          new SparkContext(conf)
+        })
 
-      val conf = Engine.sparkConf().setAppName("BigDL GoogleNet v1 Train Example")
-      val sc = new SparkContext(conf)
       val trainSet = ImageNet2012(
         param.folder + "/train",
         sc,
         imageSize,
-        batchSize,
-        param.nodesNumber,
-        param.coreNumberPerNode,
-        param.classNumber
+        param.batchSize,
+        param.nodeNumber,
+        param.coreNumber,
+        param.classNumber,
+        1281167
       )
       val valSet = ImageNet2012(
         param.folder + "/val",
         sc,
         imageSize,
-        batchSize,
-        param.nodesNumber,
-        param.coreNumberPerNode,
-        param.classNumber
+        param.batchSize,
+        param.nodeNumber,
+        param.coreNumber,
+        param.classNumber,
+        50000,
+        trainSet
       )
 
       val model = if (param.modelSnapshot.isDefined) {
@@ -71,7 +76,7 @@ object GoogleNetv1_SparkTrain {
         T.load(param.stateSnapshot.get)
       } else {
         T(
-          "learningRate" -> 0.0898,
+          "learningRate" -> param.learningRate,
           "weightDecay" -> 0.0001,
           "momentum" -> 0.9,
           "dampening" -> 0.0,
@@ -79,14 +84,14 @@ object GoogleNetv1_SparkTrain {
         )
       }
 
-      val optimizer = new DistriOptimizer[Float](
+      val optimizer = Optimizer(
         model = model,
         dataset = trainSet,
         criterion = new ClassNLLCriterion[Float]()
       )
 
       if (param.checkpoint.isDefined) {
-        optimizer.setCache(param.checkpoint.get, Trigger.severalIteration(620))
+        optimizer.setCheckpoint(param.checkpoint.get, Trigger.severalIteration(620))
       }
 
       optimizer
@@ -99,7 +104,7 @@ object GoogleNetv1_SparkTrain {
   }
 }
 
-object GoogleNetv2_SparkTrain {
+object TrainGoogleNetV2 {
   Logger.getLogger("org").setLevel(Level.ERROR)
   Logger.getLogger("akka").setLevel(Level.ERROR)
   Logger.getLogger("breeze").setLevel(Level.ERROR)
@@ -109,29 +114,32 @@ object GoogleNetv2_SparkTrain {
 
   def main(args: Array[String]): Unit = {
     trainParser.parse(args, new TrainParams()).map(param => {
-      Engine.setCluster(param.nodesNumber, param.coreNumberPerNode)
-      val batchSize = param.batchSize.getOrElse(1344)
       val imageSize = 224
-
-      val conf = Engine.sparkConf().setAppName("BigDL GoogleNet v2 Train Example")
-      val sc = new SparkContext(conf)
+      val sc = Engine.init(param.nodeNumber, param.coreNumber, param.env == "spark")
+        .map(conf => {
+          conf.setAppName("BigDL Inception v1 Train Example")
+            .set("spark.task.maxFailures", "1")
+          new SparkContext(conf)
+        })
       val trainSet = ImageNet2012(
         param.folder + "/train",
         sc,
         imageSize,
-        batchSize,
-        param.nodesNumber,
-        param.coreNumberPerNode,
-        param.classNumber
+        param.batchSize,
+        param.nodeNumber,
+        param.coreNumber,
+        param.classNumber,
+        1281167
       )
       val valSet = ImageNet2012(
         param.folder + "/val",
         sc,
         imageSize,
-        batchSize,
-        param.nodesNumber,
-        param.coreNumberPerNode,
-        param.classNumber
+        param.batchSize,
+        param.nodeNumber,
+        param.coreNumber,
+        param.classNumber,
+        50000
       )
 
       val model = if (param.modelSnapshot.isDefined) {
@@ -144,7 +152,7 @@ object GoogleNetv2_SparkTrain {
         T.load(param.stateSnapshot.get)
       } else {
         T(
-          "learningRate" -> 0.1,
+          "learningRate" -> param.learningRate,
           "weightDecay" -> 0.0002,
           "momentum" -> 0.9,
           "dampening" -> 0.0,
@@ -152,14 +160,14 @@ object GoogleNetv2_SparkTrain {
         )
       }
 
-      val optimizer = new DistriOptimizer[Float](
+      val optimizer = Optimizer(
         model = model,
         dataset = trainSet,
         criterion = new ClassNLLCriterion[Float]()
       )
 
       if (param.checkpoint.isDefined) {
-        optimizer.setCache(param.checkpoint.get, Trigger.everyEpoch)
+        optimizer.setCheckpoint(param.checkpoint.get, Trigger.everyEpoch)
       }
 
       optimizer

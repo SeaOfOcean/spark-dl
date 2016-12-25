@@ -22,30 +22,30 @@ import java.nio.file.{Paths, Files}
 import com.intel.analytics.bigdl._
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.utils.{T, Table}
-import com.intel.analytics.bigdl.dataset.{DataSet => DataSource}
+import com.intel.analytics.bigdl.dataset.{LocalDataSet, MiniBatch, DistributedDataSet}
 
 import scala.reflect.ClassTag
 
-abstract class Optimizer[T  : ClassTag, TDS, VDS](
+abstract class Optimizer[T: ClassTag, D](
     protected val model: Module[T],
-    protected val dataset: DataSource[TDS],
+  protected val dataset: DataSet[D],
     protected val criterion: Criterion[T])(implicit ev : TensorNumeric[T])
 {
   protected var state: Table = T()
   protected var optimMethod: OptimMethod[T] = new SGD[T]()
   protected var endWhen: Trigger = Trigger.maxIteration(100)
 
-  protected var cacheTrigger: Option[Trigger] = None
-  protected var cachePath: Option[String] = None
+  protected var checkpointTrigger: Option[Trigger] = None
+  protected var checkpointPath: Option[String] = None
   protected var isOverWrite: Boolean = false
 
   protected var validationTrigger: Option[Trigger] = None
   protected var validationMethods: Option[Array[ValidationMethod[T]]] = None
-  protected var validationDataSet: Option[DataSource[VDS]] = None
+  protected var validationDataSet: Option[DataSet[D]] = None
 
   def optimize(): Module[T]
 
-  def setValidation(trigger: Trigger, dataset: DataSource[VDS],
+  def setValidation(trigger: Trigger, dataset: DataSet[D],
     vMethods : Array[ValidationMethod[T]])
   : this.type = {
     this.validationTrigger = Some(trigger)
@@ -54,14 +54,14 @@ abstract class Optimizer[T  : ClassTag, TDS, VDS](
     this
   }
 
-  def setCache(path: String, trigger: Trigger): this.type = {
+  def setCheckpoint(path: String, trigger: Trigger): this.type = {
     require(Files.isDirectory(Paths.get(path)), s"$path is not a folder")
-    this.cachePath = Some(path)
-    this.cacheTrigger = Some(trigger)
+    this.checkpointPath = Some(path)
+    this.checkpointTrigger = Some(trigger)
     this
   }
 
-  def overWriteCache() : this.type = {
+  def overWriteCheckpoint() : this.type = {
     isOverWrite = true
     this
   }
@@ -88,17 +88,40 @@ object Optimizer {
     s"[Epoch $epoch $count/$total][Iteration $iter][Wall Clock ${wallClockTime / 1e9}s]"
   }
 
-  private[bigdl] def saveModel[T](model: Module[T], cachePath : Option[String], overWrite : Boolean,
-    postfix: String = ""): Unit = {
-    if (cachePath.isDefined) {
-      model.save(s"${cachePath.get}/model$postfix", overWrite)
+  private[bigdl] def saveModel[T](model: Module[T], checkpointPath : Option[String],
+    overWrite : Boolean, postfix: String = ""): Unit = {
+    if (checkpointPath.isDefined) {
+      model.save(s"${checkpointPath.get}/model$postfix", overWrite)
     }
   }
 
-  private[bigdl] def saveState(state: Table, cachePath : Option[String], overWrite : Boolean,
+  private[bigdl] def saveState(state: Table, checkpointPath : Option[String], overWrite : Boolean,
     postfix: String = ""): Unit = {
-    if (cachePath.isDefined) {
-      state.save(s"${cachePath.get}/state$postfix", overWrite)
+    if (checkpointPath.isDefined) {
+      state.save(s"${checkpointPath.get}/state$postfix", overWrite)
+    }
+  }
+
+  def apply[T: ClassTag, D](
+    model: Module[T],
+    dataset: DataSet[D],
+    criterion: Criterion[T]
+  )(implicit ev: TensorNumeric[T]): Optimizer[T, D] = {
+    dataset match {
+      case d: DistributedDataSet[MiniBatch[T]] =>
+        new DistriOptimizer[T](
+          model = model,
+          dataset = d,
+          criterion = criterion
+        ).asInstanceOf[Optimizer[T, D]]
+      case d: LocalDataSet[MiniBatch[T]] =>
+        new LocalOptimizer[T](
+          model = model,
+          dataset = d,
+          criterion = criterion
+        ).asInstanceOf[Optimizer[T, D]]
+      case _ =>
+        throw new UnsupportedOperationException
     }
   }
 }

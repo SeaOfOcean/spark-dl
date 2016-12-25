@@ -20,7 +20,7 @@ package com.intel.analytics.bigdl.models.autoencoder
 import java.nio.ByteBuffer
 import java.nio.file.{Files, Path}
 
-import com.intel.analytics.bigdl.dataset.Sample
+import com.intel.analytics.bigdl.dataset.ByteRecord
 
 import scopt.OptionParser
 
@@ -30,7 +30,7 @@ object Utils {
 
   case class TrainParams(
     folder: String = "./",
-    cache: Option[String] = None,
+    checkpoint: Option[String] = None,
     modelSnapshot: Option[String] = None,
     stateSnapshot: Option[String] = None,
     batchSize: Int = 150,
@@ -57,7 +57,7 @@ object Utils {
 
     opt[String]("cache")
       .text("where to cache the model")
-      .action((x, c) => c.copy(cache = Some(x)))
+      .action((x, c) => c.copy(checkpoint = Some(x)))
 
     opt[Double]('r', "learningRate")
       .text("learning rate")
@@ -74,7 +74,7 @@ object Utils {
 
   case class TrainSparkParams(
     folder: String = "./",
-    cache: Option[String] = None,
+    checkpoint: Option[String] = None,
     modelSnapshot: Option[String] = None,
     stateSnapshot: Option[String] = None,
     coreNumberPerNode: Int = -1,
@@ -94,7 +94,7 @@ object Utils {
       .action((x, c) => c.copy(stateSnapshot = Some(x)))
     opt[String]("cache")
       .text("where to cache the model")
-      .action((x, c) => c.copy(cache = Some(x)))
+      .action((x, c) => c.copy(checkpoint = Some(x)))
     opt[Int]('c', "core")
       .text("cores number on each node")
       .action((x, c) => c.copy(coreNumberPerNode = x))
@@ -112,7 +112,7 @@ object Utils {
   )
 
 
-  private[bigdl] def load(featureFile: Path, labelFile: Path): Array[Sample] = {
+  private[bigdl] def load(featureFile: Path, labelFile: Path): Array[ByteRecord] = {
     val labelBuffer = ByteBuffer.wrap(Files.readAllBytes(labelFile))
     val featureBuffer = ByteBuffer.wrap(Files.readAllBytes(featureFile))
     val labelMagicNumber = labelBuffer.getInt()
@@ -128,7 +128,7 @@ object Utils {
     val rowNum = featureBuffer.getInt()
     val colNum = featureBuffer.getInt()
 
-    val result = new Array[Sample](featureCount)
+    val result = new Array[ByteRecord](featureCount)
     var i = 0
     while (i < featureCount) {
       val img = new Array[Byte]((rowNum * colNum))
@@ -141,7 +141,7 @@ object Utils {
         }
         y += 1
       }
-      result(i) = Sample(img, labelBuffer.get().toFloat + 1.0f)
+      result(i) = ByteRecord(img, labelBuffer.get().toFloat + 1.0f)
       i += 1
     }
 
