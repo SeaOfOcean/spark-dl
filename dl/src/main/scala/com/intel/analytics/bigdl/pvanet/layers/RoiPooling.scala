@@ -20,7 +20,6 @@ package com.intel.analytics.bigdl.pvanet.layers
 import breeze.linalg.{max, min}
 import breeze.numerics.{ceil, floor, round}
 import com.intel.analytics.bigdl.nn.abstractnn.AbstractModule
-import com.intel.analytics.bigdl.pvanet.utils.FileUtil
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.utils.Table

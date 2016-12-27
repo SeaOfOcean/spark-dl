@@ -17,6 +17,7 @@
 
 package com.intel.analytics.bigdl.pvanet.tools
 
+import com.intel.analytics.bigdl._
 import com.intel.analytics.bigdl.optim.SGD.EpochStep
 import com.intel.analytics.bigdl.optim.{SGD, Trigger}
 import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, ObjectDataSource}
@@ -66,7 +67,7 @@ object Train {
     val imgScaler = new ImageScalerAndMeanSubstractor(fasterRcnnModel.param)
     fasterRcnnModel.train
     val optimizer = new FasterRcnnOptimizer(
-      data = dataSource -> imgScaler,
+      data = (dataSource -> imgScaler).toLocal(),
       validationData = valSource,
       net = fasterRcnnModel,
       model = fasterRcnnModel.getTrainModel,

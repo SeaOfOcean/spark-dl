@@ -18,7 +18,7 @@
 package com.intel.analytics.bigdl.optim
 
 import com.intel.analytics.bigdl._
-import com.intel.analytics.bigdl.dataset.{MiniBatch, DistributedDataSet, LocalDataSet}
+import com.intel.analytics.bigdl.dataset.{MiniBatch, DistributedDataSet, Dataset}
 
 abstract class Validator[T, D](
   model: Module[T],
@@ -35,7 +35,7 @@ object Validator {
           model = model,
           dataSet = d
         ).asInstanceOf[Validator[T, D]]
-      case d: LocalDataSet[MiniBatch[T]] =>
+      case d: Dataset[MiniBatch[T]] =>
         new LocalValidator[T](
           model = model,
           dataSet = d

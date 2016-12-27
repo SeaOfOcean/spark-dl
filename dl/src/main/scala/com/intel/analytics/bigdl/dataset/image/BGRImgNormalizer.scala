@@ -17,7 +17,7 @@
 
 package com.intel.analytics.bigdl.dataset.image
 
-import com.intel.analytics.bigdl.dataset.{LocalDataSet, Transformer}
+import com.intel.analytics.bigdl.dataset.{Dataset, Transformer}
 import com.intel.analytics.bigdl.optim.LocalOptimizer._
 import org.apache.log4j.Logger
 
@@ -36,13 +36,13 @@ object BGRImgNormalizer {
     new BGRImgNormalizer(mean._1, mean._2, mean._3, std._1, std._2, std._3)
   }
 
-  def apply(dataSet: LocalDataSet[LabeledBGRImage])
+  def apply(dataSet: Dataset[LabeledBGRImage])
   : BGRImgNormalizer = {
     apply(dataSet, -1)
   }
 
 
-  def apply(dataSet: LocalDataSet[LabeledBGRImage], samples: Int)
+  def apply(dataSet: Dataset[LabeledBGRImage], samples: Int)
   : BGRImgNormalizer = {
     var sumR: Double = 0
     var sumG: Double = 0

@@ -16,7 +16,7 @@
  */
 package com.intel.analytics.bigdl.models.utils
 
-import com.intel.analytics.bigdl.dataset.{MiniBatch, LocalDataSet}
+import com.intel.analytics.bigdl.dataset.{MiniBatch, Dataset}
 import com.intel.analytics.bigdl.models.vgg.{Vgg_16, Vgg_19}
 import com.intel.analytics.bigdl.numeric.NumericFloat
 import com.intel.analytics.bigdl._
@@ -92,7 +92,7 @@ object LocalOptimizerPerf {
     println(model)
     val criterion = ClassNLLCriterion()
     val labels = Tensor(param.batchSize).fill(1)
-    val dummyDataSet = new LocalDataSet[MiniBatch[Float]] {
+    val dummyDataSet = new Dataset[MiniBatch[Float]] {
       override def data(looped : Boolean): Iterator[MiniBatch[Float]] = {
         new Iterator[MiniBatch[Float]] {
           override def hasNext: Boolean = true

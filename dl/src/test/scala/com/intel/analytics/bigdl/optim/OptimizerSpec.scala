@@ -19,7 +19,7 @@ package com.intel.analytics.bigdl.optim
 
 import java.nio.file.{Files, Paths}
 
-import com.intel.analytics.bigdl.dataset.{LocalDataSet, DistributedDataSet}
+import com.intel.analytics.bigdl.dataset.{Dataset, DistributedDataSet}
 import com.intel.analytics.bigdl.nn.{ClassNLLCriterion, Linear, Sequential}
 import com.intel.analytics.bigdl._
 import com.intel.analytics.bigdl.models.alexnet.AlexNet
@@ -194,7 +194,7 @@ class OptimizerSpec extends FlatSpec with Matchers {
   }
 
   "A Local dataset" should "spawn a local optimizer" in {
-    val ds = new LocalDataSet[Float] {
+    val ds = new Dataset[Float] {
       override def data(looped: Boolean): Iterator[Float] = null
       override def size(): Long = 0
       override def shuffle(): Unit = {}

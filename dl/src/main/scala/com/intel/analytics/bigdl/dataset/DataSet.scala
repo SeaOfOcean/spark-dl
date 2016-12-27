@@ -79,7 +79,7 @@ trait AbstractDataSet[D, DataSequence] {
   // scalastyle:on noSpaceBeforeLeftBracket
   // scalastyle:on methodName
 
-  def toLocal(): LocalDataSet[D] = this.asInstanceOf[LocalDataSet[D]]
+  def toLocal(): Dataset[D] = this.asInstanceOf[Dataset[D]]
 
   def toDistributed(): DistributedDataSet[D] = this.asInstanceOf[DistributedDataSet[D]]
 }
@@ -89,10 +89,10 @@ trait AbstractDataSet[D, DataSequence] {
  *
  * @tparam T
  */
-trait LocalDataSet[T] extends AbstractDataSet[T, Iterator[T]] {
+trait Dataset[T] extends AbstractDataSet[T, Iterator[T]] {
   override def transform[C: ClassTag](transformer: Transformer[T, C]): DataSet[C] = {
     val preDataSet = this
-    new LocalDataSet[C] {
+    new Dataset[C] {
       override def shuffle(): Unit = preDataSet.shuffle
 
       override def size(): Long = preDataSet.size()
@@ -107,7 +107,7 @@ trait LocalDataSet[T] extends AbstractDataSet[T, Iterator[T]] {
  *
  * @tparam T
  */
-class LocalArrayDataSet[T] private[dataset](buffer: Array[T]) extends LocalDataSet[T] {
+class LocalArrayDataSet[T] private[dataset](buffer: Array[T]) extends Dataset[T] {
   override def shuffle(): Unit = {
     RandomGenerator.shuffle(buffer)
   }
@@ -284,7 +284,7 @@ object DataSet {
   }
 
   object ImageFolder {
-    def paths(path: Path): LocalDataSet[LocalLabeledImagePath] = {
+    def paths(path: Path): Dataset[LocalLabeledImagePath] = {
       val buffer = LocalImageFiles.readPaths(path)
       new LocalArrayDataSet[LocalLabeledImagePath](buffer)
     }
@@ -315,7 +315,7 @@ object DataSet {
 
   object SeqFileFolder {
     val logger = Logger.getLogger(getClass)
-    def paths(path: Path, totalSize: Long): LocalDataSet[LocalSeqFilePath] = {
+    def paths(path: Path, totalSize: Long): Dataset[LocalSeqFilePath] = {
       logger.info(s"Read sequence files folder $path")
       val buffer: Array[LocalSeqFilePath] = findFiles(path)
       logger.info(s"Find ${buffer.length} sequence files")

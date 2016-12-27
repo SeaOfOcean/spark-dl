@@ -17,13 +17,12 @@
 
 package com.intel.analytics.bigdl.pvanet.layers
 
-import breeze.linalg.{DenseMatrix, DenseVector, min}
 import breeze.numerics.round
 import com.intel.analytics.bigdl.nn.abstractnn.AbstractModule
 import com.intel.analytics.bigdl.pvanet.model.FasterRcnnParam
-import com.intel.analytics.bigdl.pvanet.utils.{Bbox, MatrixUtil}
+import com.intel.analytics.bigdl.pvanet.utils.{Bbox, TensorUtil}
+import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
-import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import com.intel.analytics.bigdl.utils.Table
 
 import scala.reflect.ClassTag
@@ -44,23 +43,23 @@ class ProposalTarget[@specialized(Float, Double) T: ClassTag]
    * Compute bounding-box regression targets for an image.
    *
    */
-  def computeTargets(ex_rois: DenseMatrix[Float],
-    gt_rois: DenseMatrix[Float],
-    labels: Array[Float]): DenseMatrix[Float] = {
-    assert(ex_rois.rows == gt_rois.rows)
-    assert(ex_rois.cols == 4)
-    assert(gt_rois.cols == 4)
+  def computeTargets(ex_rois: Tensor[Float],
+    gt_rois: Tensor[Float],
+    labels: Tensor[Float]): Tensor[Float] = {
+    require(ex_rois.size(1) == gt_rois.size(1))
+    require(ex_rois.size(2) == 4)
+    require(gt_rois.size(2) == 4)
 
     val targets = Bbox.bboxTransform(ex_rois, gt_rois)
 
     if (param.BBOX_NORMALIZE_TARGETS_PRECOMPUTED) {
       // Optionally normalize targets by a precomputed mean and stdev
-      for (r <- 0 until targets.rows) {
-        targets(r, ::) :-= DenseVector(param.BBOX_NORMALIZE_MEANS).t
-        targets(r, ::) :/= DenseVector(param.BBOX_NORMALIZE_STDS).t
+      for (r <- 1 to targets.size(1)) {
+        targets(r).add(-1, param.BBOX_NORMALIZE_MEANS)
+        targets(r).cdiv(param.BBOX_NORMALIZE_STDS)
       }
     }
-    DenseMatrix.horzcat(DenseVector(labels).toDenseMatrix.t, targets)
+    TensorUtil.horzcat(labels.resize(labels.nElement(), 1), targets)
   }
 
   /**
@@ -75,78 +74,100 @@ class ProposalTarget[@specialized(Float, Double) T: ClassTag]
    * bbox_inside_weights (ndarray): N x 4K blob of loss weights
    *
    */
-  def getBboxRegressionLabels(bbox_target_data: DenseMatrix[Float],
-    numClasses: Int): (DenseMatrix[Float], DenseMatrix[Float]) = {
-    val clss = bbox_target_data(::, 0).toArray
-    val bbox_targets = DenseMatrix.zeros[Float](clss.length, 4 * numClasses)
-    val bbox_inside_weights = DenseMatrix.zeros[Float](bbox_targets.rows, bbox_targets.cols)
+  def getBboxRegressionLabels(bbox_target_data: Tensor[Float],
+    numClasses: Int): (Tensor[Float], Tensor[Float]) = {
+    val clss = TensorUtil.selectCol(bbox_target_data, 1).clone().storage().array()
+    val bbox_targets = Tensor[Float](clss.length, 4 * numClasses)
+    val bbox_inside_weights = Tensor[Float]().resizeAs(bbox_targets)
     val inds = clss.zipWithIndex.filter(x => x._1 > 0).map(x => x._2)
     inds.foreach(ind => {
       val cls = clss(ind)
       val start = 4 * cls
-      (1 until bbox_target_data.cols).foreach(x => {
-        bbox_targets(ind, x + start.toInt - 1) = bbox_target_data(ind, x)
-        bbox_inside_weights(ind, x + start.toInt - 1) = param.BBOX_INSIDE_WEIGHTS(x - 1)
+      (2 to bbox_target_data.size(2)).foreach(x => {
+        bbox_targets.setValue(ind + 1, x + start.toInt - 1, bbox_target_data.valueAt(ind + 1, x))
+        bbox_inside_weights.setValue(ind + 1, x + start.toInt - 1,
+          param.BBOX_INSIDE_WEIGHTS.valueAt(x - 1))
       })
     })
     (bbox_targets, bbox_inside_weights)
   }
 
-  // Generate a random sample of RoIs comprising foreground and background examples.
-  def sampleRois(all_rois: DenseMatrix[Float],
-    gt_boxes: DenseMatrix[Float],
-    fg_rois_per_image: Int,
-    rois_per_image: Int,
-    numClasses: Int)
-  : (Array[Float], DenseMatrix[Float], DenseMatrix[Float], DenseMatrix[Float]) = {
-    // overlaps: (rois x gt_boxes)
-    val overlaps = Bbox.bboxOverlap(all_rois(::, 1 until 5), gt_boxes(::, 0 until 4))
-    // todo: this can be solved by just max
-    val gt_assignment = MatrixUtil.argmax2(overlaps, 1)
-    val max_overlaps = MatrixUtil.max2(overlaps, 1)
-    var labels = MatrixUtil.selectMatrix(gt_boxes, gt_assignment, 0)(::, 4).toArray
+  val rois_per_image = param.BATCH_SIZE
+  val fg_rois_per_image = round(param.FG_FRACTION * param.BATCH_SIZE).toInt
 
+  var fg_rois_per_this_image = 0
+  var bg_rois_per_this_image = 0
+
+  def selectForeGroundRois(max_overlaps: Tensor[Float]): Array[Int] = {
     // Select foreground RoIs as those with >= FG_THRESH overlap
-    var fg_inds = max_overlaps.zipWithIndex
-      .filter(x => x._1 >= param.FG_THRESH).map(x => x._2)
+    var fg_inds = findAllGeInds(max_overlaps, param.FG_THRESH)
     // Guard against the case when an image has fewer than fg_rois_per_image
     // foreground RoIs
-    val fg_rois_per_this_image = min(fg_rois_per_image, fg_inds.length)
+    fg_rois_per_this_image = Math.min(fg_rois_per_image, fg_inds.length)
     // Sample foreground regions without replacement
     if (fg_inds.length > 0) {
       fg_inds = Random.shuffle(fg_inds.toList).slice(0, fg_rois_per_this_image).toArray
     }
+    fg_inds
+  }
 
+  def selectBackgroundRois(max_overlaps: Tensor[Float]): Array[Int] = {
     // Select background RoIs as those within [BG_THRESH_LO, BG_THRESH_HI)
-    var bg_inds = max_overlaps.zipWithIndex
+    var bg_inds = max_overlaps.storage().array().zip(Stream from 1)
       .filter(x => (x._1 < param.BG_THRESH_HI) && (x._1 >= param.BG_THRESH_LO))
       .map(x => x._2)
     // Compute number of background RoIs to take from this image (guarding
     // against there being fewer than desired)
-    var bg_rois_per_this_image = rois_per_image - fg_rois_per_this_image
-    bg_rois_per_this_image = min(bg_rois_per_this_image, bg_inds.length)
+    bg_rois_per_this_image = Math.min(rois_per_image - fg_rois_per_this_image, bg_inds.length)
     // Sample background regions without replacement
     if (bg_inds.length > 0) {
       bg_inds = Random.shuffle(bg_inds.toList).slice(0, bg_rois_per_this_image).toArray
     }
+    bg_inds
+  }
 
+
+  // Generate a random sample of RoIs comprising foreground and background examples.
+  def sampleRois(all_rois: Tensor[Float],
+    gt_boxes: Tensor[Float])
+  : (Tensor[Float], Tensor[Float], Tensor[Float], Tensor[Float]) = {
+    // overlaps: (rois x gt_boxes)
+    val overlaps = Bbox.bboxOverlap(TensorUtil.selectMatrix(all_rois, Array.range(2, 6), 2),
+      TensorUtil.selectMatrix(gt_boxes, Array.range(1, 5), 2))
+
+    val (max_overlaps, gt_assignment) = overlaps.max(2)
+
+    var labels = TensorUtil.selectMatrix2(gt_boxes, gt_assignment, Array(5)).squeeze().clone()
+
+    val fg_inds = selectForeGroundRois(max_overlaps)
+    val bg_inds = selectBackgroundRois(max_overlaps)
+    // for test usage
+    // fg_inds = FileUtil.loadFeatures("fg_inds_choice").storage().array().map(x => x.toInt + 1)
+    // bg_inds = FileUtil.loadFeatures("bg_inds_choice").storage().array().map(x => x.toInt + 1)
     // The indices that we're selecting (both fg and bg)
     val keep_inds = fg_inds ++ bg_inds
+
     // Select sampled values from various arrays:
-    labels = keep_inds.map(x => labels(x))
+    labels = TensorUtil.selectMatrix(labels, keep_inds, 1)
     // Clamp labels for the background RoIs to 0
-    Range(fg_rois_per_this_image, labels.length).foreach(i => labels(i) = 0)
+    (fg_rois_per_this_image + 1 to labels.nElement()).foreach(i => labels(i) = 0)
 
-    val rois = MatrixUtil.selectMatrix(all_rois, keep_inds, 0)
-
-    val keepInds2 = keep_inds.map(x => gt_assignment(x))
+    val rois = TensorUtil.selectMatrix(all_rois, keep_inds, 1)
+    val keepInds2 = keep_inds.map(x => gt_assignment.valueAt(x, 1).toInt)
     val bbox_target_data = computeTargets(
-      rois(::, 1 until 5), MatrixUtil.selectMatrix(gt_boxes, keepInds2, 0)(::, 0 until 4), labels)
+      TensorUtil.selectMatrix(rois, Array.range(2, 6), 2),
+      TensorUtil.selectMatrix(TensorUtil.selectMatrix(gt_boxes, keepInds2, 1),
+        Array.range(1, 5), 2), labels)
+
 
     val (bbox_targets, bbox_inside_weights) =
-      getBboxRegressionLabels(bbox_target_data, numClasses)
+      getBboxRegressionLabels(bbox_target_data, param.numClasses)
+    (labels.squeeze(), rois, bbox_targets, bbox_inside_weights)
+  }
 
-    (labels, rois, bbox_targets, bbox_inside_weights)
+  def findAllGeInds(tensor: Tensor[Float], thresh: Float): Array[Int] = {
+    tensor.storage().array().zip(Stream from 1)
+      .filter(x => x._1 >= param.FG_THRESH).map(x => x._2)
   }
 
   override def updateOutput(input: Table): Table = {
@@ -156,67 +177,59 @@ class ProposalTarget[@specialized(Float, Double) T: ClassTag]
     val all_roisTen = input(1).asInstanceOf[Tensor[Float]]
     // GT boxes (x1, y1, x2, y2, label)
     // and other times after box coordinates -- normalize to one format
-    val gt_boxes = input(2).asInstanceOf[Tensor[Float]].toBreezeMatrix()
+    val gt_boxes = input(2).asInstanceOf[Tensor[Float]]
 
     // Include ground-truth boxes in the set of candidate rois
-    val zeros = DenseMatrix.zeros[Float](gt_boxes.rows, 1)
-    val all_rois = DenseMatrix.vertcat(all_roisTen.toBreezeMatrix(),
-      DenseMatrix.horzcat(zeros, gt_boxes(::, 0 until gt_boxes.cols - 1)))
-    // Sanity check: single batch only
-    assert(all_rois(::, 0).forall(x => x == 0), "Only single item batches are supported")
-
-    val numImages = 1
-    val rois_per_image = param.BATCH_SIZE / numImages
-
-    val fg_rois_per_image = round(param.FG_FRACTION * rois_per_image).toInt
+    val zeros = Tensor[Float](gt_boxes.size(1), 1)
+    val all_rois = TensorUtil.vertcat(all_roisTen,
+      TensorUtil.horzcat(zeros, TensorUtil.selectMatrix(gt_boxes,
+        Array.range(1, gt_boxes.size(2)), 2)))
 
     // Sample rois with classification labels and bounding box regression
     // targets
-    val (labels, rois, bbox_targets, bbox_inside_weights) = sampleRois(
-      all_rois, gt_boxes, fg_rois_per_image,
-      rois_per_image, param.numClasses)
+    val (labels, rois, bbox_targets, bbox_inside_weights) = sampleRois(all_rois, gt_boxes)
 
     if (output.length() == 0) {
       // sampled rois (0, x1, y1, x2, y2) (1,5)
-      output.insert(matrix2tensor(rois))
+      output.insert(rois)
       // labels (1,1)
-      labelTarget.insert(Tensor(Storage(labels)))
+      labelTarget.insert(labels)
       // bbox_targets (1, numClasses * 4) + bbox_inside_weights (1, numClasses * 4)
       // + bbox_outside_weights (1, numClasses * 4)
 
+      for (r <- 1 to bbox_inside_weights.size(1)) {
+        for (c <- 1 to bbox_inside_weights.size(2)) {
+          if (bbox_inside_weights.valueAt(r, c) > 0) {
+            bbox_inside_weights.setValue(r, c, 1f)
+          } else {
+            bbox_inside_weights.setValue(r, c, 0f)
+          }
+        }
+      }
+
       labelTarget.insert(matrix2Table(bbox_targets, bbox_inside_weights,
-        bbox_inside_weights.map(x => if (x > 0) 1f else 0f)))
+        bbox_inside_weights))
       output.insert(labelTarget)
     } else {
-      output.update(1, matrix2tensor(rois))
-      labelTarget.update(1, Tensor(Storage(labels)))
+      output.update(1, rois)
+      labelTarget.update(1, labels)
       labelTarget.update(2, matrix2Table(bbox_targets, bbox_inside_weights,
-        bbox_inside_weights.map(x => if (x > 0) 1f else 0f)))
+        bbox_inside_weights))
     }
     output
   }
 
-  // todo: may not need
-  def matrix2tensor(mat: DenseMatrix[Float]): Tensor[Float] = {
-    val out = Tensor[Float]().resize(mat.rows, mat.cols)
-    for (i <- 0 until mat.rows) {
-      for (j <- 0 until mat.cols) {
-        out.setValue(i + 1, j + 1, mat(i, j))
-      }
-    }
-    out
-  }
 
-  def matrix2Table(mat1: DenseMatrix[Float], mat2: DenseMatrix[Float],
-    mat3: DenseMatrix[Float]): Table = {
+  def matrix2Table(mat1: Tensor[Float], mat2: Tensor[Float],
+    mat3: Tensor[Float]): Table = {
     if (target.length() == 0) {
-      target.insert(matrix2tensor(mat1))
-      target.insert(matrix2tensor(mat2))
-      target.insert(matrix2tensor(mat3))
+      target.insert(mat1)
+      target.insert(mat2)
+      target.insert(mat3)
     } else {
-      target.update(1, matrix2tensor(mat1))
-      target.update(2, matrix2tensor(mat2))
-      target.update(3, matrix2tensor(mat3))
+      target.update(1, mat1)
+      target.update(2, mat2)
+      target.update(3, mat3)
     }
     target
   }

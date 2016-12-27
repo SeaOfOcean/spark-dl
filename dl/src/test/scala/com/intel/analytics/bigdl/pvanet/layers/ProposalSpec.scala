@@ -55,7 +55,7 @@ class ProposalSpec extends FlatSpec with Matchers {
         assert(abs(expected1(i, j) - out1.valueAt(i + 1, j + 1)) < 1e-4)
       }
     }
-    expected2.zipWithIndex.foreach(x => assert(abs(out2.valueAt(x._2 + 1) - x._1) < 1e-4))
+    expected2.zipWithIndex.foreach(x => assert(abs(out2.valueAt(x._2 + 1, 1) - x._1) < 1e-4))
   }
 
   "testUpdateOutput twice" should "be correct" in {
@@ -68,6 +68,6 @@ class ProposalSpec extends FlatSpec with Matchers {
         assert(abs(expected1(i, j) - out1.valueAt(i + 1, j + 1)) < 1e-4)
       }
     }
-    expected2.zipWithIndex.foreach(x => assert(abs(out2.valueAt(x._2 + 1) - x._1) < 1e-4))
+    expected2.zipWithIndex.foreach(x => assert(abs(out2.valueAt(x._2 + 1, 1) - x._1) < 1e-4))
   }
 }

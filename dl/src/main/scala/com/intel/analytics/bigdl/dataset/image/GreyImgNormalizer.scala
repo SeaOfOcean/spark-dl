@@ -18,7 +18,7 @@
 package com.intel.analytics.bigdl.dataset.image
 
 import com.intel.analytics.bigdl.DataSet
-import com.intel.analytics.bigdl.dataset.{DataSet, LocalDataSet, Transformer}
+import com.intel.analytics.bigdl.dataset.{DataSet, Dataset, Transformer}
 
 import scala.collection.Iterator
 

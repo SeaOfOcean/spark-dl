@@ -139,7 +139,7 @@ object Test {
 
   def visDetection(d: Roidb, clsname: String, clsDets: Tensor[Float],
     thresh: Float = 0.3f): Unit = {
-    Draw.vis2(d.imagePath, clsname, clsDets,
+    Draw.vis(d.imagePath, clsname, clsDets,
       FileUtil.demoPath + s"/${clsname}_"
         + d.imagePath.substring(d.imagePath.lastIndexOf("/") + 1))
   }
@@ -175,7 +175,7 @@ object Test {
 
     val model = FasterRcnn(param.net, Phase.TEST, model2caffePath(param.net))
     MKL.setNumThreads(param.nThread)
-    val testDataSource = ObjectDataSource("voc_2007_testcode1", param.folder, false)
+    val testDataSource = ObjectDataSource("voc_2007_testcode", param.folder, false)
     testNet(model, testDataSource)
   }
 

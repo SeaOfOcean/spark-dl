@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import javax.imageio.ImageIO
 
 import breeze.linalg.DenseVector
-import com.intel.analytics.bigdl.dataset.{LocalDataSet, Transformer}
+import com.intel.analytics.bigdl.dataset.{Dataset, LocalArrayDataSet, Transformer}
 import com.intel.analytics.bigdl.pvanet.model.FasterRcnnParam
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import com.intel.analytics.bigdl.utils.RandomGenerator
@@ -32,7 +32,7 @@ import scala.util.Random
 
 
 class ObjectDataSource(val imdb: Imdb, val useFlipped: Boolean = false)
-  extends LocalDataSet[Roidb] {
+  extends Dataset[Roidb] {
 
   val roidbs = imdb.getRoidb(useFlipped)
 
@@ -64,7 +64,7 @@ class ObjectDataSource(val imdb: Imdb, val useFlipped: Boolean = false)
    *
    * @return
    */
-  def data(looped: Boolean): Iterator[Roidb] = {
+  override def data(looped: Boolean): Iterator[Roidb] = {
     perm = roidbs.indices.toArray
     new Iterator[Roidb] {
       private val index = new AtomicInteger()
@@ -111,7 +111,7 @@ class ImageScalerAndMeanSubstractor(param: FasterRcnnParam)
   extends Transformer[Roidb, ImageWithRoi] {
   def byte2Float(x: Byte): Float = x & 0xff
 
-  def apply(data: Roidb): ImageWithRoi = {
+  def apply2(data: Roidb): ImageWithRoi = {
     val scaleTo = param.SCALES(Random.nextInt(param.SCALES.length))
     val img = ImageIO.read(new java.io.File(data.imagePath))
     val imSizeMin = Math.min(img.getWidth, img.getHeight)
@@ -155,12 +155,68 @@ class ImageScalerAndMeanSubstractor(param: FasterRcnnParam)
         .filter(x => x._1 != 0).map(x => x._2)
       val gt_boxes = Tensor[Float](gt_inds.length, 5)
       gt_inds.zipWithIndex.foreach(ind => {
-        val scaled = data.boxes(ind._1, 0 until 4).t :* DenseVector(imScales)
+        val scaled = data.boxes.toBreezeMatrix()(ind._1, 0 until 4).t :* DenseVector(imScales)
         gt_boxes.setValue(ind._2 + 1, 1, scaled(0))
         gt_boxes.setValue(ind._2 + 1, 2, scaled(1))
         gt_boxes.setValue(ind._2 + 1, 3, scaled(2))
         gt_boxes.setValue(ind._2 + 1, 4, scaled(3))
         gt_boxes.setValue(ind._2 + 1, 5, data.gtClasses.valueAt(ind._1 + 1))
+      })
+      gtBoxes = Some(gt_boxes)
+    }
+    ImageWithRoi(img.getWidth, img.getHeight, gtBoxes, scaledImage, imInfo)
+  }
+
+  def apply(data: Roidb): ImageWithRoi = {
+    val scaleTo = param.SCALES(Random.nextInt(param.SCALES.length))
+    val img = ImageIO.read(new java.io.File(data.imagePath))
+    val imSizeMin = Math.min(img.getWidth, img.getHeight)
+    val imSizeMax = Math.max(img.getWidth, img.getHeight)
+    var im_scale = scaleTo.toFloat / imSizeMin.toFloat
+    // Prevent the biggest axis from being more than MAX_SIZE
+    if (Math.round(im_scale * imSizeMax) > param.MAX_SIZE) {
+      im_scale = param.MAX_SIZE.toFloat / imSizeMax.toFloat
+    }
+
+    val im_scale_x = (Math.floor(img.getHeight * im_scale / param.SCALE_MULTIPLE_OF) *
+      param.SCALE_MULTIPLE_OF / img.getHeight).toFloat
+    val im_scale_y = (Math.floor(img.getWidth * im_scale / param.SCALE_MULTIPLE_OF) *
+      param.SCALE_MULTIPLE_OF / img.getWidth).toFloat
+
+    val scaledImage1: java.awt.Image =
+      img.getScaledInstance((im_scale_y * img.getWidth).toInt,
+        (im_scale_x * img.getHeight()).toInt, java.awt.Image.SCALE_SMOOTH)
+
+    val imageBuff: BufferedImage =
+      new BufferedImage((im_scale_y * img.getWidth).toInt, (im_scale_x * img.getHeight()).toInt,
+        BufferedImage.TYPE_3BYTE_BGR)
+    imageBuff.getGraphics.drawImage(scaledImage1, 0, 0, new Color(0, 0, 0), null)
+    val pixels: Array[Float] = imageBuff.getRaster.getDataBuffer
+      .asInstanceOf[DataBufferByte].getData.map(x => byte2Float(x))
+    require(pixels.length % 3 == 0)
+    // mean subtract
+    val meanPixels = pixels.zipWithIndex.map(x =>
+      (pixels(x._2) - FasterRcnnParam.PIXEL_MEANS.head.head(x._2 % 3)).toFloat
+    )
+
+    val scaledImage = new RGBImageOD(meanPixels, imageBuff.getWidth, imageBuff.getHeight)
+    val imScales = Tensor(Storage(Array(im_scale_x, im_scale_y, im_scale_x, im_scale_y)))
+    val imInfo = Some(Tensor(Storage(
+      Array(imageBuff.getHeight(), imageBuff.getWidth, im_scale_x))))
+
+    var gtBoxes: Option[Tensor[Float]] = None
+
+    if (data.gtClasses != null) {
+      val gt_inds = data.gtClasses.storage().array().zip(Stream from 1)
+        .filter(x => x._1 != 0).map(x => x._2)
+      val gt_boxes = Tensor[Float](gt_inds.length, 5)
+      gt_inds.zip(Stream from 1).foreach(ind => {
+        val scaled = data.boxes.select(1, ind._1).narrow(1, 1, 4).clone().cmul(imScales)
+        gt_boxes.setValue(ind._2, 1, scaled.valueAt(1))
+        gt_boxes.setValue(ind._2, 2, scaled.valueAt(2))
+        gt_boxes.setValue(ind._2, 3, scaled.valueAt(3))
+        gt_boxes.setValue(ind._2, 4, scaled.valueAt(4))
+        gt_boxes.setValue(ind._2, 5, data.gtClasses.valueAt(ind._1))
       })
       gtBoxes = Some(gt_boxes)
     }

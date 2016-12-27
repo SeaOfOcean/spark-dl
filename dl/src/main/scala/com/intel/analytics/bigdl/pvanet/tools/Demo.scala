@@ -17,11 +17,10 @@
 
 package com.intel.analytics.bigdl.pvanet.tools
 
-import breeze.linalg.DenseMatrix
 import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, Roidb}
 import com.intel.analytics.bigdl.pvanet.model.Model._
 import com.intel.analytics.bigdl.pvanet.model._
-import com.intel.analytics.bigdl.pvanet.utils.{Bbox, MatrixUtil, Nms, TensorUtil}
+import com.intel.analytics.bigdl.pvanet.utils.{Bbox, Nms, TensorUtil}
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.Timer
 import org.apache.log4j.Logger
@@ -87,16 +86,16 @@ object Demo {
       val NMS_THRESH = 0.3f
       for (j <- 1 until classes.length) {
         def getClsDet: Tensor[Float] = {
-          val inds = Range(0, scores.size(1)).toArray
+          val inds = (1 to scores.size(1)).toArray
           if (inds.length == 0) return Tensor[Float](0, 5)
-          val clsScores = TensorUtil.selectMatrix2(scores, inds, Array(j))
+          val clsScores = TensorUtil.selectMatrix2(scores, inds, Array(j + 1))
           val clsBoxes = TensorUtil.selectMatrix2(boxes,
-            inds, Range(j * 4, (j + 1) * 4).toArray)
+            inds, (j * 4 + 1 to (j + 1) * 4).toArray)
 
           var clsDets = TensorUtil.horzcat(clsBoxes, clsScores)
           val keep = Nms.nms(clsDets, NMS_THRESH)
 
-          val detsNMSed = TensorUtil.selectMatrix(clsDets, keep, 0)
+          val detsNMSed = TensorUtil.selectMatrix(clsDets, keep, 1)
 
           if (net.param.BBOX_VOTE) {
             clsDets = Bbox.bboxVote(detsNMSed, clsDets)

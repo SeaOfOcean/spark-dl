@@ -21,7 +21,6 @@ import java.io.{File, PrintWriter}
 import java.nio.file.Paths
 import java.util.UUID
 
-import breeze.linalg.DenseMatrix
 import com.intel.analytics.bigdl.pvanet.tools.VocEval
 import com.intel.analytics.bigdl.pvanet.utils.FileUtil
 import com.intel.analytics.bigdl.tensor.Tensor
@@ -103,7 +102,7 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
       objs = non_diff_objs
     }
 
-    val boxes = new DenseMatrix[Float](objs.length, 4)
+    val boxes = Tensor[Float](objs.length, 4)
     val gt_classes = Tensor[Float](objs.length)
     // Load object bounding boxes into a data frame.
     for ((obj, ix) <- objs.zip(Stream from 1)) {
@@ -114,10 +113,10 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
       val x2 = (bndbox \ "xmax").text.toFloat - 1
       val y2 = (bndbox \ "ymax").text.toFloat - 1
       val cls = classToInd((obj \ "name").text)
-      boxes(ix - 1, 0) = x1
-      boxes(ix - 1, 1) = y1
-      boxes(ix - 1, 2) = x2
-      boxes(ix - 1, 3) = y2
+      boxes.setValue(ix, 1, x1)
+      boxes.setValue(ix, 2, y1)
+      boxes.setValue(ix, 3, x2)
+      boxes.setValue(ix, 4, y2)
       gt_classes.setValue(ix, cls)
     }
     Roidb(imagePathFromIndex(index), boxes, gt_classes, flipped = false)
@@ -162,31 +161,31 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
     }
   }
 
-  private def writeVocResultsFile(allBoxes: Array[Array[DenseMatrix[Float]]]) = {
-    classToInd.foreach {
-      case (cls, clsInd) =>
-        if (cls != "__background__") {
-          logger.info(s"writing $cls VOC results file")
-          val filename = getVocResultsFileTemplate().format(cls)
-          val of = new PrintWriter(new java.io.File(filename))
-          imageIndex.zipWithIndex.foreach {
-            case (imInd, index) =>
-              val dets = allBoxes(clsInd - 1)(index)
-              if (dets.size > 0) {
-                // the VOCdevkit expects 1-based indices
-                for (k <- 0 until dets.rows) {
-                  of.write("%s %.3f %.1f %.1f %.1f %.1f\n".format(
-                    imInd, dets(k, dets.cols - 1),
-                    dets(k, 0) + 1, dets(k, 1) + 1,
-                    dets(k, 2) + 1, dets(k, 3) + 1
-                  ))
-                }
-              }
-          }
-          of.close()
-        }
-    }
-  }
+//  private def writeVocResultsFile(allBoxes: Array[Array[DenseMatrix[Float]]]) = {
+//    classToInd.foreach {
+//      case (cls, clsInd) =>
+//        if (cls != "__background__") {
+//          logger.info(s"writing $cls VOC results file")
+//          val filename = getVocResultsFileTemplate().format(cls)
+//          val of = new PrintWriter(new java.io.File(filename))
+//          imageIndex.zipWithIndex.foreach {
+//            case (imInd, index) =>
+//              val dets = allBoxes(clsInd - 1)(index)
+//              if (dets.size > 0) {
+//                // the VOCdevkit expects 1-based indices
+//                for (k <- 0 until dets.rows) {
+//                  of.write("%s %.3f %.1f %.1f %.1f %.1f\n".format(
+//                    imInd, dets(k, dets.cols - 1),
+//                    dets(k, 0) + 1, dets(k, 1) + 1,
+//                    dets(k, 2) + 1, dets(k, 3) + 1
+//                  ))
+//                }
+//              }
+//          }
+//          of.close()
+//        }
+//    }
+//  }
 
   private def writeVocResultsFile(allBoxes: Array[Array[Tensor[Float]]]) = {
     classToInd.foreach {
@@ -247,10 +246,10 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
 
   private def cleanup(cachedir: String) = new File(cachedir).listFiles().foreach(f => f.delete())
 
-  def evaluateDetections(allBoxes: Array[Array[DenseMatrix[Float]]]): Unit = {
-    writeVocResultsFile(allBoxes)
-    eval()
-  }
+//  def evaluateDetections(allBoxes: Array[Array[DenseMatrix[Float]]]): Unit = {
+//    writeVocResultsFile(allBoxes)
+//    eval()
+//  }
 
   override def evaluateDetections(allBoxes: Array[Array[Tensor[Float]]]): Unit = {
     writeVocResultsFile(allBoxes)

@@ -18,16 +18,16 @@
 package com.intel.analytics.bigdl.pvanet.tools
 
 import com.intel.analytics.bigdl.Module
-import com.intel.analytics.bigdl.dataset.LocalDataSet
+import com.intel.analytics.bigdl.dataset.Dataset
 import com.intel.analytics.bigdl.nn.ParallelCriterion
 import com.intel.analytics.bigdl.optim.{OptimMethod, Trigger}
-import com.intel.analytics.bigdl.pvanet.datasets.{ImageToTensor, ImageWithRoi, ObjectDataSource}
+import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, ImageToTensor, ImageWithRoi, ObjectDataSource}
 import com.intel.analytics.bigdl.pvanet.layers.AnchorTarget
 import com.intel.analytics.bigdl.pvanet.model.FasterRcnn
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.Table
 
-class FasterRcnnOptimizer(data: LocalDataSet[ImageWithRoi],
+class FasterRcnnOptimizer(data: Dataset[ImageWithRoi],
   validationData: ObjectDataSource,
   net: FasterRcnn,
   model: Module[Float],
@@ -95,7 +95,7 @@ class FasterRcnnOptimizer(data: LocalDataSet[ImageWithRoi],
 //      FileUtil.loadFeatures[Float]("rpn_bbox_targets"),
 //      FileUtil.loadFeatures[Float]("rpn_bbox_inside_weights"),
 //      FileUtil.loadFeatures[Float]("rpn_bbox_outside_weights"))
-    //require(anchorTargets.labels.equals(expected.labels))
+    // require(anchorTargets.labels.equals(expected.labels))
 //    targets.insert(expected1.labels)
 //    targets.insert(expected1.targetsTable)
 
@@ -114,7 +114,7 @@ class FasterRcnnOptimizer(data: LocalDataSet[ImageWithRoi],
   }
 
   val imageToTensor = new ImageToTensor(batchSize = 1)
-
+  val imgScaler = new ImageScalerAndMeanSubstractor(net.param)
   def optimize(): Module[Float] = {
     val (weights, grad) = model.getParameters()
     var wallClockTime = 0L
@@ -122,7 +122,7 @@ class FasterRcnnOptimizer(data: LocalDataSet[ImageWithRoi],
 
     state("epoch") = state.get[Int]("epoch").getOrElse(1)
     state("neval") = state.get[Int]("neval").getOrElse(1)
-    var dataIter = data.data(true)
+    var dataIter = data.data(train = true)
     data.shuffle()
     while (!endWhen(state)) {
       val start = System.nanoTime()
@@ -164,7 +164,7 @@ val dataFetchTime = System.nanoTime()
 
       if (count >= data.size()) {
         state("epoch") = state[Int]("epoch") + 1
-        dataIter = data.data(true)
+        dataIter = data.data(true).asInstanceOf[Iterator[ImageWithRoi]]
         data.shuffle()
         count = 0
       }

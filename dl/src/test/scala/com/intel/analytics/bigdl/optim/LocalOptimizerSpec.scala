@@ -17,23 +17,23 @@
 
 package com.intel.analytics.bigdl.optim
 
-import com.intel.analytics.bigdl.dataset.{MiniBatch, DataSet, LocalDataSet}
+import com.intel.analytics.bigdl.dataset.{MiniBatch, DataSet, Dataset}
 import com.intel.analytics.bigdl.nn._
 import com.intel.analytics.bigdl._
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import com.intel.analytics.bigdl.utils.{Engine, RandomGenerator, T}
 import org.scalatest.{FlatSpec, Matchers}
 
-object DummyDataSet extends LocalDataSet[MiniBatch[Float]] {
+object DummyDataSet extends Dataset[MiniBatch[Float]] {
   val totalSize = 10
   var isCrossEntropy = true
 
-  def creDataSet: LocalDataSet[MiniBatch[Float]] = {
+  def creDataSet: Dataset[MiniBatch[Float]] = {
     isCrossEntropy = true
     DummyDataSet
   }
 
-  def mseDataSet: LocalDataSet[MiniBatch[Float]] = {
+  def mseDataSet: Dataset[MiniBatch[Float]] = {
     isCrossEntropy = false
     DummyDataSet
   }

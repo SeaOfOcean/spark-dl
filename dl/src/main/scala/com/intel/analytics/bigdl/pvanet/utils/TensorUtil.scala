@@ -62,6 +62,11 @@ object TensorUtil {
     out
   }
 
+  def selectMatrix2(mat: Tensor[Float],
+    rows: Tensor[Float], cols: Array[Int]): Tensor[Float] = {
+    selectMatrix2(mat, rows.storage().array().map(x => x.toInt), cols)
+  }
+
   def selectMatrix(matrix: Tensor[Float],
     selectInds: Array[Int], dim: Int): Tensor[Float] = {
     assert(dim == 1 || dim == 2)
@@ -82,6 +87,11 @@ object TensorUtil {
       selectInds.zip(Stream.from(1)).map(x => updateCol(res, x._2, selectCol(matrix, x._1)))
       res
     }
+  }
+
+  def selectMatrix(matrix: Tensor[Float],
+    selectInds: Tensor[Float], dim: Int): Tensor[Float] = {
+    selectMatrix(matrix, selectInds.contiguous().storage().array().map(x => x.toInt), dim)
   }
 
   /**
@@ -255,7 +265,7 @@ object TensorUtil {
   }
 
 
-  def vertConcat[T: ClassTag](tensors: Tensor[T]*)(implicit ev: TensorNumeric[T]): Tensor[T] = {
+  def vertcat[T: ClassTag](tensors: Tensor[T]*)(implicit ev: TensorNumeric[T]): Tensor[T] = {
     require(tensors(0).dim() <= 2, "currently only support 1D or 2D")
 
     def getRowCol(tensor: Tensor[T]): (Int, Int) = {
@@ -274,11 +284,17 @@ object TensorUtil {
     }
     val resData = Tensor[T](nRows, nCols)
     var id = 0
-    tensors.foreach(tensor =>
-      (1 to getRowCol(tensor)._1).foreach(rid => {
+    tensors.foreach { tensor =>
+      if (tensor.nDimension() == 1) {
         id = id + 1
         resData.update(id, tensor)
-      }))
+      } else {
+        (1 to getRowCol(tensor)._1).foreach(rid => {
+          id = id + 1
+          resData.update(id, tensor(rid))
+        })
+      }
+    }
     resData
   }
 }

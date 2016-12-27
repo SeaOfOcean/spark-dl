@@ -21,6 +21,7 @@ import com.intel.analytics.bigdl.optim.SGD.LearningRateSchedule
 import com.intel.analytics.bigdl.optim.{OptimMethod, Trigger}
 import com.intel.analytics.bigdl.pvanet.model.Model.ModelType
 import com.intel.analytics.bigdl.pvanet.model.Phase.PhaseType
+import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 
 
 object Phase extends Enumeration {
@@ -58,7 +59,7 @@ abstract class FasterRcnnParam(phase: PhaseType = Phase.TEST) {
   val FG_FRACTION = 0.25
 
   // Overlap threshold for a ROI to be considered foreground (if >= FG_THRESH)
-  val FG_THRESH = 0.5
+  val FG_THRESH = 0.5f
 
   // Overlap threshold for a ROI to be considered background (class = 0 if
   // overlap in [LO, HI))
@@ -76,12 +77,12 @@ abstract class FasterRcnnParam(phase: PhaseType = Phase.TEST) {
   val SNAPSHOT_ITERS = 10000
 
   // Deprecated (inside weights)
-  val BBOX_INSIDE_WEIGHTS = Array(1.0f, 1.0f, 1.0f, 1.0f)
+  val BBOX_INSIDE_WEIGHTS = Tensor(Storage(Array(1.0f, 1.0f, 1.0f, 1.0f)))
   // Normalize the targets using "precomputed" (or made up) means and stdevs
   // (BBOX_NORMALIZE_TARGETS must also be true)
   var BBOX_NORMALIZE_TARGETS_PRECOMPUTED = true
-  val BBOX_NORMALIZE_MEANS = Array(0.0f, 0.0f, 0.0f, 0.0f)
-  val BBOX_NORMALIZE_STDS = Array(0.1f, 0.1f, 0.2f, 0.2f)
+  val BBOX_NORMALIZE_MEANS = Tensor(Storage(Array(0.0f, 0.0f, 0.0f, 0.0f)))
+  val BBOX_NORMALIZE_STDS = Tensor(Storage(Array(0.1f, 0.1f, 0.2f, 0.2f)))
 
   // IOU >= thresh: positive example
   val RPN_POSITIVE_OVERLAP = 0.7
@@ -94,7 +95,7 @@ abstract class FasterRcnnParam(phase: PhaseType = Phase.TEST) {
   // Total number of examples
   val RPN_BATCHSIZE = 256
   // NMS threshold used on RPN proposals
-  val RPN_NMS_THRESH = 0.7
+  val RPN_NMS_THRESH = 0.7f
   // Number of top scoring boxes to keep before apply NMS to RPN proposals
   var RPN_PRE_NMS_TOP_N = 12000
   // Number of top scoring boxes to keep after applying NMS to RPN proposals

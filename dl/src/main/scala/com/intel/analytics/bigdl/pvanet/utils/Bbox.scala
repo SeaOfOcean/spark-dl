@@ -229,7 +229,7 @@ object Bbox {
     val targetsDw = gtWidths.cdiv(exWidths).log()
     val targetsDh = gtHeights.cdiv(exHeights).log()
 
-    val res = TensorUtil.vertConcat(targetsDx, targetsDy, targetsDw, targetsDh)
+    val res = TensorUtil.vertcat(targetsDx, targetsDy, targetsDw, targetsDh)
     res.t().contiguous()
   }
 

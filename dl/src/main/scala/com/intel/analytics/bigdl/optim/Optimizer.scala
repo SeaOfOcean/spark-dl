@@ -22,7 +22,7 @@ import java.nio.file.{Paths, Files}
 import com.intel.analytics.bigdl._
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.utils.{T, Table}
-import com.intel.analytics.bigdl.dataset.{LocalDataSet, MiniBatch, DistributedDataSet}
+import com.intel.analytics.bigdl.dataset.{Dataset, MiniBatch, DistributedDataSet}
 
 import scala.reflect.ClassTag
 
@@ -114,7 +114,7 @@ object Optimizer {
           dataset = d,
           criterion = criterion
         ).asInstanceOf[Optimizer[T, D]]
-      case d: LocalDataSet[MiniBatch[T]] =>
+      case d: Dataset[MiniBatch[T]] =>
         new LocalOptimizer[T](
           model = model,
           dataset = d,

@@ -17,12 +17,11 @@
 
 package com.intel.analytics.bigdl.pvanet.layers
 
-import breeze.linalg.{DenseMatrix, DenseVector, argsort}
 import com.intel.analytics.bigdl.nn.abstractnn.AbstractModule
 import com.intel.analytics.bigdl.pvanet.model.FasterRcnnParam
 import com.intel.analytics.bigdl.pvanet.utils._
+import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
-import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import com.intel.analytics.bigdl.utils.Table
 
 import scala.reflect.ClassTag
@@ -43,7 +42,7 @@ class Proposal[@specialized(Float, Double) T: ClassTag](param: FasterRcnnParam)
   //  if len(top) > 1:
   //    top[ 1].reshape(1, 1, 1, 1)
 
-  val basicAnchors = Anchor.generateBasicAnchors(param.anchorRatios, param.anchorScales)
+  val basicAnchors = Anchor.generateBasicAnchors2(param.anchorRatios, param.anchorScales)
 
   /**
    *
@@ -119,12 +118,12 @@ class Proposal[@specialized(Float, Double) T: ClassTag](param: FasterRcnnParam)
     val width = dataSize(3)
 
     // Enumerate all shifts
-    val shifts = Anchor.generateShifts(width, height, param.featStride)
+    val shifts = Anchor.generateShifts2(width, height, param.featStride)
 
-    val anchors: DenseMatrix[Float] = Anchor.getAllAnchors(shifts, basicAnchors)
+    val anchors = Anchor.getAllAnchors(shifts, basicAnchors)
 
     // Convert anchors into proposals via bbox transformations
-    var proposals = Bbox.bboxTransformInv(anchors, bboxDeltas.toBreezeMatrix())
+    var proposals = Bbox.bboxTransformInv(anchors, bboxDeltas)
 
     // 2. clip predicted boxes to image
     proposals = Bbox.clipBoxes(proposals, imInfo.valueAt(1), imInfo.valueAt(2))
@@ -133,45 +132,48 @@ class Proposal[@specialized(Float, Double) T: ClassTag](param: FasterRcnnParam)
     // (NOTE: convert min_size to input image scale stored in im_info[2])
     var keep = filterBoxes(proposals, min_size * imInfo.valueAt(3))
 
-    proposals = MatrixUtil.selectMatrix(proposals, keep, 0)
-    var scores = MatrixUtil.selectMatrix(scoresTensor.toBreezeMatrix(), keep, 0)
+    proposals = TensorUtil.selectMatrix(proposals, keep, 1)
+    var scores = TensorUtil.selectMatrix(scoresTensor, keep, 1)
 
     // 4. sort all (proposal, score) pairs by score from highest to lowest
     // 5. take top pre_nms_topN (e.g. 6000)
-    var order = argsort(scores.toDenseVector).reverse.toArray
-    if (pre_nms_topN > 0) {
-      order = order.slice(0, pre_nms_topN)
-    }
-    proposals = MatrixUtil.selectMatrix(proposals, order, 0)
-    scores = MatrixUtil.selectMatrix(scores, order, 0)
+//    var order = scores.topk().reverse.toArray
+//    if (pre_nms_topN > 0) {
+//      order = order.slice(0, pre_nms_topN)
+//    }
+    val order = scores.topk(if (pre_nms_topN > 0 && pre_nms_topN < scores.nElement()) pre_nms_topN
+    else scores.nElement(), dim = 1, increase = false)
+      ._2.contiguous().storage().array().map(x => x.toInt)
+
+    proposals = TensorUtil.selectMatrix(proposals, order, 1)
+    scores = TensorUtil.selectMatrix(scores, order, 1)
 
     // 6. apply nms (e.g. threshold = 0.7)
     // 7. take after_nms_topN (e.g. 300)
     // 8. return the top proposals (-> RoIs top)
-    keep = Nms.nms(DenseMatrix.horzcat(proposals, scores), nms_thresh.toFloat)
+    keep = Nms.nms(TensorUtil.horzcat(proposals, scores), nms_thresh.toFloat)
     if (post_nms_topN > 0) {
       keep = keep.slice(0, post_nms_topN)
     }
-    proposals = MatrixUtil.selectMatrix(proposals, keep, 0)
-    scores = MatrixUtil.selectMatrix(scores, keep, 0)
+    proposals = TensorUtil.selectMatrix(proposals, keep, 1)
+    scores = TensorUtil.selectMatrix(scores, keep, 1)
 
     // Output rois blob
     // Our RPN implementation only supports a single input image, so all
     // batch inds are 0
-    val mat = DenseMatrix.horzcat(DenseMatrix.zeros[Float](proposals.rows, 1), proposals)
-    val rpn_rois = Tensor[Float]()
-    rpn_rois.resize(mat.rows, mat.cols)
-    for (i <- 1 to mat.rows) {
-      for (j <- 1 to mat.cols) {
-        rpn_rois.setValue(i, j, mat(i - 1, j - 1))
+    val mat = TensorUtil.horzcat(Tensor[Float](proposals.size(1), 1), proposals)
+    val rpn_rois = Tensor[Float].resize(mat.size(1), mat.size(2))
+    for (i <- 1 to mat.size(1)) {
+      for (j <- 1 to mat.size(2)) {
+        rpn_rois.setValue(i, j, mat.valueAt(i, j))
       }
     }
     if (output.length == 0) {
       output.insert(rpn_rois)
-      output.insert(Tensor(Storage(scores.toArray)))
+      output.insert(scores)
     } else {
       output.update(1, rpn_rois)
-      output.update(2, Tensor(Storage(scores.toArray)))
+      output.update(2, scores)
     }
 //    FileUtil.assertEqual("rpn_rois", rpn_rois)
     output
@@ -181,13 +183,13 @@ class Proposal[@specialized(Float, Double) T: ClassTag](param: FasterRcnnParam)
    * Remove all boxes with any side smaller than min_size
    *
    */
-  private def filterBoxes(boxes: DenseMatrix[Float], minSize: Float): Array[Int] = {
-    val ws: DenseVector[Float] = boxes(::, 2) - boxes(::, 0) + 1f
-    val hs: DenseVector[Float] = boxes(::, 3) - boxes(::, 1) + 1f
+  private def filterBoxes(boxes: Tensor[Float], minSize: Float): Array[Int] = {
+    val ws = TensorUtil.selectCol(boxes, 3).clone().add(-1f, TensorUtil.selectCol(boxes, 1)).add(1f)
+    val hs = TensorUtil.selectCol(boxes, 4).clone().add(-1f, TensorUtil.selectCol(boxes, 2)).add(1f)
 
     var keep = Array[Int]()
-    for (i <- 0 until boxes.rows) {
-      if (ws(i) >= minSize && hs(i) >= minSize) {
+    for (i <- 1 to boxes.size(1)) {
+      if (ws.valueAt(i) >= minSize && hs.valueAt(i) >= minSize) {
         keep :+= i
       }
     }
@@ -199,5 +201,4 @@ class Proposal[@specialized(Float, Double) T: ClassTag](param: FasterRcnnParam)
     gradInput
   }
 }
-
 

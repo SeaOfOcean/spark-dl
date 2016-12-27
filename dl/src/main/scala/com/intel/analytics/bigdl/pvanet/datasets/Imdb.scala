@@ -20,9 +20,7 @@ package com.intel.analytics.bigdl.pvanet.datasets
 import java.io.FileInputStream
 import javax.imageio.ImageIO
 
-import breeze.linalg.DenseMatrix
-import com.intel.analytics.bigdl.pvanet.model.FasterRcnnParam
-import com.intel.analytics.bigdl.pvanet.utils.{FileUtil, MatrixUtil}
+import com.intel.analytics.bigdl.pvanet.utils.{FileUtil, TensorUtil}
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.File
 
@@ -74,16 +72,35 @@ abstract class Imdb {
 
   def imagePathFromIndex(index: String): String
 
+//  def appendFlippedImages(): Unit = {
+//    val isFlip = true
+//    for (i <- 0 until numImages) {
+//      val roi = roidb(i)
+//      val boxes = roi.boxes.copy
+//      val oldx1 = MatrixUtil.selectCol(boxes, 0).toDenseVector
+//      val oldx2 = MatrixUtil.selectCol(boxes, 2).toDenseVector
+//      (0 until boxes.rows).foreach(r => {
+//        boxes(r, 0) = getWidth(i) - oldx2(i) - 1
+//        boxes(r, 2) = getWidth(i) - oldx1(i) - 1
+//      })
+//      roidb :+ Roidb(roi.imagePath, boxes, roi.gtOverlaps, roi.gtClasses, isFlip)
+//    }
+//    val newImageIndex = new Array[String](imageIndex.length * 2)
+//    imageIndex.copyToArray(newImageIndex, 0)
+//    imageIndex.copyToArray(newImageIndex, imageIndex.length)
+//    imageIndex = newImageIndex
+//  }
+
   def appendFlippedImages(): Unit = {
     val isFlip = true
     for (i <- 0 until numImages) {
       val roi = roidb(i)
-      val boxes = roi.boxes.copy
-      val oldx1 = MatrixUtil.selectCol(boxes, 0).toDenseVector
-      val oldx2 = MatrixUtil.selectCol(boxes, 2).toDenseVector
-      (0 until boxes.rows).foreach(r => {
-        boxes(r, 0) = getWidth(i) - oldx2(i) - 1
-        boxes(r, 2) = getWidth(i) - oldx1(i) - 1
+      val boxes = roi.boxes.clone()
+      val oldx1 = TensorUtil.selectCol(boxes, 1)
+      val oldx2 = TensorUtil.selectCol(boxes, 3)
+      (1 to boxes.size(1)).foreach(r => {
+        boxes.setValue(r, 1, getWidth(i) - oldx2.valueAt(i + 1) - 1)
+        boxes.setValue(r, 3, getWidth(i) - oldx1.valueAt(i + 1) - 1)
       })
       roidb :+ Roidb(roi.imagePath, boxes, roi.gtOverlaps, roi.gtClasses, isFlip)
     }
@@ -93,7 +110,7 @@ abstract class Imdb {
     imageIndex = newImageIndex
   }
 
-  def evaluateDetections(allBoxes: Array[Array[DenseMatrix[Float]]]): Unit
+//  def evaluateDetections(allBoxes: Array[Array[DenseMatrix[Float]]]): Unit
 
   def evaluateDetections(allBoxes: Array[Array[Tensor[Float]]]): Unit
 
@@ -141,7 +158,7 @@ abstract class Imdb {
 
 case class Roidb(
   imagePath: String,
-  boxes: DenseMatrix[Float] = null,
+  boxes: Tensor[Float] = null,
   gtClasses: Tensor[Float] = null,
   gtOverlaps: Tensor[Float] = null,
   flipped: Boolean = false) {

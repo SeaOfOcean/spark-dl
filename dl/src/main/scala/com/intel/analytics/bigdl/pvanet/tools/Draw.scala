@@ -22,45 +22,44 @@ import java.awt.{BasicStroke, Color, Font, Graphics2D}
 import java.io.File
 import javax.imageio.ImageIO
 
-import breeze.linalg.DenseMatrix
-import com.intel.analytics.bigdl.pvanet.utils.{TensorUtil}
+import com.intel.analytics.bigdl.pvanet.utils.TensorUtil
 import com.intel.analytics.bigdl.tensor.Tensor
 import org.apache.log4j.Logger
 
 object Draw {
   val logger = Logger.getLogger(getClass)
-  def vis(imgPath: String, clsname: String, dets: DenseMatrix[Float],
-    savePath: String, thresh: Float = 0.3f): Unit = {
-    var img: BufferedImage = null
-    var g2d: Graphics2D = null
+//  def vis(imgPath: String, clsname: String, dets: DenseMatrix[Float],
+//    savePath: String, thresh: Float = 0.3f): Unit = {
+//    var img: BufferedImage = null
+//    var g2d: Graphics2D = null
+//
+//    def loadImage = {
+//      img = ImageIO.read(new File(imgPath))
+//      g2d = img.createGraphics
+//      val font = new Font("Helvetica", Font.PLAIN, 14);
+//      g2d.setFont(font)
+//      g2d.setStroke(new BasicStroke(3))
+//    }
+//
+//    for (i <- 0 until Math.min(10, dets.rows)) {
+//      val bbox = dets(i, 0 until 4)
+//      val score = dets(i, 4)
+//      if (score > thresh) {
+//        if (g2d == null) {
+//          loadImage
+//        }
+//        draw(g2d, bbox(0).toInt, bbox(1).toInt, bbox(2).toInt - bbox(0).toInt,
+//          bbox(3).toInt - bbox(1).toInt, s"$clsname ${"%.3f".format(score)}")
+//      }
+//    }
+//    if (g2d != null) {
+//      ImageIO.write(img, savePath.substring(savePath.lastIndexOf(".") + 1), new File(savePath))
+//      logger.info(savePath + " is saved")
+//      g2d.dispose
+//    }
+//  }
 
-    def loadImage = {
-      img = ImageIO.read(new File(imgPath))
-      g2d = img.createGraphics
-      val font = new Font("Helvetica", Font.PLAIN, 14);
-      g2d.setFont(font)
-      g2d.setStroke(new BasicStroke(3))
-    }
-
-    for (i <- 0 until Math.min(10, dets.rows)) {
-      val bbox = dets(i, 0 until 4)
-      val score = dets(i, 4)
-      if (score > thresh) {
-        if (g2d == null) {
-          loadImage
-        }
-        draw(g2d, bbox(0).toInt, bbox(1).toInt, bbox(2).toInt - bbox(0).toInt,
-          bbox(3).toInt - bbox(1).toInt, s"$clsname ${"%.3f".format(score)}")
-      }
-    }
-    if (g2d != null) {
-      ImageIO.write(img, savePath.substring(savePath.lastIndexOf(".") + 1), new File(savePath))
-      logger.info(savePath + " is saved")
-      g2d.dispose
-    }
-  }
-
-  def vis2(imgPath: String, clsname: String, dets: Tensor[Float],
+  def vis(imgPath: String, clsname: String, dets: Tensor[Float],
     savePath: String, thresh: Float = 0.3f): Unit = {
     var img: BufferedImage = null
     var g2d: Graphics2D = null

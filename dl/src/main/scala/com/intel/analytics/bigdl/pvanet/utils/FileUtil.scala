@@ -138,6 +138,16 @@ object FileUtil {
     assertEqual(expected, output, expectedName, prec)
   }
 
+  def assertEqual(expectedName: String, output: Array[Int], prec: Double): Unit = {
+    val expected = loadFeatures(expectedName)
+    assertEqual(expected, Tensor(Storage(output.map(x => x.toFloat))), expectedName, prec)
+  }
+
+  def assertEqual(expectedName: String, output: Array[Float], prec: Double): Unit = {
+    val expected = loadFeatures(expectedName)
+    assertEqual(expected, Tensor(Storage(output)), expectedName, prec)
+  }
+
   def assertEqual(expected: Tensor[Float], output: Tensor[Float],
     info: String = "", prec: Double): Unit = {
     if (!info.isEmpty) {
@@ -147,7 +157,7 @@ object FileUtil {
       s"expected size ${expected.size().mkString(",")} " +
       s"does not match output ${output.size().mkString(",")}")
     (expected.storage().array() zip output.storage().array()).foreach(x =>
-      require(Math.abs(x._1-x._2) < prec,
+      require(Math.abs(x._1 - x._2) < prec,
         s"${x._1} does not equal ${x._2}"))
     if (!info.isEmpty) {
       println(s"$info pass")
