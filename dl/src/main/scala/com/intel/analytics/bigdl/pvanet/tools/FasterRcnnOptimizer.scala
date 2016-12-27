@@ -18,7 +18,7 @@
 package com.intel.analytics.bigdl.pvanet.tools
 
 import com.intel.analytics.bigdl.Module
-import com.intel.analytics.bigdl.dataset.Dataset
+import com.intel.analytics.bigdl.dataset.LocalDataSet
 import com.intel.analytics.bigdl.nn.ParallelCriterion
 import com.intel.analytics.bigdl.optim.{OptimMethod, Trigger}
 import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, ImageToTensor, ImageWithRoi, ObjectDataSource}
@@ -27,7 +27,7 @@ import com.intel.analytics.bigdl.pvanet.model.FasterRcnn
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.utils.Table
 
-class FasterRcnnOptimizer(data: Dataset[ImageWithRoi],
+class FasterRcnnOptimizer(data: LocalDataSet[ImageWithRoi],
   validationData: ObjectDataSource,
   net: FasterRcnn,
   model: Module[Float],

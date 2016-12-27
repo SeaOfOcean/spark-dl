@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import javax.imageio.ImageIO
 
 import breeze.linalg.DenseVector
-import com.intel.analytics.bigdl.dataset.{Dataset, LocalArrayDataSet, Transformer}
+import com.intel.analytics.bigdl.dataset.{LocalDataSet, Transformer}
 import com.intel.analytics.bigdl.pvanet.model.FasterRcnnParam
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import com.intel.analytics.bigdl.utils.RandomGenerator
@@ -32,7 +32,7 @@ import scala.util.Random
 
 
 class ObjectDataSource(val imdb: Imdb, val useFlipped: Boolean = false)
-  extends Dataset[Roidb] {
+  extends LocalDataSet[Roidb] {
 
   val roidbs = imdb.getRoidb(useFlipped)
 

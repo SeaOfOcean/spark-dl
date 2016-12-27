@@ -17,7 +17,7 @@
 
 package com.intel.analytics.bigdl.optim
 
-import com.intel.analytics.bigdl.dataset.{MiniBatch, Dataset}
+import com.intel.analytics.bigdl.dataset.{MiniBatch, LocalDataSet}
 import com.intel.analytics.bigdl._
 import com.intel.analytics.bigdl.tensor.Tensor
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
@@ -42,7 +42,7 @@ object LocalOptimizer {
  */
 class LocalOptimizer[T: ClassTag] private[optim](
   model: Module[T],
-  dataset: Dataset[MiniBatch[T]],
+  dataset: LocalDataSet[MiniBatch[T]],
   criterion: Criterion[T]
 )(implicit ev: TensorNumeric[T])
   extends Optimizer[T, MiniBatch[T]](
