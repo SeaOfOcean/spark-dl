@@ -17,12 +17,12 @@
 
 package com.intel.analytics.bigdl.optim
 
-import java.nio.file.{Paths, Files}
+import java.nio.file.{Files, Paths}
 
 import com.intel.analytics.bigdl._
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric
 import com.intel.analytics.bigdl.utils.{T, Table}
-import com.intel.analytics.bigdl.dataset.{Dataset, MiniBatch, DistributedDataSet}
+import com.intel.analytics.bigdl.dataset.{DistributedDataSet, LocalDataSet, MiniBatch}
 
 import scala.reflect.ClassTag
 
@@ -42,6 +42,12 @@ abstract class Optimizer[T: ClassTag, D](
   protected var validationTrigger: Option[Trigger] = None
   protected var validationMethods: Option[Array[ValidationMethod[T]]] = None
   protected var validationDataSet: Option[DataSet[D]] = None
+
+  // To achieve better performance, please set dropPercentage as 0.04
+  protected var dropPercentage: Double = 0.0
+  protected var maxDropPercentage: Double = 0.0
+  protected var comupteThresholdbatchSize: Int = 100
+  protected var warmupIterationNum: Int = 200
 
   def optimize(): Module[T]
 
@@ -80,6 +86,16 @@ abstract class Optimizer[T: ClassTag, D](
     this.endWhen = endWhen
     this
   }
+
+  def setDropMoudleProperty(dropPercentage: Double, maxDropPercentage: Double,
+    batchsize: Int = 100, warmupIteration: Int = 200): this.type = {
+    this.dropPercentage = dropPercentage
+    this.maxDropPercentage = maxDropPercentage
+    require(dropPercentage >= 0 && dropPercentage <= maxDropPercentage)
+    this.comupteThresholdbatchSize = batchsize
+    this.warmupIterationNum = warmupIteration
+    this
+  }
 }
 
 object Optimizer {
@@ -114,7 +130,7 @@ object Optimizer {
           dataset = d,
           criterion = criterion
         ).asInstanceOf[Optimizer[T, D]]
-      case d: Dataset[MiniBatch[T]] =>
+      case d: LocalDataSet[MiniBatch[T]] =>
         new LocalOptimizer[T](
           model = model,
           dataset = d,
