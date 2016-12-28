@@ -198,7 +198,7 @@ class AnchorTarget(param: FasterRcnnParam) {
       val disableInds = Random.shuffle(bgInds).take(bgInds.length - numBg.toInt)
       disableInds.foreach(x => labels.setValue(x, -1))
       logger.info(s"${disableInds.length} bg inds are disabled, " +
-        s"now ${(1 to labels.size(1)).count(x => x == 0)} inds")
+        s"now ${(1 to labels.size(1)).count(x => labels.valueAt(x) == 0)} inds")
     }
     labels
   }

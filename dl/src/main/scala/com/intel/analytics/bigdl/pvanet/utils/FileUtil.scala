@@ -199,4 +199,9 @@ object FileUtil {
     }
     None
   }
+
+  def main(args: Array[String]): Unit = {
+    val means = loadFeaturesFullPath("/home/xianyan/data/model/alexnet/means-3_256_256.txt")
+    DlFile.save(means, "/home/xianyan/data/model/alexnet/means.obj")
+  }
 }
