@@ -1,8 +1,8 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
+ * Licensed to Intel Corporation under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
+ * Intel Corporation licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
@@ -29,11 +29,11 @@ import com.intel.analytics.bigdl.utils.{T, Table}
 
 import scala.reflect.ClassTag
 
-object GoogleNet {
+object Inception {
   def getModel[D: ClassTag](classNum: Int, modelName: String = "")(
     implicit ev: TensorNumeric[D]): Module[D] = {
     modelName match {
-      case "googlenet-bn" =>
+      case "inception-bn" =>
         def inception(inputSize: Int, config: Table)(
           implicit ev: TensorNumeric[D]): Module[D] = {
           val concat = Concat[D](2)

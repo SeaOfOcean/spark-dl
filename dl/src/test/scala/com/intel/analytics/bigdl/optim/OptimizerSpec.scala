@@ -1,8 +1,8 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
+ * Licensed to Intel Corporation under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
+ * Intel Corporation licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
@@ -181,7 +181,7 @@ class OptimizerSpec extends FlatSpec with Matchers {
   "A Distributed dataset" should "spawn a distributed optimizer" in {
     val ds = new DistributedDataSet[Float] {
       override def originRDD(): RDD[_] = null
-      override def data(looped: Boolean): RDD[Float] = null
+      override def data(train: Boolean): RDD[Float] = null
       override def size(): Long = 0
       override def shuffle(): Unit = {}
     }
@@ -195,7 +195,7 @@ class OptimizerSpec extends FlatSpec with Matchers {
 
   "A Local dataset" should "spawn a local optimizer" in {
     val ds = new LocalDataSet[Float] {
-      override def data(looped: Boolean): Iterator[Float] = null
+      override def data(train: Boolean): Iterator[Float] = null
       override def size(): Long = 0
       override def shuffle(): Unit = {}
     }

@@ -1,8 +1,8 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
+ * Licensed to Intel Corporation under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
+ * Intel Corporation licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
@@ -23,7 +23,6 @@ import com.intel.analytics.bigdl.utils.Engine
 
 class FP16SplitsParameterSpec extends FlatSpec with Matchers {
   "convert double tensor to fp16 array and back" should "be same when the number is integer" in {
-    Engine.default.setPoolSize(1)
     val tensor = Tensor[Double](5)
     tensor.setValue(1, 1.0)
     tensor.setValue(2, 2.0)

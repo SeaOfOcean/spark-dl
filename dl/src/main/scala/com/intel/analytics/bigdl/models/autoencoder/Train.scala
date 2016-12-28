@@ -1,8 +1,8 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
+ * Licensed to Intel Corporation under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
+ * Intel Corporation licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
@@ -19,52 +19,82 @@ package com.intel.analytics.bigdl.models.autoencoder
 
 import java.nio.file.Paths
 
-import com.intel.analytics.bigdl._
-import com.intel.analytics.bigdl.dataset.DataSet
-import com.intel.analytics.bigdl.dataset.image.{GreyImgNormalizer, GreyImgToAEBatch, GreyImgToBatch, SampleToGreyImg}
+import com.intel.analytics.bigdl.dataset.{DataSet, MiniBatch, Transformer, image}
+import com.intel.analytics.bigdl.dataset.image._
 import com.intel.analytics.bigdl.nn.{MSECriterion, Module}
+import com.intel.analytics.bigdl._
 import com.intel.analytics.bigdl.optim._
 import com.intel.analytics.bigdl.utils.{Engine, T}
+import org.apache.log4j.{Level, Logger}
+import org.apache.spark.SparkContext
 import com.intel.analytics.bigdl.tensor.TensorNumericMath.TensorNumeric._
 
+object toAutoencoderBatch {
+  def apply(): toAutoencoderBatch[Float] = new toAutoencoderBatch[Float]()
+}
+
+class toAutoencoderBatch[T] extends Transformer[MiniBatch[T], MiniBatch[T]] {
+  override def apply(prev: Iterator[MiniBatch[T]]): Iterator[MiniBatch[T]] = {
+    prev.map(batch => {
+      MiniBatch(batch.data, batch.data)
+    })
+  }
+}
 
 object Train {
+  Logger.getLogger("org").setLevel(Level.ERROR)
+  Logger.getLogger("akka").setLevel(Level.ERROR)
+  Logger.getLogger("breeze").setLevel(Level.ERROR)
+  Logger.getLogger("com.intel.analytics.bigdl.optim").setLevel(Level.INFO)
 
   import Utils._
 
   def main(args: Array[String]): Unit = {
     trainParser.parse(args, new TrainParams()).map(param => {
-      val trainData = Paths.get(param.folder, "/train-images.idx3-ubyte")
-      val trainLabel = Paths.get(param.folder, "/train-labels.idx1-ubyte")
 
-      val trainSet = DataSet.array(load(trainData, trainLabel))
-        .transform(SampleToGreyImg(28, 28))
-      val normalizer = GreyImgNormalizer(trainSet)
+      val sc = Engine.init(param.nodeNumber, param.coreNumber, param.env == "spark").map(conf => {
+        conf.setAppName("Train Autoencoder on MNIST")
+          .set("spark.akka.frameSize", 64.toString)
+          .set("spark.task.maxFailures", "1")
+        new SparkContext(conf)
+      })
+
+      val trainData = Paths.get(param.folder, "/train-images-idx3-ubyte")
+      val trainLabel = Paths.get(param.folder, "/train-labels-idx1-ubyte")
+
+      val trainDataSet = (if (sc.isDefined) {
+        DataSet.array(load(trainData, trainLabel), sc.get, param.nodeNumber)
+      } else {
+        DataSet.array(load(trainData, trainLabel))
+      }) -> SampleToGreyImg(28, 28) -> GreyImgNormalizer(trainMean, trainStd) -> GreyImgToBatch(
+        param.batchSize) -> toAutoencoderBatch()
 
       val model = if (param.modelSnapshot.isDefined) {
         Module.load[Float](param.modelSnapshot.get)
       } else {
-        AE(classNum = 32)
+        Autoencoder(classNum = 32)
       }
 
       val state = if (param.stateSnapshot.isDefined) {
         T.load(param.stateSnapshot.get)
       } else {
         T(
-          "learningRate" -> param.learningRate
+          "learningRate" -> 0.01,
+          "weightDecay" -> 0.0005,
+          "momentum" -> 0.9,
+          "dampening" -> 0.0
         )
       }
 
-      Engine.setCoreNumber(param.coreNumber)
       val optimizer = Optimizer(
         model = model,
-        dataset = trainSet.transform(normalizer).transform(GreyImgToAEBatch(param.batchSize)),
+        dataset = trainDataSet,
         criterion = new MSECriterion[Float]()
       )
+
       if (param.checkpoint.isDefined) {
         optimizer.setCheckpoint(param.checkpoint.get, Trigger.everyEpoch)
       }
-
       optimizer
         .setState(state)
         .setOptimMethod(new Adagrad[Float]())
@@ -73,3 +103,4 @@ object Train {
     })
   }
 }
+

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
 #
-# Licensed to the Apache Software Foundation (ASF) under one or more
+# Licensed to Intel Corporation under one or more
 # contributor license agreements.  See the NOTICE file distributed with
 # this work for additional information regarding copyright ownership.
-# The ASF licenses this file to You under the Apache License, Version 2.0
+# Intel Corporation licenses this file to You under the Apache License, Version 2.0
 # (the "License"); you may not use this file except in compliance with
 # the License.  You may obtain a copy of the License at
 #
@@ -50,8 +50,8 @@ fi
 
 if [[ "$_java" ]]; then
     version=$("$_java" -version 2>&1 | awk -F '"' '/version/ {print $2}')
-    if [[ "$version" < "1.8" ]]; then
-        echo Require a java version higher than 1.8
+    if [[ "$version" < "1.7" ]]; then
+        echo Require a java version not lower than 1.7
         exit 1
     fi
 fi
@@ -67,4 +67,4 @@ cp $BASEDIR/scripts/bigdl.sh $BIN_DIR/
 
 mvn clean package -DskipTests $*
 cp $BASEDIR/dl/target/bigdl-$VERSION-jar-with-dependencies.jar $LIB_DIR/
-cp $BASEDIR/dl/target/bigdl-$VERSION-jar-with-dependencies-all-in-one.jar $LIB_DIR/
+cp $BASEDIR/dl/target/bigdl-$VERSION-jar-with-dependencies-and-spark.jar $LIB_DIR/

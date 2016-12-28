@@ -1,8 +1,8 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
+ * Licensed to Intel Corporation under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
+ * Intel Corporation licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
@@ -80,7 +80,7 @@ object DummyDataSet extends LocalDataSet[MiniBatch[Float]] {
 
   override def shuffle(): Unit = {}
 
-  override def data(looped : Boolean): Iterator[MiniBatch[Float]] = {
+  override def data(train : Boolean): Iterator[MiniBatch[Float]] = {
     new Iterator[MiniBatch[Float]] {
       var i = 0
 

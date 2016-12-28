@@ -1,8 +1,8 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one or more
+ * Licensed to Intel Corporation under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
+ * Intel Corporation licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
  *
@@ -20,7 +20,7 @@ package com.intel.analytics.bigdl.example.classifier
 import java.nio.file.Paths
 
 import com.intel.analytics.bigdl.models.alexnet.AlexNet
-import com.intel.analytics.bigdl.models.inception.GoogleNet_v1_NoAuxClassifier
+import com.intel.analytics.bigdl.models.inception.Inception_v1_NoAuxClassifier
 import com.intel.analytics.bigdl.nn.Module
 import com.intel.analytics.bigdl.optim.{LocalValidator, Top1Accuracy, Top5Accuracy, Validator}
 import com.intel.analytics.bigdl.utils.Engine
@@ -107,7 +107,7 @@ object ImageClassifier {
                 param.caffeDefPath, param.modelPath),
                 AlexNetPreprocessor(valPath, imageSize, param.batchSize, param.meanFile.get))
             case "googlenet" =>
-              (Module.loadCaffe[Float](GoogleNet_v1_NoAuxClassifier(1000),
+              (Module.loadCaffe[Float](Inception_v1_NoAuxClassifier(1000),
                 param.caffeDefPath, param.modelPath),
                 GoogleNetPreprocessor(valPath, imageSize, param.batchSize))
           }
