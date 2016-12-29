@@ -17,7 +17,13 @@
 
 package com.intel.analytics.bigdl.models.vgg
 
+import java.nio.ByteBuffer
+import java.nio.file.{Files, Path, Paths}
+
+import com.intel.analytics.bigdl.dataset.ByteRecord
 import scopt.OptionParser
+
+import scala.collection.mutable.ArrayBuffer
 
 object Utils {
   val trainMean = (0.4913996898739353, 0.4821584196221302, 0.44653092422369434)
@@ -32,7 +38,8 @@ object Utils {
     stateSnapshot: Option[String] = None,
     coreNumber: Int = -1,
     nodeNumber: Int = -1,
-    batchSize: Int = 128,
+    batchSize: Int = 112,
+    maxEpoch: Int = 90,
     env: String = "local"
   )
 
@@ -57,6 +64,9 @@ object Utils {
       .text("node number to train the model")
       .action((x, c) => c.copy(nodeNumber = x))
       .required()
+    opt[Int]('e', "maxEpoch")
+      .text("epoch numbers")
+      .action((x, c) => c.copy(maxEpoch = x))
     opt[Int]('b', "batchSize")
       .text("batch size")
       .action((x, c) => c.copy(batchSize = x))
@@ -78,7 +88,7 @@ object Utils {
     model: String = "",
     coreNumber: Int = -1,
     nodeNumber: Int = -1,
-    batchSize: Int = 128,
+    batchSize: Int = 112,
     env: String = "local"
   )
 
@@ -113,4 +123,66 @@ object Utils {
       .action((x, c) => c.copy(env = x.toLowerCase()))
       .required()
   }
+
+  private[bigdl] def loadTrain(dataFile: String): Array[ByteRecord] = {
+    val directoryStream = Files.newDirectoryStream(Paths.get(dataFile))
+    import scala.collection.JavaConverters._
+    val allFiles = directoryStream.asScala.map(_.toAbsolutePath.toString)
+      .filter(_.startsWith(dataFile + "/data_batch_"))
+      .filter(_.endsWith(".bin"))
+      .toArray.sortWith(_ < _).map(p => Paths.get(p))
+
+    val result = new ArrayBuffer[ByteRecord]()
+    allFiles.map(imageFile => {
+      load(imageFile, result)
+    })
+    result.toArray
+  }
+
+  private[bigdl] def loadTest(dataFile: String): Array[ByteRecord] = {
+    val result = new ArrayBuffer[ByteRecord]()
+    val testFile = Paths.get(dataFile + "/test_batch.bin")
+    load(testFile, result)
+    result.toArray
+  }
+
+  private[bigdl] def load(featureFile: Path, result : ArrayBuffer[ByteRecord]): Unit = {
+    val rowNum = 32
+    val colNum = 32
+    val imageOffset = rowNum * colNum * 3 + 1
+    val channelOffset = rowNum * colNum
+    val bufferOffset = 8
+
+    val featureBuffer = ByteBuffer.wrap(Files.readAllBytes(featureFile))
+    val featureArray = featureBuffer.array()
+    val featureCount = featureArray.length / (rowNum * colNum * 3 + 1)
+
+    var i = 0
+    while (i < featureCount) {
+      val img = new Array[Byte]((rowNum * colNum * 3 + bufferOffset))
+      val byteBuffer = ByteBuffer.wrap(img)
+      byteBuffer.putInt(rowNum)
+      byteBuffer.putInt(colNum)
+
+      val label = featureArray(i * imageOffset).toFloat
+      var y = 0
+      val start = i * imageOffset + 1
+      while (y < rowNum) {
+        var x = 0
+        while (x < colNum) {
+          img((x + y * colNum) * 3 + 2 + bufferOffset) =
+            featureArray(start + x + y * colNum)
+          img((x + y * colNum) * 3 + 1 + bufferOffset) =
+            featureArray(start + x + y * colNum + channelOffset)
+          img((x + y * colNum) * 3 + bufferOffset) =
+            featureArray(start + x + y * colNum + 2 * channelOffset)
+          x += 1
+        }
+        y += 1
+      }
+      result.append(ByteRecord(img, label + 1.0f))
+      i += 1
+    }
+  }
 }
+
