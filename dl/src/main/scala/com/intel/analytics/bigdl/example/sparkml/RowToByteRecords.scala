@@ -15,31 +15,30 @@
  * limitations under the License.
  */
 
-package com.intel.analytics.bigdl.dataset.image
+package com.intel.analytics.bigdl.example.sparkml
 
 import com.intel.analytics.bigdl.dataset.{ByteRecord, Transformer}
+import org.apache.log4j.Logger
+import org.apache.spark.sql.Row
 
 import scala.collection.Iterator
 
-object SampleToGreyImg {
-  def apply(row: Int, col: Int): SampleToGreyImg
-  = new SampleToGreyImg(row, col)
+object RowToByteRecords {
+  val logger = Logger.getLogger(getClass)
+
+  def apply(colName: String = "data"): RowToByteRecords = {
+    new RowToByteRecords(colName)
+  }
 }
 
-/**
- * Convert byte records into grey image.
- * @param row
- * @param col
- */
-class SampleToGreyImg(row: Int, col: Int)
-  extends Transformer[ByteRecord, LabeledGreyImage] {
-  private val buffer = new LabeledGreyImage(row, col)
+class RowToByteRecords(colName: String)
+  extends Transformer[Row, ByteRecord] {
 
-  override def apply(prev: Iterator[ByteRecord]): Iterator[LabeledGreyImage] = {
-    prev.map(rawData => {
-      require(row * col == rawData.data.length)
-      require(rawData.label >= 1)
-      buffer.setLabel(rawData.label).copy(rawData.data, 255.0f)
-    })
+  override def apply(prev: Iterator[Row]): Iterator[ByteRecord] = {
+    prev.map(
+      img => {
+        ByteRecord(img.getAs[Array[Byte]](colName), -1.0f)
+      }
+    )
   }
 }

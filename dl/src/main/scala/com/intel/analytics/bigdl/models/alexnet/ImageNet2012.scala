@@ -16,13 +16,11 @@
  */
 package com.intel.analytics.bigdl.models.alexnet
 
-import java.nio.file.{Path, Paths}
+import java.nio.file.Paths
 
 import com.intel.analytics.bigdl.DataSet
 import com.intel.analytics.bigdl.dataset._
 import com.intel.analytics.bigdl.dataset.image._
-import com.intel.analytics.bigdl.tensor.Tensor
-import com.intel.analytics.bigdl.utils.Engine
 import org.apache.spark.SparkContext
 
 object ImageNet2012 {
@@ -34,13 +32,11 @@ object ImageNet2012 {
     nodeNumber: Int,
     coresPerNode: Int,
     classNumber: Int,
-    size: Int,
-    ds: DataSet[_] = null
+    size: Int
   )
   : DataSet[MiniBatch[Float]] = {
     (if (sc.isDefined) {
-      DataSet.SeqFileFolder.files(path, sc.get, classNumber, nodeNumber,
-        (if (ds == null) null else ds.toDistributed().originRDD())).transform(
+      DataSet.SeqFileFolder.files(path, sc.get, classNumber).transform(
         MTLabeledBGRImgToBatch[ByteRecord](
           width = imageSize,
           height = imageSize,

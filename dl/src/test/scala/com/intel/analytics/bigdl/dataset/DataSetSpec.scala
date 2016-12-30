@@ -22,7 +22,7 @@ import java.nio.file.Paths
 
 import com.intel.analytics.bigdl.dataset.image._
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
-import com.intel.analytics.bigdl.utils.{Engine, RandomGenerator}
+import com.intel.analytics.bigdl.utils.{Engine, MklBlas, RandomGenerator}
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FlatSpec, Matchers}
@@ -31,6 +31,9 @@ class DataSetSpec extends FlatSpec with Matchers with BeforeAndAfter {
   var sc: SparkContext = null
 
   before {
+    val nodeNumber = 1
+    val coreNumber = 1
+    Engine.init(nodeNumber, coreNumber, true)
     sc = new SparkContext("local[1]", "DataSetSpec")
   }
 
@@ -68,7 +71,7 @@ class DataSetSpec extends FlatSpec with Matchers with BeforeAndAfter {
     val dataSet = DataSet.array(com.intel.analytics.bigdl.models.lenet.Utils.load(
       Paths.get(processPath(resource.getPath()) + File.separator, "t10k-images.idx3-ubyte"),
       Paths.get(processPath(resource.getPath()) + File.separator, "t10k-labels.idx1-ubyte")
-    ), sc, 4)
+    ), sc)
 
     dataSet.size() should be(10000)
     var rdd = dataSet.data(train = false)
@@ -115,7 +118,7 @@ class DataSetSpec extends FlatSpec with Matchers with BeforeAndAfter {
   "cifar rdd data source" should "load image correct" in {
     val resource = getClass().getClassLoader().getResource("cifar")
     val dataSet = DataSet.ImageFolder.images(Paths.get(processPath(resource.getPath())),
-      sc, 4, BGRImage.NO_SCALE)
+      sc, BGRImage.NO_SCALE)
     dataSet.size() should be(7)
     val labelMap = LocalImageFiles.readLabels(Paths.get(processPath(resource.getPath())))
     labelMap("airplane") should be(1)
@@ -265,7 +268,7 @@ class DataSetSpec extends FlatSpec with Matchers with BeforeAndAfter {
     val trainRDD = DataSet.rdd(sc.parallelize(data, 1).mapPartitions(_ => {
       RandomGenerator.RNG.setSeed(100)
       (1 to 100).iterator
-    }), 1).data(train = true)
+    })).data(train = true)
     trainRDD.mapPartitions(iter => {
       Iterator.single(iter.next())
     }).collect()(0) should be(22)

@@ -204,6 +204,10 @@ object Engine {
 
   private val singletonCounter: AtomicInteger = new AtomicInteger(0)
 
+  private[this] var _isInitialized: Boolean = false
+
+  def isInitialized: Boolean = _isInitialized
+
   /**
    * Check if current execution is a singleton on the JVM
    *
@@ -227,7 +231,7 @@ object Engine {
 
   def coreNumber(): Int = physicalCoreNumber
 
-  def setCoreNumber(n: Int): Unit = {
+  private[bigdl] def setCoreNumber(n: Int): Unit = {
     require(n > 0)
     physicalCoreNumber = n
     _model = initModelThreadPool()
@@ -242,7 +246,7 @@ object Engine {
 
   def nodeNumber(): Option[Int] = nodeNum
 
-  def setNodeNumber(n : Option[Int]): Unit = {
+  private[bigdl] def setNodeNumber(n : Option[Int]): Unit = {
     nodeNum = n
   }
 
@@ -297,7 +301,7 @@ object Engine {
     cores: Int,
     onSpark: Boolean = false
   ): Option[SparkConf] = {
-    if (onSpark) {
+    val ret = if (onSpark) {
       nodeNum = Some(node)
       physicalCoreNumber = cores
       _model = initModelThreadPool()
@@ -320,6 +324,9 @@ object Engine {
       physicalCoreNumber = cores
       None
     }
+    _isInitialized = true
+
+    ret
   }
 
   // Check envs

@@ -119,8 +119,7 @@ class LabeledGreyImage(d: Array[Float], w: Int, h: Int,
 }
 
 /**
- * Represent a BGR image
- *
+ * Represent a BGR image.
  * @param data
  * @param _width
  * @param _height
@@ -216,7 +215,7 @@ class BGRImage(
     this
   }
 
-  def convertToByte(buffer: Array[Byte] = null, scaleTo: Float = 255.0f): Array[Byte] = {
+  def convertToByte(buffer: Array[Byte] = null, normalize: Float = 255.0f): Array[Byte] = {
     val res = if (buffer == null) {
       new Array[Byte](height() * width() * 3)
     } else {
@@ -226,7 +225,7 @@ class BGRImage(
 
     var i = 0
     while (i < height() * width() * 3) {
-      res(i) = (data(i) * scaleTo).toByte
+      res(i) = (data(i) * normalize).toByte
       i += 1
     }
     res

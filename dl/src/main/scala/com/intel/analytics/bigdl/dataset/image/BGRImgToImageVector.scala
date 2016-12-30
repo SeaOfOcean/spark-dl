@@ -17,29 +17,34 @@
 
 package com.intel.analytics.bigdl.dataset.image
 
-import com.intel.analytics.bigdl.dataset.{ByteRecord, Transformer}
+import com.intel.analytics.bigdl.dataset.Transformer
+import org.apache.log4j.Logger
+import org.apache.spark.mllib.linalg.DenseVector
 
 import scala.collection.Iterator
 
-object SampleToGreyImg {
-  def apply(row: Int, col: Int): SampleToGreyImg
-  = new SampleToGreyImg(row, col)
+object BGRImgToImageVector {
+  val logger = Logger.getLogger(getClass)
+
+  def apply(): BGRImgToImageVector = {
+    new BGRImgToImageVector()
+  }
 }
 
-/**
- * Convert byte records into grey image.
- * @param row
- * @param col
- */
-class SampleToGreyImg(row: Int, col: Int)
-  extends Transformer[ByteRecord, LabeledGreyImage] {
-  private val buffer = new LabeledGreyImage(row, col)
+class BGRImgToImageVector()
+  extends Transformer[LabeledBGRImage, DenseVector] {
 
-  override def apply(prev: Iterator[ByteRecord]): Iterator[LabeledGreyImage] = {
-    prev.map(rawData => {
-      require(row * col == rawData.data.length)
-      require(rawData.label >= 1)
-      buffer.setLabel(rawData.label).copy(rawData.data, 255.0f)
-    })
+  private var featureData: Array[Float] = null
+
+  override def apply(prev: Iterator[LabeledBGRImage]): Iterator[DenseVector] = {
+    prev.map(
+      img => {
+        if (null == featureData) {
+          featureData = new Array[Float](3 * img.height() * img.width())
+        }
+        img.copyTo(featureData, 0, true)
+        new DenseVector(featureData.map(_.toDouble))
+      }
+    )
   }
 }

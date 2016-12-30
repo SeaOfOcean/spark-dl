@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.intel.analytics.bigdl.sparkml
+package com.intel.analytics.bigdl.utils
 
 import com.intel.analytics.bigdl.models.lenet.LeNet5
 import com.intel.analytics.bigdl.tensor.Tensor
@@ -53,7 +53,7 @@ class DLClassifierSpec extends FlatSpec with Matchers{
     // init
     val valTrans = new DLClassifier[Float]().setInputCol("features").setOutputCol("predict")
     val paramsTrans = ParamMap(valTrans.modelTrain -> model,
-      valTrans.batchSize -> Array(10, 28, 28))
+      valTrans.batchShape -> Array(10, 28, 28))
 
     val tensorBuffer = new ArrayBuffer[LabeledPoint]()
     var m = 0
@@ -77,7 +77,7 @@ class DLClassifierSpec extends FlatSpec with Matchers{
 
       valTrans.transform(testData, paramsTrans)
         .select("label", "predict")
-         .collect()
+        .collect()
         .foreach { case Row(label: Double, predict: Int) =>
           label.toInt should be(predict)
         }

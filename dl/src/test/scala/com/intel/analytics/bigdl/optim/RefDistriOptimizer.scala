@@ -40,6 +40,8 @@ class RefDistriOptimizer[T: ClassTag](
   ) {
 
   override def optimize(): Module[T] = {
+    this.assertEngineInited()
+
     RefDistriOptimizer.optimize(
       model,
       dataset,
