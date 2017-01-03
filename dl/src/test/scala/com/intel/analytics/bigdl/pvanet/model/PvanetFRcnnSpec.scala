@@ -27,7 +27,7 @@ class PvanetFRcnnSpec extends FlatSpec {
   "faster rcnn with pvanet net" should "work properly" in {
     val caffeDef = "/home/xianyan/objectRelated/pvanet/full/test.pt"
     val caffeModel = "/home/xianyan/objectRelated/pvanet/full/test.model"
-    val vggFrcnn = FasterRcnn(Model.PVANET, Phase.TEST, pretrained = (caffeDef, caffeModel))
+    val vggFrcnn = FasterRcnn(Model.PVANET, Phase.TEST, caffeModel = Some(caffeDef, caffeModel))
     val model = vggFrcnn.getModel
     val input = new Table()
     FileUtil.middleRoot = FileUtil.getFile("middle/pvanet/14/")

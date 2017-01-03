@@ -21,7 +21,7 @@ import java.io.{BufferedWriter, File, FileNotFoundException, FileWriter}
 import java.nio.file.Paths
 
 import breeze.linalg.DenseMatrix
-import com.intel.analytics.bigdl.pvanet.datasets.Imdb
+import com.intel.analytics.bigdl.pvanet.dataset.Imdb
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
 import com.intel.analytics.bigdl.utils.{Table, File => DlFile}
 
@@ -121,7 +121,7 @@ object FileUtil {
 
 
   def saveDenseMatrix(detsNMS: DenseMatrix[Float], s: String): Unit = {
-    val savePath = s"/home/xianyan/code/intel/pvanet/spark-dl/data/middle/pvanet/" +
+    val savePath = s"data/middle/pvanet/" +
       s"$s-${detsNMS.rows}_${detsNMS.cols}"
     val writer = new BufferedWriter(new FileWriter(savePath))
     for (i <- 0 until detsNMS.rows) {
@@ -201,7 +201,7 @@ object FileUtil {
   }
 
   def main(args: Array[String]): Unit = {
-    val means = loadFeaturesFullPath("/home/xianyan/data/model/alexnet/means-3_256_256.txt")
-    DlFile.save(means, "/home/xianyan/data/model/alexnet/means.obj")
+    val means = loadFeaturesFullPath("data/model/alexnet/means-3_256_256.txt")
+    DlFile.save(means, "data/model/alexnet/means.obj")
   }
 }

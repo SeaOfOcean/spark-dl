@@ -17,7 +17,7 @@
 
 package com.intel.analytics.bigdl.pvanet.tools
 
-import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, Roidb}
+import com.intel.analytics.bigdl.pvanet.dataset.{ImageScalerWithNormalizer, Roidb}
 import com.intel.analytics.bigdl.pvanet.model.Model._
 import com.intel.analytics.bigdl.pvanet.model._
 import com.intel.analytics.bigdl.pvanet.utils.{Bbox, Nms, TensorUtil}
@@ -38,8 +38,12 @@ object Demo {
     "sheep", "sofa", "train", "tvmonitor"
   )
 
-  case class PascolVocLocalParam(folder: String = "/home/xianyan/objectRelated/Pedestrain_1",
-    net: ModelType = Model.VGG16, nThread: Int = 4)
+  case class PascolVocLocalParam(folder: String = "data/Pedestrain_1",
+    net: ModelType = Model.VGG16, nThread: Int = 4,
+    caffeDefPath: String = "data/faster_rcnn_models/VGG16/" +
+      "faster_rcnn_alt_opt/rpn_test.pt",
+    caffeModelPath: String = "data/faster_rcnn_models/VGG16/" +
+      "VGG16_faster_rcnn_final.caffemodel")
 
   private val parser = new OptionParser[PascolVocLocalParam]("Spark-DL PascolVoc Local Example") {
     head("Spark-DL PascolVoc Local Example")
@@ -49,26 +53,24 @@ object Demo {
     opt[String]('n', "net")
       .text("net type : VGG16 | PVANET")
       .action((x, c) => c.copy(net = Model.withName(x)))
+    opt[String]("caffeDefPath")
+      .text("caffe prototxt")
+      .action((x, c) => c.copy(caffeDefPath = x))
+    opt[String]("caffeModelPath")
+      .text("caffe model path")
     opt[String]('t', "mkl thread number")
       .action((x, c) => c.copy(nThread = x.toInt))
   }
-  val model2caffePath = Map(
-    VGG16 -> ("/home/xianyan/objectRelated/faster_rcnn_models/VGG16/" +
-      "faster_rcnn_alt_opt/rpn_test.pt",
-      "/home/xianyan/objectRelated/faster_rcnn_models/" +
-        "VGG16_faster_rcnn_final.caffemodel"),
-    PVANET -> ("/home/xianyan/objectRelated/pvanet/full/test.pt",
-      "/home/xianyan/objectRelated/pvanet/full/test.model"))
 
   def main(args: Array[String]): Unit = {
     val param = parser.parse(args, PascolVocLocalParam()).get
     val imgNames = Array("1.jpg", "20.jpg", "30.jpg", "40.jpg",
       "50.jpg", "60.jpg", "70.jpg", "80.jpg", "90.jpg", "100.jpg")
-    val net = FasterRcnn(param.net, pretrained = model2caffePath(param.net))
+    val net = FasterRcnn(param.net, caffeModel = Some((param.caffeDefPath, param.caffeModelPath)))
 
     val model = net.getTestModel
 
-    val imageScaler = new ImageScalerAndMeanSubstractor(net.param)
+    val imageScaler = new ImageScalerWithNormalizer(net.param)
 
     imgNames.foreach(imaName => {
       val img = Roidb(param.folder + "/" + imaName)

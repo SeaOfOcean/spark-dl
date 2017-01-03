@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.intel.analytics.bigdl.pvanet.datasets
+package com.intel.analytics.bigdl.pvanet.dataset
 
 import java.io.{File, PrintWriter}
 import java.nio.file.Paths
@@ -156,8 +156,12 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
   def getVocResultsFileTemplate(root: Option[String] = None): String = {
     root match {
       case Some(r) => Paths.get(r, s"${compId}_det_${imageSet}_%s.txt").toString
-      case _ => Paths.get(devkitPath,
-        s"/results/VOC$year/Main/${compId}_det_${imageSet}_%s.txt").toString
+      case _ =>
+        val root = s"data/results/VOC$year/"
+        if (!FileUtil.existFile(root)) {
+          new File(root).mkdirs()
+        }
+        Paths.get(root, s"${compId}_det_${imageSet}_%s.txt").toString
     }
   }
 
@@ -216,7 +220,7 @@ class PascalVoc(val year: String = "2007", val imageSet: String,
   def eval(resultFolder: Option[String] = None): Array[(String, Double)] = {
     val annopath = s"$devkitPath/VOC$year/Annotations/%s.xml"
     val imagesetfile = s"$devkitPath/VOC$year/ImageSets/Main/$imageSet.txt"
-    val cachedir = s"$devkitPath/annotations_cache"
+    val cachedir = s"data/cache/annotations_cache"
     var aps = List[Double]()
     // The PASCAL VOC metric changed in 2010
     val use_07_metric = if (year.toInt < 2010) true else false

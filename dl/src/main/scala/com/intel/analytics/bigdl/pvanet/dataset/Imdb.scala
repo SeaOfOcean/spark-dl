@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.intel.analytics.bigdl.pvanet.datasets
+package com.intel.analytics.bigdl.pvanet.dataset
 
 import java.io.FileInputStream
 import javax.imageio.ImageIO

@@ -21,7 +21,7 @@ import com.intel.analytics.bigdl.Module
 import com.intel.analytics.bigdl.dataset.LocalDataSet
 import com.intel.analytics.bigdl.nn.ParallelCriterion
 import com.intel.analytics.bigdl.optim.{OptimMethod, Trigger}
-import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, ImageToTensor, ImageWithRoi, ObjectDataSource}
+import com.intel.analytics.bigdl.pvanet.dataset.{ImageScalerWithNormalizer, ImageToTensor, ImageWithRoi, ObjectDataSource}
 import com.intel.analytics.bigdl.pvanet.layers.AnchorTarget
 import com.intel.analytics.bigdl.pvanet.model.FasterRcnn
 import com.intel.analytics.bigdl.tensor.Tensor
@@ -114,7 +114,7 @@ class FasterRcnnOptimizer(data: LocalDataSet[ImageWithRoi],
   }
 
   val imageToTensor = new ImageToTensor(batchSize = 1)
-  val imgScaler = new ImageScalerAndMeanSubstractor(net.param)
+  val imgScaler = new ImageScalerWithNormalizer(net.param)
   def optimize(): Module[Float] = {
     val (weights, grad) = model.getParameters()
     var wallClockTime = 0L

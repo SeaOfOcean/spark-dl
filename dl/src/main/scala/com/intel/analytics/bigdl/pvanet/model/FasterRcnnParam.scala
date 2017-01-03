@@ -22,6 +22,7 @@ import com.intel.analytics.bigdl.optim.{OptimMethod, Trigger}
 import com.intel.analytics.bigdl.pvanet.model.Model.ModelType
 import com.intel.analytics.bigdl.pvanet.model.Phase.PhaseType
 import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
+import scopt.OptionParser
 
 
 object Phase extends Enumeration {
@@ -152,4 +153,6 @@ object FasterRcnnParam {
     }
   }
 }
+
+
 

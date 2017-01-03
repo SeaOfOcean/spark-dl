@@ -29,7 +29,7 @@ class VggFRcnnSpec extends FlatSpec {
       "faster_rcnn_alt_opt/rpn_test.pt"
     val caffeModel = "/home/xianyan/objectRelated/faster_rcnn_models/" +
       "VGG16_faster_rcnn_final.caffemodel"
-    val vggFrcnn = FasterRcnn(Model.VGG16, Phase.TEST, pretrained = (caffeDef, caffeModel))
+    val vggFrcnn = FasterRcnn(Model.VGG16, Phase.TEST, caffeModel = Some(caffeDef, caffeModel))
     val model = vggFrcnn.getModel
     val input = new Table()
     FileUtil.middleRoot = FileUtil.getFile("middle/vgg16/14/")

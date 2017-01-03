@@ -17,7 +17,7 @@
 
 package com.intel.analytics.bigdl.pvanet.layers
 
-import com.intel.analytics.bigdl.pvanet.datasets.{ImageScalerAndMeanSubstractor, Imdb}
+import com.intel.analytics.bigdl.pvanet.dataset.{ImageScalerWithNormalizer, Imdb}
 import com.intel.analytics.bigdl.pvanet.model.{Phase, VggParam}
 import com.intel.analytics.bigdl.pvanet.utils.FileUtil
 import com.intel.analytics.bigdl.tensor.Tensor
@@ -28,7 +28,7 @@ class AnchorTargetSpec extends FlatSpec with Matchers {
   val param = new VggParam(Phase.TRAIN)
   val datasource = Imdb.getImdb("voc_2007_testcode1")
   val roidb = datasource.loadAnnotation("000014")
-  val scaler = new ImageScalerAndMeanSubstractor(param)
+  val scaler = new ImageScalerWithNormalizer(param)
   val img = scaler.apply(roidb)
   println(img.gtBoxes.get)
   val anchorTarget = new AnchorTarget(param)

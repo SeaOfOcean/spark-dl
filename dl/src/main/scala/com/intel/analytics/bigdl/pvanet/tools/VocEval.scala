@@ -121,27 +121,15 @@ object VocEval {
     // read list of images
     val imageNames = Source.fromFile(imagesetFile).getLines().toList.map(x => x.trim)
 
-    var recs: util.HashMap[Int, List[Object]] = null
-    def loadAnnots: Unit = {
-      // load annots
-      recs = new util.HashMap[Int, List[Object]]()
-      imageNames.zipWithIndex.foreach {
-        case (imagename, i) =>
-          recs.put(imagename.toInt, parseRec(annoPath.format(imagename)))
-      }
-      DlFile.save(recs, cachefile)
-    }
-    if (!FileUtil.existFile(cachefile)) {
-      loadAnnots
-    } else {
-      try {
-        recs = DlFile.load[util.HashMap[Int, List[Object]]](cachefile)
-      } catch {
-        case e: Exception =>
-          new File(cachefile).delete()
-          loadAnnots
-      }
-
+    val results = FileUtil.load[util.HashMap[Int, List[Object]]](cachefile)
+    val recs = results match {
+      case Some(rs) => rs
+      case _ =>
+        val res = new util.HashMap[Int, List[Object]]()
+        imageNames.foreach ( imagename =>
+          res.put(imagename.toInt, parseRec(annoPath.format(imagename))))
+        DlFile.save(res, cachefile, isOverwrite = true)
+        res
     }
 
     // extract gt objects for this class

@@ -18,8 +18,8 @@
 package com.intel.analytics.bigdl.pvanet.tools
 
 import com.intel.analytics.bigdl.Module
-import com.intel.analytics.bigdl.pvanet.datasets._
-import com.intel.analytics.bigdl.pvanet.model.Model._
+import com.intel.analytics.bigdl.pvanet.dataset._
+import com.intel.analytics.bigdl.pvanet.model.Model.ModelType
 import com.intel.analytics.bigdl.pvanet.model.{FasterRcnn, Model, Phase}
 import com.intel.analytics.bigdl.pvanet.utils._
 import com.intel.analytics.bigdl.tensor.Tensor
@@ -41,7 +41,7 @@ object Test {
       })
       out
     }
-    val imageScaler = new ImageScalerAndMeanSubstractor(net.param)
+    val imageScaler = new ImageScalerWithNormalizer(net.param)
 
     // timer
     val imDetectTimer = new Timer
@@ -144,20 +144,25 @@ object Test {
         + d.imagePath.substring(d.imagePath.lastIndexOf("/") + 1))
   }
 
-  val model2caffePath = Map(
-    VGG16 -> ("/home/xianyan/objectRelated/faster_rcnn_models/VGG16/" +
-      "faster_rcnn_alt_opt/rpn_test.pt",
-      "/home/xianyan/objectRelated/faster_rcnn_models/" +
-        "VGG16_faster_rcnn_final.caffemodel"),
-    PVANET -> ("/home/xianyan/objectRelated/pvanet/full/test.pt",
-      "/home/xianyan/objectRelated/pvanet/full/test.model"))
+//  val model2caffePath = Map(
+//    VGG16 -> ("/home/xianyan/objectRelated/faster_rcnn_models/VGG16/" +
+//      "faster_rcnn_alt_opt/rpn_test.pt",
+//      "/home/xianyan/objectRelated/faster_rcnn_models/" +
+//        "VGG16_faster_rcnn_final.caffemodel"),
+//    PVANET -> ("/home/xianyan/objectRelated/pvanet/full/test.pt",
+//      "/home/xianyan/objectRelated/pvanet/full/test.model"))
 
   case class PascolVocLocalParam(
-    folder: String = "/home/xianyan/objectRelated/VOCdevkit",
-    net: ModelType = VGG16,
+    folder: String = "data/VOCdevkit",
+    net: ModelType = Model.VGG16,
+    imageSet: String = "voc_2007_testcode",
+    caffeDefPath: String = "data/faster_rcnn_models/VGG16/" +
+      "faster_rcnn_alt_opt/rpn_test.pt",
+    caffeModelPath: String = "data/faster_rcnn_models/VGG16/" +
+      "VGG16_faster_rcnn_final.caffemodel",
     nThread: Int = 8)
 
-  private val parser = new OptionParser[PascolVocLocalParam]("Spark-DL PascolVoc Local Example") {
+  val parser = new OptionParser[PascolVocLocalParam]("Spark-DL PascolVoc Local Example") {
     head("Spark-DL PascolVoc Local Example")
     opt[String]('f', "folder")
       .text("where you put the PascolVoc data")
@@ -165,6 +170,15 @@ object Test {
     opt[String]('n', "net")
       .text("net type : VGG16 | PVANET")
       .action((x, c) => c.copy(net = Model.withName(x)))
+    opt[String]('i', "imageset")
+      .text("imageset: voc_2007_test")
+      .action((x, c) => c.copy(imageSet = x))
+    opt[String]("caffeDefPath")
+      .text("caffe prototxt")
+      .action((x, c) => c.copy(caffeDefPath = x))
+    opt[String]("caffeModelPath")
+      .text("caffe model path")
+      .action((x, c) => c.copy(caffeModelPath = x))
     opt[String]('t', "mkl thread number")
       .action((x, c) => c.copy(nThread = x.toInt))
   }
@@ -173,10 +187,9 @@ object Test {
     import com.intel.analytics.bigdl.mkl.MKL
     val param = parser.parse(args, PascolVocLocalParam()).get
 
-    val model = FasterRcnn(param.net, Phase.TEST, model2caffePath(param.net))
+    val model = FasterRcnn(param.net, Phase.TEST, Some((param.caffeDefPath, param.caffeModelPath)))
     MKL.setNumThreads(param.nThread)
-    val testDataSource = ObjectDataSource("voc_2007_testcode", param.folder, false)
+    val testDataSource = ObjectDataSource(param.imageSet, param.folder, useFlipped = false)
     testNet(model, testDataSource)
   }
-
 }

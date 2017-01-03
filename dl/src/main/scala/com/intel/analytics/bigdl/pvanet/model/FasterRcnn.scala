@@ -368,7 +368,8 @@ abstract class FasterRcnn(var phase: PhaseType) {
 }
 
 object FasterRcnn {
-  def apply(modelType: ModelType, phase: PhaseType = TEST, pretrained: Any = None): FasterRcnn = {
+  def apply(modelType: ModelType, phase: PhaseType = TEST,
+    caffeModel: Option[(String, String)] = None): FasterRcnn = {
 
     def getFasterRcnn(modelType: ModelType): FasterRcnn = {
       modelType match {
@@ -382,11 +383,8 @@ object FasterRcnn {
     }
 
     Random.setSeed(FasterRcnnParam.RANDOM_SEED)
-    val fasterRcnnModel = pretrained match {
-      case mp: String =>
-        // big dl faster rcnn models
-        DlFile.load[FasterRcnn](mp)
-      case (dp: String, mp: String) =>
+    val fasterRcnnModel = caffeModel match {
+      case Some((dp: String, mp: String)) =>
         // caffe pretrained model
         getFasterRcnn(modelType)
           .loadFromCaffeOrCache(dp, mp)
