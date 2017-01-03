@@ -14,30 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package com.intel.analytics.bigdl.dataset.image
-
-import com.intel.analytics.bigdl.dataset.{ByteRecord, Transformer}
-
-import scala.collection.Iterator
-
-object SampleToBGRImg {
-  def apply(normalize: Float = 255f): SampleToBGRImg =
-    new SampleToBGRImg(normalize)
-}
+package org.apache.spark.ml
+import org.apache.spark.ml.param.ParamMap
+import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{DataFrame, Dataset}
 
 /**
- * Convert a byte record to BGR image. The format is, first 4 bytes is width, the next 4 bytes is
- * height, and the last is pixels coming with BGR order.
- * @param normalize
+ * A wrapper for org.apache.spark.ml.Transformer.
+ * Extends MlTransformer and override process to gain compatibility with
+ * both spark 1.5 and spark 2.0.
  */
-class SampleToBGRImg(normalize: Float)
-  extends Transformer[ByteRecord, LabeledBGRImage] {
-  private val buffer = new LabeledBGRImage()
+abstract class MlTransformer extends Transformer{
 
-  override def apply(prev: Iterator[ByteRecord]): Iterator[LabeledBGRImage] = {
-    prev.map(rawData => {
-      buffer.copy(rawData.data, normalize).setLabel(rawData.label)
-    })
+  def process(dataset: DataFrame): DataFrame
+
+  override def transform(dataset: Dataset[_]): DataFrame = {
+    process(dataset.toDF())
   }
+
+  override def transformSchema(schema: StructType): StructType = schema
+
+  override def copy(extra: ParamMap): MlTransformer = defaultCopy(extra)
 }

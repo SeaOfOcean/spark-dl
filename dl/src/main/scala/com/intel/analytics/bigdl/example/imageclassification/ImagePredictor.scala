@@ -14,24 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.intel.analytics.bigdl.example.sparkml
+package com.intel.analytics.bigdl.example.imageclassification
 
 import java.nio.file.Paths
 
 import com.intel.analytics.bigdl.dataset.image.{LocalImageFiles, _}
-import com.intel.analytics.bigdl.example.sparkml.MlUtils._
+import com.intel.analytics.bigdl.example.imageclassification.MlUtils._
 import com.intel.analytics.bigdl.numeric.NumericFloat
 import com.intel.analytics.bigdl.utils.Engine
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.SparkContext
-import org.apache.spark.ml.DLClassifier
+import org.apache.spark.ml.{DLClassifier => SparkDLClassifier}
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.sql.SQLContext
 
 /**
  * An example to show how to use DLClassifier Transform
  */
-object DLClassifier {
+object ImagePredictor {
   Logger.getLogger("org").setLevel(Level.ERROR)
   Logger.getLogger("akka").setLevel(Level.ERROR)
   Logger.getLogger("breeze").setLevel(Level.ERROR)
@@ -53,7 +53,7 @@ object DLClassifier {
           .getOrElse(throw new RuntimeException("can't get node number"))
 
       val model = loadModel(param)
-      val valTrans = new DLClassifier()
+      val valTrans = new SparkDLClassifier()
         .setInputCol("features")
         .setOutputCol("predict")
 
@@ -63,12 +63,12 @@ object DLClassifier {
         Array(param.batchSize, 3, imageSize, imageSize))
 
       // load image set
-      val paths = LocalImageFiles.readPathsNoLabel(Paths.get(param.folder))
+      val paths = LocalImageFiles.readPaths(Paths.get(param.folder), hasLabel = false)
       val imageSet = imagesLoad(paths, 256)
 
       val valRDD = sc.parallelize(imageSet).repartition(partitionNum)
       val transf = RowToByteRecords() ->
-          SampleToBGRImg() ->
+          BytesToBGRImg() ->
           BGRImgCropper(imageSize, imageSize) ->
           BGRImgNormalizer(testMean, testStd) ->
           BGRImgToImageVector()

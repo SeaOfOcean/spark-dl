@@ -69,14 +69,10 @@ class ZippedPartitionsWithLocalityRDD[A: ClassTag, B: ClassTag, V: ClassTag](
       }
       require(matchPartition != null, s"can't find locality partition for partition $i " +
         s"Partition locations are (${curPrefs}) Candidate partition locations are\n" +
-        s"${candidateLocs.mkString("\n")}")
+        s"${candidateLocs.mkString("\n")} Are you using more executors than the node number? " +
+        s"If yes, try to change your executor number.")
       new ZippedPartitionsLocalityPartition(i, Array(i, matchPartition._1), rdds, locs)
     }
-  }
-
-  override def compute(s: Partition, context: TaskContext): Iterator[V] = {
-    val partitions = s.asInstanceOf[ZippedPartitionsLocalityPartition].partitions
-    f(rdd1.iterator(partitions(0), context), rdd2.iterator(partitions(1), context))
   }
 }
 

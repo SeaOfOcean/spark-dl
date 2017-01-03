@@ -15,33 +15,30 @@
  * limitations under the License.
  */
 
-package com.intel.analytics.bigdl.dataset.text
+package com.intel.analytics.bigdl.example.imageclassification
 
-import com.intel.analytics.bigdl.dataset.{MiniBatch, Transformer}
-import com.intel.analytics.bigdl.tensor.{Storage, Tensor}
+import com.intel.analytics.bigdl.dataset.{ByteRecord, Transformer}
+import org.apache.log4j.Logger
+import org.apache.spark.sql.Row
 
 import scala.collection.Iterator
 
-object TensorSeqToBatch {
-  def apply(batchSize: Int = 1): TensorSeqToBatch = new TensorSeqToBatch(batchSize)
+object RowToByteRecords {
+  val logger = Logger.getLogger(getClass)
+
+  def apply(colName: String = "data"): RowToByteRecords = {
+    new RowToByteRecords(colName)
+  }
 }
 
-class TensorSeqToBatch(batchSize: Int = 1)
-  extends Transformer[(Tensor[Float], Tensor[Float]), MiniBatch[Float]] {
+class RowToByteRecords(colName: String)
+  extends Transformer[Row, ByteRecord] {
 
-  override def apply(prev: Iterator[(Tensor[Float], Tensor[Float])]): Iterator[MiniBatch[Float]] = {
-    new Iterator[MiniBatch[Float]] {
-
-      override def hasNext: Boolean = prev.hasNext
-
-      override def next(): MiniBatch[Float] = {
-        if (prev.hasNext) {
-          val data = prev.next()
-          MiniBatch(data._1, data._2)
-        } else {
-          null
-        }
+  override def apply(prev: Iterator[Row]): Iterator[ByteRecord] = {
+    prev.map(
+      img => {
+        ByteRecord(img.getAs[Array[Byte]](colName), -1.0f)
       }
-    }
+    )
   }
 }

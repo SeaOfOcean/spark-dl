@@ -19,17 +19,17 @@ package com.intel.analytics.bigdl.example.loadmodel
 
 import java.nio.file.Paths
 
-import com.intel.analytics.bigdl.models.alexnet.AlexNet
 import com.intel.analytics.bigdl.models.inception.Inception_v1_NoAuxClassifier
 import com.intel.analytics.bigdl.nn.Module
 import com.intel.analytics.bigdl.optim.{Top1Accuracy, Top5Accuracy, Validator}
 import com.intel.analytics.bigdl.utils.Engine
+import scala.language.existentials
 import org.apache.log4j.Logger
 import org.apache.spark.SparkContext
 import scopt.OptionParser
 
 
-object ImageClassifier {
+object ModelValidator {
 
   val logger = Logger.getLogger(getClass)
 
@@ -93,7 +93,6 @@ object ImageClassifier {
     opt[Int]('n', "node")
       .text("node number to test the model")
       .action((x, c) => c.copy(nodeNumber = x))
-      .required()
     opt[String]("env")
       .text("execution environment")
       .validate(x => {
@@ -142,6 +141,7 @@ object ImageClassifier {
         case _ => throw new IllegalArgumentException(s"${param.modelType}")
       }
       println(model)
+
       val validator = Validator(model, validateDataSet)
       val evaluator = Array(new Top1Accuracy[Float](), new Top5Accuracy[Float]())
       val result = validator.test(evaluator)

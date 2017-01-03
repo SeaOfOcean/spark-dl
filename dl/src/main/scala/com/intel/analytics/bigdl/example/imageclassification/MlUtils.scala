@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.intel.analytics.bigdl.example.sparkml
+package com.intel.analytics.bigdl.example.imageclassification
 
 import com.intel.analytics.bigdl.Module
 import com.intel.analytics.bigdl.dataset.Transformer
@@ -37,8 +37,6 @@ object MlUtils {
   sealed trait ModelType
 
   case object TorchModel extends ModelType
-
-  case object CaffeModel extends ModelType
 
   case object BigDlModel extends ModelType
 
@@ -118,7 +116,7 @@ object MlUtils {
   case class ByteImage(data: Array[Byte], imageName: String)
 
   def transformDF(data: DataFrame, f: Transformer[Row, DenseVector]): DataFrame = {
-    val vectorRdd = data.select("data").mapPartitions(f(_))
+    val vectorRdd = data.select("data").rdd.mapPartitions(f(_))
     val dataRDD = data.rdd.zipPartitions(vectorRdd) { (a, b) =>
       b.zip(a.map(_.getAs[String]("imageName")))
         .map(
